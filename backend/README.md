@@ -1,237 +1,66 @@
-# Sistema Generador de Portafolios Digitales - Backend
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-API REST desarrollada con Laravel para la gestión de portafolios digitales.
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-## Instalación y Configuración
+## About Laravel
 
-### Requisitos
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- PHP 8.2+
-- Composer
-- MySQL 8.0+
-- Node.js (opcional para herramientas frontend)
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-### Pasos de Instalación
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-1. **Clonar el repositorio**
-```bash
-git clone https://github.com/tisstackshield7-bit/Sistema-generador-de-portafolios-digitales.git
-cd backend
-```
+## Learning Laravel
 
-2. **Instalar dependencias**
-```bash
-composer install
-```
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
 
-3. **Configurar el archivo .env**
-```bash
-cp .env.example .env
-php artisan key:generate
-```
+You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
 
-4. **Configurar la base de datos**
-Edita el archivo `.env` con tus credenciales de MySQL:
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=portafolios_db
-DB_USERNAME=root
-DB_PASSWORD=
-```
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-5. **Ejecutar migraciones**
-```bash
-php artisan migrate
-```
+## Laravel Sponsors
 
-6. **Iniciar el servidor**
-```bash
-php artisan serve
-```
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-El servidor estará disponible en `http://localhost:8000`
+### Premium Partners
 
-## Autenticación
+- **[Vehikl](https://vehikl.com/)**
+- **[Tighten Co.](https://tighten.co)**
+- **[WebReinvent](https://webreinvent.com/)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
+- **[Cyber-Duck](https://cyber-duck.co.uk)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Jump24](https://jump24.co.uk)**
+- **[Redberry](https://redberry.international/laravel/)**
+- **[Active Logic](https://activelogic.com)**
+- **[byte5](https://byte5.de)**
+- **[OP.GG](https://op.gg)**
 
-El backend utiliza **Laravel Sanctum** para autenticación token-based.
+## Contributing
 
-### Endpoints de Autenticación
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-- `POST /api/auth/register` - Registrar nuevo usuario
-- `POST /api/auth/login` - Iniciar sesión
-- `POST /api/auth/logout` - Cerrar sesión (requiere autenticación)
-- `GET /api/auth/user` - Obtener usuario actual (requiere autenticación)
+## Code of Conduct
 
-## Estructura de Modelos
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-### User
-- id, name, email, password
-- professional_title, bio, avatar_url, cover_image_url
-- location, phone, website, is_active
+## Security Vulnerabilities
 
-### Portfolio
-- id, user_id, title, slug, description
-- theme, is_published, custom_domain
-- meta_description, meta_keywords
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-### Project
-- id, user_id, portfolio_id, title, slug, description
-- thumbnail_url, project_url, github_url
-- start_date, end_date, featured, order
-- Relación: belongsToMany(Technology)
+## License
 
-### Experience
-- id, user_id, job_title, company, location
-- start_date, end_date, is_current
-- description, company_logo_url
-
-### Skill
-- id, user_id, name, category
-- proficiency_level (beginner, intermediate, advanced, expert)
-- order
-
-### Education
-- id, user_id, institution, degree, field_of_study
-- start_date, end_date, is_current
-- description, certificate_url, institution_logo_url
-
-### SocialLink
-- id, user_id, platform, url, icon, display_label
-
-### Technology
-- id, name, slug, color, icon_url
-- Relación: belongsToMany(Project)
-
-## Endpoints de API
-
-### Rutas Protegidas (requieren autenticación)
-
-#### Usuario
-- `GET /api/user` - Obtener perfil
-- `PUT /api/user` - Actualizar perfil
-- `PUT /api/user/password` - Cambiar contraseña
-
-#### Portafolios
-- `GET /api/portfolios` - Listar portafolios
-- `POST /api/portfolios` - Crear portafolio
-- `GET /api/portfolios/{id}` - Obtener portafolio
-- `PUT /api/portfolios/{id}` - Actualizar portafolio
-- `DELETE /api/portfolios/{id}` - Eliminar portafolio
-
-#### Proyectos
-- `GET /api/projects` - Listar proyectos
-- `POST /api/projects` - Crear proyecto
-- `GET /api/projects/{id}` - Obtener proyecto
-- `PUT /api/projects/{id}` - Actualizar proyecto
-- `DELETE /api/projects/{id}` - Eliminar proyecto
-- `GET /api/projects-technologies` - Obtener todas las tecnologías
-
-#### Experiencias
-- `GET /api/experiences` - Listar experiencias
-- `POST /api/experiences` - Crear experiencia
-- `GET /api/experiences/{id}` - Obtener experiencia
-- `PUT /api/experiences/{id}` - Actualizar experiencia
-- `DELETE /api/experiences/{id}` - Eliminar experiencia
-
-#### Habilidades
-- `GET /api/skills` - Listar habilidades
-- `POST /api/skills` - Crear habilidad
-- `GET /api/skills/{id}` - Obtener habilidad
-- `PUT /api/skills/{id}` - Actualizar habilidad
-- `DELETE /api/skills/{id}` - Eliminar habilidad
-- `GET /api/skills/by-category` - Agrupar por categoría
-
-#### Educación
-- `GET /api/education` - Listar educación
-- `POST /api/education` - Crear educación
-- `GET /api/education/{id}` - Obtener educación
-- `PUT /api/education/{id}` - Actualizar educación
-- `DELETE /api/education/{id}` - Eliminar educación
-
-#### Enlaces Sociales
-- `GET /api/social-links` - Listar enlaces sociales
-- `POST /api/social-links` - Crear enlace social
-- `GET /api/social-links/{id}` - Obtener enlace social
-- `PUT /api/social-links/{id}` - Actualizar enlace social
-- `DELETE /api/social-links/{id}` - Eliminar enlace social
-- `GET /api/social-links/platforms` - Obtener plataformas disponibles
-
-### Rutas Públicas
-
-- `GET /api/portfolios/{slug}` - Obtener portafolio público
-- `GET /api/users/{id}` - Obtener perfil público
-- `GET /api/users/{id}/projects` - Obtener proyectos públicos
-- `GET /api/health` - Health check
-
-## CORS
-
-El backend está configurado para aceptar solicitudes desde:
-- http://localhost:3000
-- http://localhost:5173
-
-Configura estas URLs en la variable de entorno `CORS_ALLOWED_ORIGINS`
-
-## Variables de Entorno
-
-```
-APP_NAME="Sistema Portafolios Digitales"
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://localhost:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=portafolios_db
-DB_USERNAME=root
-DB_PASSWORD=
-
-SANCTUM_STATEFUL_DOMAINS=localhost:3000,localhost:5173
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-```
-
-## Estructura de Directorios
-
-```
-backend/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/Api/
-│   │   └── Middleware/
-│   ├── Models/
-│   ├── Policies/
-│   ├── Providers/
-│   └── Services/
-├── bootstrap/
-├── config/
-├── database/
-│   ├── migrations/
-│   ├── factories/
-│   └── seeders/
-├── routes/
-├── storage/
-├── public/
-├── tests/
-├── composer.json
-├── .env.example
-└── README.md
-```
-
-## Desarrollo
-
-- Usar rutas RESTful con controladores por recurso
-- Validación de entrada en los requests
-- Políticas de autorización para proteger datos
-- Usar Eloquent ORM para queries
-- Soft deletes para datos sensibles
-
-## Próximas características
-
-- [ ] Carga de archivos (avatares, proyectos)
-- [ ] Temas personalizados para portafolios
-- [ ] URL personalizadas
-- [ ] Estadísticas de visitas
-- [ ] Sistema de comentarios
-- [ ] Etiquetado de proyectos
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

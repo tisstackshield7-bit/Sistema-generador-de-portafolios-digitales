@@ -1,16 +1,15 @@
 #!/usr/bin/env php
 <?php
 
+use Symfony\Component\Console\Input\ArgvInput;
+
 define('LARAVEL_START', microtime(true));
 
-if (file_exists(__DIR__ . '/vendor/autoload.php')) {
-    require __DIR__ . '/vendor/autoload.php';
-} else {
-    require __DIR__ . '/bootstrap/autoload.php';
-}
+// Register the Composer autoloader...
+require __DIR__.'/vendor/autoload.php';
 
-$app = require_once __DIR__ . '/bootstrap/app.php';
+// Bootstrap Laravel and handle the command...
+$status = (require_once __DIR__.'/bootstrap/app.php')
+    ->handleCommand(new ArgvInput);
 
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-
-exit($kernel->handle(new Symfony\Component\Console\Input\ArgvInput(), new Symfony\Component\Console\Output\ConsoleOutput()));
+exit($status);
