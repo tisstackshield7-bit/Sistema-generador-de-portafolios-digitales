@@ -3,86 +3,98 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\Sesion;
+use App\Models\Usuario;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    /**
-     * Registrar un nuevo usuario.
-     */
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'professional_title' => 'nullable|string|max:255',
+        $usuario = Usuario::create([
+            'nombre' => null,
+            'correo' => $request->correo,
+            'contrasena' => Hash::make($request->contrasena),
+            'estado' => 'activo',
+            'creado_en' => now(),
+            'actualizado_en' => now(),
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'professional_title' => $validated['professional_title'] ?? null,
-            'is_active' => true,
-        ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $sesion = $this->createSession($usuario, $request);
 
         return response()->json([
-            'message' => 'Usuario registrado exitosamente',
-            'user' => $user,
-            'token' => $token,
+            'message' => 'Registro exitoso.',
+            'usuario_id' => $usuario->id,
+            'redirect_to' => '/perfil/crear',
+            'token' => $sesion->token,
+            'usuario' => [
+                'id' => $usuario->id,
+                'correo' => $usuario->correo,
+                'estado' => $usuario->estado,
+            ],
         ], 201);
     }
 
-    /**
-     * Iniciar sesión.
-     */
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        $usuario = Usuario::where('correo', $request->correo)->first();
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Las credenciales son incorrectas.'],
-            ]);
+        if (!$usuario || !Hash::check($request->contrasena, $usuario->contrasena)) {
+            return response()->json([
+                'message' => 'Credenciales incorrectas.'
+            ], 422);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $sesion = $this->createSession($usuario, $request);
 
         return response()->json([
-            'message' => 'Sesión iniciada exitosamente',
-            'user' => $user,
-            'token' => $token,
+            'message' => 'Inicio de sesión exitoso.',
+            'token' => $sesion->token,
+            'usuario' => [
+                'id' => $usuario->id,
+                'correo' => $usuario->correo,
+                'estado' => $usuario->estado,
+            ],
         ]);
     }
 
-    /**
-     * Cerrar sesión.
-     */
+    public function me(Request $request)
+    {
+        $usuario = $request->attributes->get('auth_usuario');
+
+        return response()->json([
+            'usuario' => $usuario,
+        ]);
+    }
+
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $sesion = $request->attributes->get('auth_sesion');
+
+        if ($sesion) {
+            $sesion->delete();
+        }
 
         return response()->json([
-            'message' => 'Sesión cerrada exitosamente',
+            'message' => 'Sesión cerrada correctamente.'
         ]);
     }
-
-    /**
-     * Obtener usuario autenticado.
-     */
-    public function user(Request $request)
+    private function createSession(Usuario $usuario, Request $request): Sesion
     {
-        return response()->json($request->user());
+        return Sesion::create([
+            'usuario_id' => $usuario->id,
+            'token' => Str::random(80),
+            'ip_usuario' => $request->ip(),
+            'dispositivo' => substr((string) $request->userAgent(), 0, 255),
+            'fecha_inicio' => now(),
+            'fecha_expiracion' => Carbon::now()->addDays(7),
+            'creado_en' => now(),
+            'actualizado_en' => now(),
+        ]);
     }
 }
