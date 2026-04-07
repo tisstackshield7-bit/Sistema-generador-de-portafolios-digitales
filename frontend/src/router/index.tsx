@@ -7,11 +7,12 @@ import BasicProfileCreatePage from "../pages/profile/BasicProfileCreatePage";
 import BasicProfileEditPage from "../pages/profile/BasicProfileEditPage";
 import ProfileViewPage from "../pages/profile/ProfileViewPage";
 import PrivateRoute from "../components/auth/PrivateRoute";
+import HomePage from "../pages/HomePage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LoginPage />,
+    element: <HomePage />,
   },
   {
     path: "/register",
