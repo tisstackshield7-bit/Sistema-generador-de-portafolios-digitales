@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authStore } from "../store/authStore";
 import { getMyProfile, getPublicProfiles } from "../api/profile";
+import { API_ORIGIN } from "../api/axios";
 import { logoutUser } from "../api/auth";
 import type { Perfil } from "../types/profile";
 import "./HomePage.css";
@@ -13,11 +14,12 @@ type PublicPortfolio = {
   titular_profesional?: string | null;
   biografia: string;
   foto_perfil?: string | null;
+  slug: string;
 };
 
-const popularTechnologies = ["React", "Laravel", "Vue", "Java", "Python", "Angular", "UI/UX", "Docker", "SQL"];
+export const popularTechnologies = ["React", "Laravel", "Vue", "Java", "Python", "Angular", "UI/UX", "Docker", "SQL"];
 
-const quickActions = [
+export const quickActions = [
   "Crear tu portafolio",
   "Mostrar proyectos",
   "Registrar habilidades",
@@ -72,7 +74,7 @@ export default function HomePage() {
       {(publicProfiles.length ? publicProfiles : []).map((p) => (
         <div key={p.id} className="card portfolio-card">
           {p.foto_perfil ? (
-            <img src={`http://127.0.0.1:8000/storage/${p.foto_perfil}`} alt={p.nombre_completo} className="avatar-img" />
+            <img src={`${API_ORIGIN}/storage/${p.foto_perfil}`} alt={p.nombre_completo} className="avatar-img" />
           ) : (
             <div className="avatar-fallback">{p.nombre_completo.slice(0, 1)}</div>
           )}
@@ -85,8 +87,8 @@ export default function HomePage() {
             </p>
           </div>
           <button
-            className="btn btn-outline"
-            onClick={() => (isAuth ? navigate("/perfil") : navigate("/login"))}
+            className="btn btn-outline portfolio-btn"
+            onClick={() => navigate(`/perfil-publico/${p.slug}`)}
           >
             {ctaLabel}
           </button>
@@ -107,12 +109,12 @@ export default function HomePage() {
   );
 
   const visitorView = (
-    <div className="home-grid">
+    <div className="home-grid visitor-grid">
       <section className="main-column">
         <div className="card hero">
           <p className="eyebrow">Idea de forma: visitante</p>
           <h1>Descubre portafolios digitales de proyectos de software</h1>
-          <p className="muted">Explora portafolios, proyectos, habilidades, y exporta acreditaciones.</p>
+          <p className="muted">Explora portafolios, proyectos, habilidades y acreditaciones desde una sola vista.</p>
           <div className="hero-actions">
             <button className="btn btn-primary" onClick={() => navigate("/login")}>
               Iniciar sesión
@@ -156,7 +158,7 @@ export default function HomePage() {
             <h1>¿Quieres revisar tu portafolio?</h1>
             <p className="muted">Gestiona tu perfil, habilidades y proyectos desde un solo lugar.</p>
           </div>
-          <button className="btn btn-primary" onClick={() => navigate("/perfil")}>
+          <button className="btn btn-primary" onClick={() => navigate("/perfil/editar")}>
             Editar mi portafolio
           </button>
         </div>
@@ -171,7 +173,7 @@ export default function HomePage() {
           <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
             {perfil?.foto_perfil ? (
               <img
-                src={`http://127.0.0.1:8000/storage/${perfil.foto_perfil}`}
+                src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`}
                 alt={perfil.nombre_completo}
                 className="avatar-img"
                 style={{ width: 72, height: 72, borderRadius: "16px" }}
@@ -231,9 +233,6 @@ export default function HomePage() {
               <li key={tip}>{tip}</li>
             ))}
           </ul>
-          <button className="btn btn-primary" onClick={() => navigate("/perfil/crear")}>
-            Completar portafolio
-          </button>
         </div>
       </aside>
     </div>
@@ -247,7 +246,7 @@ export default function HomePage() {
           <input type="text" placeholder="Buscar portafolios, talentos" />
         </div>
         <div className="nav-actions">
-          <Link to="#">Explorar</Link>
+          <Link to="/en-proceso">Explorar</Link>
           {!isAuth ? (
             <>
               <Link to="/login" className="btn btn-outline small">

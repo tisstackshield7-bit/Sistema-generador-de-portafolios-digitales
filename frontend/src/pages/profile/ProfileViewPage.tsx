@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyProfile } from "../../api/profile";
+import { API_ORIGIN } from "../../api/axios";
 import type { Perfil } from "../../types/profile";
 import { getInitials } from "../../utils/avatar";
 import { logoutUser } from "../../api/auth";
@@ -71,7 +72,7 @@ export default function ProfileViewPage() {
         <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "28px", alignItems: "center" }}>
           {perfil.foto_perfil ? (
             <img
-              src={`http://127.0.0.1:8000/storage/${perfil.foto_perfil}`}
+              src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`}
               alt="Perfil"
               style={avatarStyle}
             />

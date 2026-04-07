@@ -5,6 +5,7 @@ import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
 import BioCounter from "../../components/profile/BioCounter";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
+import { API_ORIGIN } from "../../api/axios";
 import {
   validateBiography,
   validateProfilePhoto,
@@ -57,7 +58,7 @@ export default function BasicProfileEditPage() {
 
   const preview = useMemo(() => {
     if (foto) return URL.createObjectURL(foto);
-    if (existingPhoto) return `http://127.0.0.1:8000/storage/${existingPhoto}`;
+    if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
     return null;
   }, [foto, existingPhoto]);
 
