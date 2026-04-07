@@ -95,4 +95,25 @@ class ProfileController extends Controller
 
         return $slug;
     }
+
+    public function listPublic()
+    {
+        $perfiles = Perfil::where('es_publico', true)
+            ->latest('creado_en')
+            ->limit(20)
+            ->get([
+                'id',
+                'nombre_completo',
+                'profesion',
+                'titular_profesional',
+                'biografia',
+                'foto_perfil',
+                'slug',
+                'creado_en',
+            ]);
+
+        return response()->json([
+            'perfiles' => $perfiles,
+        ]);
+    }
 }

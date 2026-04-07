@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
+// Listado pÃºblico de perfiles para el home
+Route::get('/perfiles-publicos', [ProfileController::class, 'listPublic']);
+
 Route::post('/auth/forgot-password', [PasswordRecoveryController::class, 'sendRecovery']);
 Route::get('/auth/reset-password/{token}', [PasswordRecoveryController::class, 'validateToken']);
 Route::post('/auth/reset-password', [PasswordRecoveryController::class, 'resetPassword']);

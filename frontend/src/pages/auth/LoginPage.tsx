@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<{ correo?: string; contrasena?: string }>({});
   const [serverError, setServerError] = useState("");
   const redirectMessage = (location.state as any)?.message || "";
-  const redirectTo = (location.state as any)?.from || "/perfil";
+  const redirectTo = (location.state as any)?.from || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

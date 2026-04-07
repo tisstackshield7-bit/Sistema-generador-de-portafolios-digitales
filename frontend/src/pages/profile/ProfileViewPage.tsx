@@ -29,7 +29,7 @@ export default function ProfileViewPage() {
     } catch {
     } finally {
       authStore.clearSession();
-      navigate("/login");
+      navigate("/");
     }
   };
 
@@ -38,18 +38,27 @@ export default function ProfileViewPage() {
   }
 
   return (
-    <div style={{ padding: "40px", background: "#f8fafc", minHeight: "100vh" }}>
-      <div style={{
-        maxWidth: "900px",
-        margin: "0 auto",
-        background: "#fff",
-        borderRadius: "16px",
-        padding: "32px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
-          <h1>Mi perfil</h1>
-          <div style={{ display: "flex", gap: "12px" }}>
+    <div style={{ padding: "40px", background: "#f6f8fb", minHeight: "100vh" }}>
+      <div
+        style={{
+          maxWidth: "1150px",
+          margin: "0 auto",
+          background: "#fff",
+          borderRadius: "22px",
+          padding: "44px 48px 60px",
+          boxShadow: "0 30px 70px rgba(15,23,42,0.1)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "32px",
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: "44px", color: "#0f172a" }}>Mi perfil</h1>
+          <div style={{ display: "flex", gap: "16px" }}>
             <button onClick={() => navigate("/perfil/editar")} style={buttonSecondary}>
               Editar perfil
             </button>
@@ -59,53 +68,69 @@ export default function ProfileViewPage() {
           </div>
         </div>
 
-        {perfil.foto_perfil ? (
-          <img
-            src={`http://127.0.0.1:8000/storage/${perfil.foto_perfil}`}
-            alt="Perfil"
-            style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover" }}
-          />
-        ) : (
-          <div style={{
-            width: "120px",
-            height: "120px",
-            borderRadius: "50%",
-            background: "#dbeafe",
-            color: "#1d4ed8",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "36px",
-            fontWeight: 700
-          }}>
-            {getInitials(perfil.nombre_completo)}
-          </div>
-        )}
+        <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "28px", alignItems: "center" }}>
+          {perfil.foto_perfil ? (
+            <img
+              src={`http://127.0.0.1:8000/storage/${perfil.foto_perfil}`}
+              alt="Perfil"
+              style={avatarStyle}
+            />
+          ) : (
+            <div
+              style={{
+                ...avatarStyle,
+                background: "#e5edff",
+                color: "#1d4ed8",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                fontSize: "48px",
+              }}
+            >
+              {getInitials(perfil.nombre_completo)}
+            </div>
+          )}
 
-        <h2 style={{ marginTop: "20px" }}>{perfil.nombre_completo}</h2>
-        <p style={{ color: "#475569", fontWeight: 600 }}>{perfil.profesion}</p>
-        <p style={{ marginTop: "16px", lineHeight: 1.6 }}>{perfil.biografia}</p>
+          <div>
+            <h2 style={{ margin: "0 0 8px", fontSize: "32px", color: "#0f172a" }}>{perfil.nombre_completo}</h2>
+            <p style={{ margin: "0 0 16px", color: "#1f2937", fontWeight: 700, fontSize: "18px" }}>
+              {perfil.profesion}
+            </p>
+            <p style={{ margin: 0, color: "#475569", fontSize: "17px", lineHeight: 1.7 }}>{perfil.biografia}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 const buttonPrimary: React.CSSProperties = {
-  padding: "10px 16px",
-  borderRadius: "10px",
+  padding: "14px 20px",
+  borderRadius: "14px",
   border: "none",
   background: "#2563eb",
   color: "white",
-  fontWeight: 700,
+  fontWeight: 800,
   cursor: "pointer",
+  minWidth: "140px",
 };
 
 const buttonSecondary: React.CSSProperties = {
-  padding: "10px 16px",
-  borderRadius: "10px",
+  padding: "14px 20px",
+  borderRadius: "14px",
   border: "1px solid #cbd5e1",
   background: "#fff",
   color: "#0f172a",
-  fontWeight: 700,
+  fontWeight: 800,
   cursor: "pointer",
+  minWidth: "140px",
+};
+
+const avatarStyle: React.CSSProperties = {
+  width: "160px",
+  height: "160px",
+  borderRadius: "50%",
+  objectFit: "cover",
+  boxShadow: "0 12px 25px rgba(15,23,42,0.12)",
 };
