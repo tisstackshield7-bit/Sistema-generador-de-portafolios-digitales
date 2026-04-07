@@ -9,6 +9,7 @@ use App\Models\RecuperacionContrasena;
 use App\Models\Usuario;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class PasswordRecoveryController extends Controller
@@ -24,6 +25,8 @@ class PasswordRecoveryController extends Controller
         }
 
         $token = Str::random(64);
+        $resetUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/') .
+            '/restablecer-contrasena/' . $token;
 
         RecuperacionContrasena::create([
             'usuario_id' => $usuario->id,
@@ -34,9 +37,21 @@ class PasswordRecoveryController extends Controller
             'actualizado_en' => now(),
         ]);
 
+        // Enviar email con el enlace de restablecimiento
+        Mail::raw(
+            "Hola,\n\nRecibimos una solicitud para restablecer tu contraseña.\n\n" .
+            "Enlace de restablecimiento (vigente 30 minutos):\n{$resetUrl}\n\n" .
+            "Si no solicitaste este cambio, puedes ignorar este mensaje.",
+            function ($message) use ($usuario) {
+                $message->to($usuario->correo)
+                    ->subject('Restablecer contraseña');
+            }
+        );
+
         return response()->json([
             'message' => 'Se envió el enlace o código de recuperación.',
-            'token_prueba' => $token,
+            // En local se devuelve el token para pruebas rápidas; en otros entornos se oculta.
+            'token_prueba' => app()->environment('local') ? $token : null,
         ]);
     }
 

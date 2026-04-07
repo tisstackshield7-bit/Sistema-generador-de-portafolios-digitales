@@ -37,6 +37,18 @@ return new class extends Migration
             });
         }
 
+        if (!Schema::hasTable('recuperaciones_contrasena')) {
+            Schema::create('recuperaciones_contrasena', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('usuario_id')->constrained('usuarios')->cascadeOnDelete();
+                $table->string('token', 100)->unique();
+                $table->timestamp('expira_en')->nullable();
+                $table->boolean('usado')->default(false);
+                $table->timestamp('creado_en')->nullable();
+                $table->timestamp('actualizado_en')->nullable();
+            });
+        }
+
         if (!Schema::hasTable('perfiles')) {
             Schema::create('perfiles', function (Blueprint $table) {
                 $table->id();
@@ -61,6 +73,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        Schema::dropIfExists('recuperaciones_contrasena');
         Schema::dropIfExists('perfiles');
         Schema::dropIfExists('sesiones');
         Schema::dropIfExists('usuarios');

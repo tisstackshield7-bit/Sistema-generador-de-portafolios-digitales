@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyProfile } from "../../api/profile";
 import type { Perfil } from "../../types/profile";
@@ -10,14 +10,18 @@ export default function ProfileViewPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      const data = await getMyProfile();
+  const loadProfile = useCallback(async () => {
+    const data = await getMyProfile();
+    if (data.perfil) {
       setPerfil(data.perfil);
-    };
+    } else {
+      navigate("/perfil/crear", { replace: true });
+    }
+  }, [navigate]);
 
+  useEffect(() => {
     loadProfile();
-  }, []);
+  }, [loadProfile]);
 
   const handleLogout = async () => {
     try {
