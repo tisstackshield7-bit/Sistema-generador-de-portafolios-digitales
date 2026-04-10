@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
 import FormInput from "../../components/common/FormInput";
@@ -26,43 +26,33 @@ export default function ForgotPasswordPage() {
       const data = await requestPasswordRecovery(correo);
       setMessage(data.message);
     } catch (err: any) {
-      setServerError(err?.response?.data?.message || "Ocurrió un error.");
+      setServerError(err?.response?.data?.message || "Ocurrio un error.");
     }
   };
 
   return (
-    <AuthLayout
-      title="¿Olvidaste tu contraseña?"
-      subtitle="Ingresa tu correo electrónico registrado"
-    >
+    <AuthLayout title="Recuperar acceso" subtitle="Te enviaremos un enlace para restablecer tu contrasena de forma segura.">
       <AlertMessage message={message || serverError} />
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="form-stack">
         <FormInput
-          label="Correo electrónico"
+          label="Correo electronico"
           value={correo}
           onChange={setCorreo}
           error={error}
           placeholder="usuario@ejemplo.com"
         />
 
-        <button type="submit" style={buttonPrimary}>Enviar</button>
+        <button type="submit" className="btn btn-primary btn-block">
+          Enviar enlace
+        </button>
       </form>
 
-      <p style={{ marginTop: "16px" }}>
-        <Link to="/login">Volver</Link>
-      </p>
+      <div className="auth-links-row">
+        <span className="meta-text">Quieres volver?</span>
+        <Link to="/login">Ir a inicio de sesion</Link>
+      </div>
     </AuthLayout>
   );
 }
 
-const buttonPrimary: React.CSSProperties = {
-  width: "100%",
-  padding: "12px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  fontWeight: 700,
-  cursor: "pointer",
-};

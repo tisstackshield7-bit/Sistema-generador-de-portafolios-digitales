@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FormInput from "../../components/common/FormInput";
 import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
 import BioCounter from "../../components/profile/BioCounter";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
+import { API_ORIGIN } from "../../api/axios";
 import {
   validateBiography,
   validateProfilePhoto,
@@ -47,7 +48,7 @@ export default function BasicProfileEditPage() {
         setProfesion(perfil?.profesion || "");
         setBiografia(perfil?.biografia || "");
         setExistingPhoto(perfil?.foto_perfil || null);
-      } catch (err: any) {
+      } catch {
         setServerError("No se pudo cargar el perfil.");
       }
     };
@@ -57,7 +58,7 @@ export default function BasicProfileEditPage() {
 
   const preview = useMemo(() => {
     if (foto) return URL.createObjectURL(foto);
-    if (existingPhoto) return `http://127.0.0.1:8000/storage/${existingPhoto}`;
+    if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
     return null;
   }, [foto, existingPhoto]);
 
@@ -73,7 +74,7 @@ export default function BasicProfileEditPage() {
     const nextErrors = {
       nombres: validateRequired(nombres, "El nombre es obligatorio."),
       apellidos: validateRequired(apellidos, "Los apellidos son obligatorios."),
-      profesion: validateRequired(profesion, "La profesión es obligatoria."),
+      profesion: validateRequired(profesion, "La profesion es obligatoria."),
       biografia: validateBiography(biografia),
     };
 
@@ -92,7 +93,7 @@ export default function BasicProfileEditPage() {
         foto_perfil: foto,
       });
 
-      setMessage("Información actualizada correctamente.");
+      setMessage("Informacion actualizada correctamente.");
       setTimeout(() => navigate("/perfil"), 900);
     } catch (err: any) {
       setServerError(err?.response?.data?.message || "No se pudo actualizar el perfil.");
@@ -100,102 +101,59 @@ export default function BasicProfileEditPage() {
   };
 
   return (
-    <div style={pageWrapper}>
-      <div style={card}>
-        <h1>Editar información básica del perfil</h1>
+    <div className="profile-form-shell app-shell">
+      <div className="page-section profile-form-grid">
+        <aside className="surface-card profile-form-aside">
+          <p className="section-label">Editar perfil</p>
+          <h1 className="section-title">Mantén tu presencia profesional al dia.</h1>
+          <p className="section-copy">
+            Ajusta tu informacion principal para que la vista publica se vea mas solida y coherente.
+          </p>
+          <ul>
+            <li>Refuerza tu titular profesional.</li>
+            <li>Haz tu resumen mas claro y concreto.</li>
+            <li>Usa una foto actual para mejorar reconocimiento.</li>
+          </ul>
+        </aside>
 
-        <AlertMessage message={message || serverError} />
+        <section className="profile-form-card">
+          <p className="section-label">Ajustes principales</p>
+          <h1>Actualizar perfil</h1>
+          <p className="section-copy">Mantener tus datos claros ayuda a que el perfil se perciba mas confiable.</p>
 
-        <form onSubmit={handleSubmit}>
-          <ProfilePhotoInput
-            preview={preview}
-            error={photoError}
-            onFileChange={handlePhotoChange}
-          />
+          <AlertMessage message={message || serverError} />
 
-          <FormInput
-            label="Nombre(s)"
-            value={nombres}
-            onChange={setNombres}
-            error={errors.nombres}
-          />
+          <form onSubmit={handleSubmit} className="form-stack">
+            <ProfilePhotoInput preview={preview} error={photoError} onFileChange={handlePhotoChange} />
 
-          <FormInput
-            label="Apellidos"
-            value={apellidos}
-            onChange={setApellidos}
-            error={errors.apellidos}
-          />
+            <FormInput label="Nombre(s)" value={nombres} onChange={setNombres} error={errors.nombres} />
+            <FormInput label="Apellidos" value={apellidos} onChange={setApellidos} error={errors.apellidos} />
+            <FormInput label="Profesion o titulo" value={profesion} onChange={setProfesion} error={errors.profesion} />
 
-          <FormInput
-            label="Profesión / Título"
-            value={profesion}
-            onChange={setProfesion}
-            error={errors.profesion}
-          />
+            <FormTextarea
+              label="Resumen profesional"
+              value={biografia}
+              onChange={(value) => {
+                if (value.length <= 500) setBiografia(value);
+              }}
+              error={errors.biografia}
+            />
 
-          <FormTextarea
-            label="Biografía"
-            value={biografia}
-            onChange={(value) => {
-              if (value.length <= 500) setBiografia(value);
-            }}
-            error={errors.biografia}
-          />
+            <BioCounter value={biografia} />
 
-          <BioCounter value={biografia} />
+            <div className="form-actions-row">
+              <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>
+                Cancelar
+              </button>
 
-          <div style={{ display: "flex", gap: "12px" }}>
-            <button type="button" style={buttonSecondary} onClick={() => navigate("/perfil")}>
-              Cancelar
-            </button>
-
-            <button type="submit" style={buttonPrimary}>
-              Guardar cambios
-            </button>
-          </div>
-        </form>
+              <button type="submit" className="btn btn-primary">
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+        </section>
       </div>
     </div>
   );
 }
 
-const pageWrapper: React.CSSProperties = {
-  minHeight: "100vh",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  background: "#f8fafc",
-  padding: "40px",
-};
-
-const card: React.CSSProperties = {
-  width: "100%",
-  maxWidth: "700px",
-  background: "#fff",
-  borderRadius: "16px",
-  padding: "32px",
-  boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-};
-
-const buttonPrimary: React.CSSProperties = {
-  flex: 1,
-  padding: "12px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  fontWeight: 700,
-  cursor: "pointer",
-};
-
-const buttonSecondary: React.CSSProperties = {
-  flex: 1,
-  padding: "12px",
-  borderRadius: "10px",
-  border: "1px solid #cbd5e1",
-  background: "#fff",
-  color: "#0f172a",
-  fontWeight: 700,
-  cursor: "pointer",
-};

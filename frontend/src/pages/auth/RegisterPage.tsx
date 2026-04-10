@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
 import FormInput from "../../components/common/FormInput";
@@ -21,12 +21,7 @@ export default function RegisterPage() {
     const correoError = validateEmail(correo);
     const contrasenaError = validatePassword(contrasena);
 
-    const nextErrors = {
-      correo: correoError,
-      contrasena: contrasenaError,
-    };
-
-    setErrors(nextErrors);
+    setErrors({ correo: correoError, contrasena: contrasenaError });
     setServerError("");
 
     if (correoError || contrasenaError) return;
@@ -36,55 +31,43 @@ export default function RegisterPage() {
       authStore.setSession(data.token, data.usuario);
       navigate(data.redirect_to || "/perfil/crear");
     } catch (error: any) {
-      const msg = error?.response?.data?.message || "Ocurrió un error al registrar.";
+      const msg = error?.response?.data?.message || "Ocurrio un error al registrar.";
       setServerError(msg);
     }
   };
 
   return (
-    <AuthLayout
-      title="Únete ¡Es gratis!"
-      subtitle="Crea tu cuenta para comenzar tu portafolio profesional"
-    >
+    <AuthLayout title="Crear cuenta" subtitle="Comienza tu presencia profesional con un registro rapido y claro.">
       <AlertMessage message={serverError} />
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="form-stack">
         <FormInput
-          label="Correo electrónico"
+          label="Correo electronico"
           value={correo}
           onChange={setCorreo}
           error={errors.correo}
-          placeholder="Ej: usuario@correo.com"
+          placeholder="tu-correo@ejemplo.com"
         />
 
         <FormInput
-          label="Contraseña"
+          label="Contrasena"
           type="password"
           value={contrasena}
           onChange={setContrasena}
           error={errors.contrasena}
-          placeholder="Ej: Admin123$"
+          placeholder="Usa mayusculas, numeros y simbolos"
         />
 
-        <button type="submit" style={buttonPrimary}>
-          Continuar con el registro
+        <button type="submit" className="btn btn-primary btn-block">
+          Continuar
         </button>
       </form>
 
-      <p style={{ marginTop: "16px" }}>
-        ¿Ya tienes una cuenta? <Link to="/login">Iniciar sesión</Link>
-      </p>
+      <div className="auth-links-row">
+        <span className="meta-text">Ya tienes una cuenta?</span>
+        <Link to="/login">Iniciar sesion</Link>
+      </div>
     </AuthLayout>
   );
 }
 
-const buttonPrimary: React.CSSProperties = {
-  width: "100%",
-  padding: "12px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  fontWeight: 700,
-  cursor: "pointer",
-};
