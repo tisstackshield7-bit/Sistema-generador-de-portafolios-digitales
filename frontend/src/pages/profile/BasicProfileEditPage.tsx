@@ -60,11 +60,11 @@ export default function BasicProfileEditPage() {
     loadProfile();
   }, []);
 
-  const preview = useMemo(() => {
-    if (foto) return URL.createObjectURL(foto);
-    if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
-    return null;
-  }, [foto, existingPhoto]);
+const preview = useMemo(() => {
+  if (foto) return URL.createObjectURL(foto);
+  if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
+  return null;
+}, [foto, existingPhoto]);
 
   const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
   const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
@@ -102,6 +102,14 @@ export default function BasicProfileEditPage() {
     setErrors((prev) => ({
       ...prev,
       profesion: fieldError,
+    }));
+  };
+  const handleBiografiaChange = (value: string) => {
+    const nextValue = value.slice(0, 500);
+    setBiografia(nextValue);
+    setErrors((prev) => ({
+      ...prev,
+      biografia: nextValue.length === 500 ? "La biografia no puede superar los 500 caracteres." : "",
     }));
   };
 
@@ -194,11 +202,9 @@ export default function BasicProfileEditPage() {
             <FormTextarea
               label="Resumen profesional"
               value={biografia}
-              onChange={(value) => {
-                const nextValue = value.slice(0, 500);
-                setBiografia(nextValue);
-              }}
+              onChange={handleBiografiaChange}
               error={errors.biografia}
+              placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
             />
 
             <BioCounter value={biografia} />

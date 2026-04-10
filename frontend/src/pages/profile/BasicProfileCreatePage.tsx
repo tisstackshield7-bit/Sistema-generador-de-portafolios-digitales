@@ -36,6 +36,14 @@ export default function BasicProfileCreatePage() {
   const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
   const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
   const [profesionError, setProfesionError] = useState("");
+  const handleBiografiaChange = (value: string) => {
+    const nextValue = value.slice(0, 500);
+    setBiografia(nextValue);
+    setErrors((prev) => ({
+      ...prev,
+      biografia: nextValue.length === 500 ? "La biografia no puede superar los 500 caracteres." : "",
+    }));
+  };
 
   const handlePhotoChange = (file: File | null) => {
     const error = validateProfilePhoto(file);
@@ -71,7 +79,6 @@ export default function BasicProfileCreatePage() {
       profesion: fieldError,
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -164,10 +171,7 @@ export default function BasicProfileCreatePage() {
             <FormTextarea
               label="Resumen profesional"
               value={biografia}
-              onChange={(value) => {
-                const nextValue = value.slice(0, 500);
-                setBiografia(nextValue);
-              }}
+              onChange={handleBiografiaChange}
               error={errors.biografia}
               placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
             />
