@@ -12,7 +12,7 @@ import {
   sanitizeLettersAndSpaces,
 } from "../../utils/validations";
 import { createBasicProfile } from "../../api/profile";
-
+import "./BasicProfileCreatePage.css";
 export default function BasicProfileCreatePage() {
   const navigate = useNavigate();
 
@@ -73,6 +73,11 @@ export default function BasicProfileCreatePage() {
       }));
     }
   };
+
+  const handleVolver = () => {
+    navigate("/register");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -169,9 +174,15 @@ export default function BasicProfileCreatePage() {
 
             <BioCounter value={biografia} />
 
-            <button type="submit" className="btn btn-primary btn-block">
-              Guardar y continuar
-            </button>
+            <div className="basic-profile-actions">
+              <button type="button" onClick={handleVolver} className="basic-profile-actions__back">
+                ← Volver
+              </button>
+
+              <button type="submit" className="basic-profile-actions__submit">
+                Guardar y continuar
+              </button>
+            </div>
           </form>
         </section>
       </div>

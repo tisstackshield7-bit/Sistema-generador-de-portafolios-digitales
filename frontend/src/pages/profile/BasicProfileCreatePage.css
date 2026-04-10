@@ -1,0 +1,37 @@
+.basic-profile-actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding-top: 16px;
+}
+
+.basic-profile-actions__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 170px;
+  height: 56px;
+  border: none;
+  border-radius: 9999px;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.basic-profile-actions__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 56px;
+  border: none;
+  border-radius: 9999px;
+  background: #10367d;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
