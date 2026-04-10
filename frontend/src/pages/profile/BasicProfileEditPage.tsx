@@ -60,14 +60,15 @@ export default function BasicProfileEditPage() {
     loadProfile();
   }, []);
 
-  const preview = useMemo(() => {
-    if (foto) return URL.createObjectURL(foto);
-    if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
-    return null;
-  }, [foto, existingPhoto]);
+const preview = useMemo(() => {
+  if (foto) return URL.createObjectURL(foto);
+  if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
+  return null;
+}, [foto, existingPhoto]);
 
   const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
   const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
+  const [profesionError, setProfesionError] = useState("");
 
   const handlePhotoChange = (file: File | null) => {
     const error = validateProfilePhoto(file);
@@ -93,18 +94,24 @@ export default function BasicProfileEditPage() {
     setApellidos(cleaned);
   };
 
-  const handleBiografiaChange = (value: string) => {
-  if (value.length <= 500) {
-    setBiografia(value);
-
+  const handleProfesionChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    const fieldError = value !== cleaned ? onlyLettersMessage : "";
+    setProfesion(cleaned);
+    setProfesionError(fieldError);
     setErrors((prev) => ({
       ...prev,
-      biografia: value.length === 500
-        ? "La biografia no puede superar los 500 caracteres."
-        : "",
+      profesion: fieldError,
     }));
-  }
-};
+  };
+  const handleBiografiaChange = (value: string) => {
+    const nextValue = value.slice(0, 500);
+    setBiografia(nextValue);
+    setErrors((prev) => ({
+      ...prev,
+      biografia: nextValue.length === 500 ? "La biografia no puede superar los 500 caracteres." : "",
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +119,7 @@ export default function BasicProfileEditPage() {
     const nextErrors = {
       nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
       apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
-      profesion: validateRequired(profesion, "La profesion es obligatoria."),
+      profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
       biografia: validateBiography(biografia),
     };
 
@@ -182,7 +189,15 @@ export default function BasicProfileEditPage() {
               title={onlyLettersMessage}
               inputMode="text"
             />
-            <FormInput label="Profesion o titulo" value={profesion} onChange={setProfesion} error={errors.profesion} />
+            <FormInput
+              label="Profesion o titulo"
+              value={profesion}
+              onChange={handleProfesionChange}
+              error={errors.profesion}
+              pattern={lettersPattern}
+              title={onlyLettersMessage}
+              inputMode="text"
+            />
 
             <FormTextarea
               label="Resumen profesional"
