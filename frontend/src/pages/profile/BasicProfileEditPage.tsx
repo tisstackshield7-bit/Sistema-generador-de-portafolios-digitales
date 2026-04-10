@@ -68,6 +68,7 @@ export default function BasicProfileEditPage() {
 
   const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
   const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
+  const [profesionError, setProfesionError] = useState("");
 
   const handlePhotoChange = (file: File | null) => {
     const error = validateProfilePhoto(file);
@@ -93,13 +94,24 @@ export default function BasicProfileEditPage() {
     setApellidos(cleaned);
   };
 
+  const handleProfesionChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    const fieldError = value !== cleaned ? onlyLettersMessage : "";
+    setProfesion(cleaned);
+    setProfesionError(fieldError);
+    setErrors((prev) => ({
+      ...prev,
+      profesion: fieldError,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const nextErrors = {
       nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
       apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
-      profesion: validateRequired(profesion, "La profesion es obligatoria."),
+      profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
       biografia: validateBiography(biografia),
     };
 
@@ -169,13 +181,22 @@ export default function BasicProfileEditPage() {
               title={onlyLettersMessage}
               inputMode="text"
             />
-            <FormInput label="Profesion o titulo" value={profesion} onChange={setProfesion} error={errors.profesion} />
+            <FormInput
+              label="Profesion o titulo"
+              value={profesion}
+              onChange={handleProfesionChange}
+              error={errors.profesion}
+              pattern={lettersPattern}
+              title={onlyLettersMessage}
+              inputMode="text"
+            />
 
             <FormTextarea
               label="Resumen profesional"
               value={biografia}
               onChange={(value) => {
-                if (value.length <= 500) setBiografia(value);
+                const nextValue = value.slice(0, 500);
+                setBiografia(nextValue);
               }}
               error={errors.biografia}
             />
