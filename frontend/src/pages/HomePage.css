@@ -39,6 +39,16 @@
   box-shadow: 0 14px 24px rgba(16, 54, 125, 0.22);
 }
 
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+  display: block;
+  background: white;
+  padding: 4px;
+}
+
 .nav-search {
   position: relative;
   display: none;

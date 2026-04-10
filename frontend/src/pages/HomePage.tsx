@@ -6,6 +6,7 @@ import { API_ORIGIN } from "../api/axios";
 import { logoutUser } from "../api/auth";
 import type { Perfil } from "../types/profile";
 import "./HomePage.css";
+import logo from "../assets/logo.jpeg";
 
 type PublicPortfolio = {
   id: number;
@@ -275,7 +276,9 @@ export default function HomePage() {
       <header className="home-nav">
         <div className="page-section nav-inner">
           <Link to="/" className="brand">
-            <span className="brand-mark">P</span>
+            <span className="brand-mark">
+              <img src={logo} alt="Portafolio Digital de Proyectos" className="brand-logo" />
+            </span>
             <span>PortaFolioPro</span>
           </Link>
 
