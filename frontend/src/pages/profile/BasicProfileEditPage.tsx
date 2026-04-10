@@ -204,10 +204,11 @@ const preview = useMemo(() => {
               value={biografia}
               onChange={handleBiografiaChange}
               error={errors.biografia}
+              maxLength={500}
               placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
             />
 
-            <BioCounter value={biografia} />
+            <BioCounter count={biografia.length} />
 
             <div className="form-actions-row">
               <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>

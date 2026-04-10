@@ -173,10 +173,11 @@ export default function BasicProfileCreatePage() {
               value={biografia}
               onChange={handleBiografiaChange}
               error={errors.biografia}
+              maxLength={500}
               placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
             />
 
-            <BioCounter value={biografia} />
+            <BioCounter count={biografia.length} />
 
             <button type="submit" className="btn btn-primary btn-block">
               Guardar y continuar

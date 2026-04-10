@@ -1,9 +1,10 @@
-﻿type Props = {
+type Props = {
   label: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
   placeholder?: string;
+  maxLength?: number;
 };
 
 export default function FormTextarea({
@@ -12,6 +13,7 @@ export default function FormTextarea({
   onChange,
   error,
   placeholder,
+  maxLength,
 }: Props) {
   return (
     <div className="form-field">
@@ -20,6 +22,7 @@ export default function FormTextarea({
         className={`form-textarea${error ? " error" : ""}`}
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
         onChange={(e) => onChange(e.target.value)}
         rows={5}
       />
@@ -27,4 +30,3 @@ export default function FormTextarea({
     </div>
   );
 }
-
