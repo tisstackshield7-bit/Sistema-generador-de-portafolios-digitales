@@ -93,6 +93,19 @@ export default function BasicProfileEditPage() {
     setApellidos(cleaned);
   };
 
+  const handleBiografiaChange = (value: string) => {
+  if (value.length <= 500) {
+    setBiografia(value);
+
+    setErrors((prev) => ({
+      ...prev,
+      biografia: value.length === 500
+        ? "La biografia no puede superar los 500 caracteres."
+        : "",
+    }));
+  }
+};
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -174,10 +187,9 @@ export default function BasicProfileEditPage() {
             <FormTextarea
               label="Resumen profesional"
               value={biografia}
-              onChange={(value) => {
-                if (value.length <= 500) setBiografia(value);
-              }}
+              onChange={handleBiografiaChange}
               error={errors.biografia}
+              placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
             />
 
             <BioCounter value={biografia} />
