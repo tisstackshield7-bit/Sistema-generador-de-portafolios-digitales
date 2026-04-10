@@ -9,6 +9,7 @@ import {
   validateBiography,
   validateProfilePhoto,
   validateRequired,
+  sanitizeLettersAndSpaces,
 } from "../../utils/validations";
 import { createBasicProfile } from "../../api/profile";
 
@@ -32,18 +33,39 @@ export default function BasicProfileCreatePage() {
 
   const preview = useMemo(() => (foto ? URL.createObjectURL(foto) : null), [foto]);
 
+  const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
+  const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
+
   const handlePhotoChange = (file: File | null) => {
     const error = validateProfilePhoto(file);
     setPhotoError(error);
     if (!error) setFoto(file);
   };
 
+  const handleNombresChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    setErrors((prev) => ({
+      ...prev,
+      nombres: value !== cleaned ? onlyLettersMessage : "",
+    }));
+    setNombres(cleaned);
+  };
+
+  const handleApellidosChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    setErrors((prev) => ({
+      ...prev,
+      apellidos: value !== cleaned ? onlyLettersMessage : "",
+    }));
+    setApellidos(cleaned);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const nextErrors = {
-      nombres: validateRequired(nombres, "El nombre es obligatorio."),
-      apellidos: validateRequired(apellidos, "Los apellidos son obligatorios."),
+      nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
+      apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
       profesion: validateRequired(profesion, "La profesion es obligatoria."),
       biografia: validateBiography(biografia),
     };
@@ -97,16 +119,22 @@ export default function BasicProfileCreatePage() {
             <FormInput
               label="Nombre(s)"
               value={nombres}
-              onChange={setNombres}
+              onChange={handleNombresChange}
               error={errors.nombres}
+              pattern={lettersPattern}
+              title={onlyLettersMessage}
+              inputMode="text"
               placeholder="Ej. Juan Daniel"
             />
 
             <FormInput
               label="Apellidos"
               value={apellidos}
-              onChange={setApellidos}
+              onChange={handleApellidosChange}
               error={errors.apellidos}
+              pattern={lettersPattern}
+              title={onlyLettersMessage}
+              inputMode="text"
               placeholder="Ej. Vasquez Casana"
             />
 

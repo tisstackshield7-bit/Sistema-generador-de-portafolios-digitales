@@ -10,6 +10,7 @@ import {
   validateBiography,
   validateProfilePhoto,
   validateRequired,
+  sanitizeLettersAndSpaces,
 } from "../../utils/validations";
 import { getMyProfile, updateBasicProfile } from "../../api/profile";
 
@@ -41,8 +42,11 @@ export default function BasicProfileEditPage() {
 
         if (perfil?.nombre_completo) {
           const parts = perfil.nombre_completo.split(" ");
-          setNombres(parts.slice(0, -1).join(" ") || parts[0] || "");
-          setApellidos(parts.slice(-1).join(" ") || "");
+          const rawNombres = parts.slice(0, -1).join(" ") || parts[0] || "";
+          const rawApellidos = parts.slice(-1).join(" ") || "";
+
+          setNombres(sanitizeLettersAndSpaces(rawNombres));
+          setApellidos(sanitizeLettersAndSpaces(rawApellidos));
         }
 
         setProfesion(perfil?.profesion || "");
@@ -62,18 +66,39 @@ export default function BasicProfileEditPage() {
     return null;
   }, [foto, existingPhoto]);
 
+  const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
+  const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
+
   const handlePhotoChange = (file: File | null) => {
     const error = validateProfilePhoto(file);
     setPhotoError(error);
     if (!error) setFoto(file);
   };
 
+  const handleNombresChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    setErrors((prev) => ({
+      ...prev,
+      nombres: value !== cleaned ? onlyLettersMessage : "",
+    }));
+    setNombres(cleaned);
+  };
+
+  const handleApellidosChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    setErrors((prev) => ({
+      ...prev,
+      apellidos: value !== cleaned ? onlyLettersMessage : "",
+    }));
+    setApellidos(cleaned);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const nextErrors = {
-      nombres: validateRequired(nombres, "El nombre es obligatorio."),
-      apellidos: validateRequired(apellidos, "Los apellidos son obligatorios."),
+      nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
+      apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
       profesion: validateRequired(profesion, "La profesion es obligatoria."),
       biografia: validateBiography(biografia),
     };
@@ -126,8 +151,24 @@ export default function BasicProfileEditPage() {
           <form onSubmit={handleSubmit} className="form-stack">
             <ProfilePhotoInput preview={preview} error={photoError} onFileChange={handlePhotoChange} />
 
-            <FormInput label="Nombre(s)" value={nombres} onChange={setNombres} error={errors.nombres} />
-            <FormInput label="Apellidos" value={apellidos} onChange={setApellidos} error={errors.apellidos} />
+            <FormInput
+              label="Nombre(s)"
+              value={nombres}
+              onChange={handleNombresChange}
+              error={errors.nombres}
+              pattern={lettersPattern}
+              title={onlyLettersMessage}
+              inputMode="text"
+            />
+            <FormInput
+              label="Apellidos"
+              value={apellidos}
+              onChange={handleApellidosChange}
+              error={errors.apellidos}
+              pattern={lettersPattern}
+              title={onlyLettersMessage}
+              inputMode="text"
+            />
             <FormInput label="Profesion o titulo" value={profesion} onChange={setProfesion} error={errors.profesion} />
 
             <FormTextarea
