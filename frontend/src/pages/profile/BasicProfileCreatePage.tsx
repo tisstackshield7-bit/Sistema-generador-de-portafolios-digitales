@@ -178,10 +178,11 @@ export default function BasicProfileCreatePage() {
               value={biografia}
               onChange={handleBiografiaChange}
               error={errors.biografia}
+              maxLength={500}
               placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
             />
 
-            <BioCounter value={biografia} />
+            <BioCounter count={biografia.length} />
 
             <div className="basic-profile-actions">
               <button type="button" onClick={handleVolver} className="basic-profile-actions__back">
