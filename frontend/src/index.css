@@ -235,6 +235,10 @@ img {
   box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.16);
 }
 
+.form-input.has-toggle {
+  padding-right: 44px;
+}
+
 .form-help {
   margin: 0;
   color: var(--text-muted);

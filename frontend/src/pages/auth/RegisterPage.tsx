@@ -56,6 +56,7 @@ export default function RegisterPage() {
           onChange={setContrasena}
           error={errors.contrasena}
           placeholder="Usa mayusculas, numeros y simbolos"
+          togglePassword
         />
 
         <button type="submit" className="btn btn-primary btn-block">

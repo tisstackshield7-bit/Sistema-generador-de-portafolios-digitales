@@ -63,6 +63,7 @@ export default function LoginPage() {
           onChange={setContrasena}
           error={errors.contrasena}
           placeholder="Ingresa tu contrasena"
+          togglePassword
         />
 
         <div className="inline-link-row">
