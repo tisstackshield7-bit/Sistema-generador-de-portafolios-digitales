@@ -1,4 +1,4 @@
-import type { ChangeEvent } from "react";
+﻿import type { ChangeEvent } from "react";
 
 type Props = {
   preview: string | null;
@@ -13,33 +13,22 @@ export default function ProfilePhotoInput({ preview, error, onFileChange }: Prop
   };
 
   return (
-    <div style={{ marginBottom: "16px" }}>
-      <label style={{ display: "block", marginBottom: "6px", fontWeight: 600 }}>
-        Foto de perfil (opcional)
-      </label>
-
-      {preview && (
-        <img
-          src={preview}
-          alt="Vista previa"
-          style={{
-            width: "100px",
-            height: "100px",
-            borderRadius: "50%",
-            objectFit: "cover",
-            display: "block",
-            marginBottom: "12px",
-          }}
-        />
-      )}
-
-      <input type="file" accept=".jpg,.jpeg,.png,.webp" onChange={handleChange} />
-
-      <p style={{ color: "#64748b", fontSize: "13px", marginTop: "6px" }}>
-        JPG, PNG o WEBP - máximo 5 MB
-      </p>
-
-      {error && <p style={{ color: "#dc2626", fontSize: "13px" }}>{error}</p>}
+    <div className="form-field photo-input">
+      <label className="form-label">Foto de perfil</label>
+      <div className="photo-preview-row">
+        {preview ? (
+          <img src={preview} alt="Vista previa" className="photo-preview" />
+        ) : (
+          <div className="photo-preview photo-empty">PF</div>
+        )}
+        <div>
+          <p className="section-copy">Agrega una imagen clara para que tu perfil se vea mas profesional.</p>
+          <p className="form-help">JPG, PNG o WEBP. Tamano maximo de 5 MB.</p>
+        </div>
+      </div>
+      <input className={`form-file${error ? " error" : ""}`} type="file" accept=".jpg,.jpeg,.png,.webp" onChange={handleChange} />
+      {error ? <p className="form-error">{error}</p> : null}
     </div>
   );
 }
+

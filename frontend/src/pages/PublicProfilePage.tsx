@@ -1,8 +1,19 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { API_ORIGIN } from "../api/axios";
 import { getPublicProfiles } from "../api/profile";
 import type { Perfil } from "../types/profile";
+
+function getInitials(name?: string | null) {
+  if (!name) return "PF";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export default function PublicProfilePage() {
   const navigate = useNavigate();
@@ -26,39 +37,25 @@ export default function PublicProfilePage() {
     loadProfile();
   }, [slug]);
 
+  const title = useMemo(() => perfil?.titular_profesional || perfil?.profesion || "Perfil profesional", [perfil]);
+
   if (loading) {
-    return <p style={{ padding: "40px" }}>Cargando perfil...</p>;
+    return (
+      <div className="profile-page-shell app-shell">
+        <div className="page-section surface-card auth-card">
+          <p className="section-copy">Cargando perfil...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!perfil) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "40px" }}>
-        <div
-          style={{
-            maxWidth: "760px",
-            margin: "0 auto",
-            background: "#fff",
-            borderRadius: "20px",
-            padding: "32px",
-            border: "1px solid #e2e8f0",
-          }}
-        >
-          <h1 style={{ marginTop: 0, color: "#0f172a" }}>Perfil no encontrado</h1>
-          <p style={{ color: "#475569", marginBottom: "20px" }}>
-            No se encontro informacion publica para este portafolio.
-          </p>
-          <button
-            onClick={() => navigate("/")}
-            style={{
-              padding: "12px 18px",
-              borderRadius: "12px",
-              border: "none",
-              background: "#2563eb",
-              color: "#fff",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
+      <div className="profile-page-shell app-shell">
+        <div className="page-section public-profile-card">
+          <h1>Perfil no encontrado</h1>
+          <p className="section-copy">No encontramos informacion publica para este portafolio.</p>
+          <button onClick={() => navigate("/")} className="btn btn-primary">
             Volver al inicio
           </button>
         </div>
@@ -67,68 +64,48 @@ export default function PublicProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "40px 24px" }}>
-      <div style={{ maxWidth: "960px", margin: "0 auto" }}>
-        <Link to="/" style={{ color: "#2563eb", fontWeight: 700, textDecoration: "none" }}>
+    <div className="profile-page-shell app-shell">
+      <div className="page-section public-profile-layout">
+        <Link to="/" className="section-link">
           Volver al inicio
         </Link>
 
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "24px",
-            padding: "36px",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 18px 40px rgba(15,23,42,0.08)",
-            marginTop: "18px",
-          }}
-        >
-          <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "24px", alignItems: "center" }}>
-            {perfil.foto_perfil ? (
-              <img
-                src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`}
-                alt={perfil.nombre_completo}
-                style={{ width: "140px", height: "140px", borderRadius: "24px", objectFit: "cover" }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "140px",
-                  height: "140px",
-                  borderRadius: "24px",
-                  background: "#dbeafe",
-                  color: "#1d4ed8",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: "40px",
-                  fontWeight: 800,
-                }}
-              >
-                {perfil.nombre_completo.slice(0, 1).toUpperCase()}
+        <section className="profile-cover surface-card">
+          <div className="profile-cover-content">
+            <div className="profile-identity">
+              {perfil.foto_perfil ? (
+                <img src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`} alt={perfil.nombre_completo} className="profile-avatar-xl" />
+              ) : (
+                <div className="profile-avatar-xl fallback-avatar">{getInitials(perfil.nombre_completo)}</div>
+              )}
+              <div>
+                <p className="section-label cover-label">Portafolio publico</p>
+                <h1>{perfil.nombre_completo}</h1>
+                <p className="cover-role">{title}</p>
+                <p className="cover-location">La Paz, Bolivia</p>
               </div>
-            )}
-
-            <div>
-              <p
-                style={{
-                  margin: "0 0 8px",
-                  color: "#64748b",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "12px",
-                }}
-              >
-                Portafolio publico
-              </p>
-              <h1 style={{ margin: "0 0 10px", color: "#0f172a", fontSize: "40px" }}>{perfil.nombre_completo}</h1>
-              <p style={{ margin: "0 0 16px", color: "#1e293b", fontSize: "18px", fontWeight: 700 }}>
-                {perfil.titular_profesional || perfil.profesion}
-              </p>
-              <p style={{ margin: 0, color: "#475569", fontSize: "17px", lineHeight: 1.7 }}>
-                {perfil.biografia || "Este usuario aun no agrego una biografia publica."}
-              </p>
             </div>
           </div>
+        </section>
+
+        <div className="profile-page-grid">
+          <section className="public-profile-card">
+            <div className="profile-section">
+              <p className="section-label">Resumen profesional</p>
+              <p className="section-copy">{perfil.biografia || "Este usuario aun no agrego una biografia publica."}</p>
+            </div>
+          </section>
+
+          <aside className="profile-side-column">
+            <section className="profile-side-card">
+              <p className="section-label">Informacion</p>
+              <ul className="side-detail-list">
+                <li>Profesion: {title}</li>
+                <li>Ubicacion: La Paz, Bolivia</li>
+                <li>Perfil publico disponible</li>
+              </ul>
+            </section>
+          </aside>
         </div>
       </div>
     </div>

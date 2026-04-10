@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
 import FormInput from "../../components/common/FormInput";
@@ -23,7 +23,7 @@ export default function ResetPasswordPage() {
         setTokenValid(true);
       } catch (err: any) {
         setTokenValid(false);
-        setServerError(err?.response?.data?.message || "El enlace no es válido.");
+        setServerError(err?.response?.data?.message || "El enlace no es valido.");
       }
     };
 
@@ -40,7 +40,7 @@ export default function ResetPasswordPage() {
     }
 
     if (contrasena !== confirmacion) {
-      setServerError("La confirmación de contraseña no coincide.");
+      setServerError("La confirmacion de contrasena no coincide.");
       return;
     }
 
@@ -50,56 +50,42 @@ export default function ResetPasswordPage() {
       setServerError("");
       setTimeout(() => navigate("/login"), 1200);
     } catch (err: any) {
-      setServerError(err?.response?.data?.message || "No se pudo restablecer la contraseña.");
+      setServerError(err?.response?.data?.message || "No se pudo restablecer la contrasena.");
     }
   };
 
   if (tokenValid === false) {
     return (
-      <AuthLayout title="Restablecer contraseña" subtitle="Enlace inválido o expirado">
+      <AuthLayout title="Restablecer contrasena" subtitle="Enlace invalido o expirado">
         <AlertMessage message={serverError} />
       </AuthLayout>
     );
   }
 
   if (tokenValid === null) {
-    return <p style={{ padding: "40px" }}>Validando enlace...</p>;
+    return (
+      <div className="auth-shell app-shell">
+        <div className="page-section surface-card auth-card">
+          <p className="section-copy">Validando enlace...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <AuthLayout title="Restablecer contraseña" subtitle="Ingresa tu nueva contraseña">
+    <AuthLayout title="Nueva contrasena" subtitle="Define una contrasena segura para recuperar el acceso.">
       <AlertMessage message={message || serverError} />
 
-      <form onSubmit={handleSubmit}>
-        <FormInput
-          label="Nueva contraseña"
-          type="password"
-          value={contrasena}
-          onChange={setContrasena}
-        />
+      <form onSubmit={handleSubmit} className="form-stack">
+        <FormInput label="Nueva contrasena" type="password" value={contrasena} onChange={setContrasena} />
 
-        <FormInput
-          label="Confirmar nueva contraseña"
-          type="password"
-          value={confirmacion}
-          onChange={setConfirmacion}
-        />
+        <FormInput label="Confirmar contrasena" type="password" value={confirmacion} onChange={setConfirmacion} />
 
-        <button type="submit" style={buttonPrimary}>
-          Guardar contraseña
+        <button type="submit" className="btn btn-primary btn-block">
+          Guardar contrasena
         </button>
       </form>
     </AuthLayout>
   );
 }
 
-const buttonPrimary: React.CSSProperties = {
-  width: "100%",
-  padding: "12px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  fontWeight: 700,
-  cursor: "pointer",
-};

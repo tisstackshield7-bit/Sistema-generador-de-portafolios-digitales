@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
 import FormInput from "../../components/common/FormInput";
@@ -22,7 +22,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     const correoError = validateEmail(correo);
-    const contrasenaError = validateRequired(contrasena, "La contraseña es obligatoria.");
+    const contrasenaError = validateRequired(contrasena, "La contrasena es obligatoria.");
 
     setErrors({
       correo: correoError,
@@ -44,53 +44,41 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout
-      title="Iniciar sesión"
-      subtitle="Accede a tu portafolio digital y gestiona tu información profesional"
-    >
+    <AuthLayout title="Iniciar sesion" subtitle="Accede a tu perfil, revisa tu portafolio y continua tu progreso profesional.">
       <AlertMessage message={redirectMessage || serverError} />
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="form-stack">
         <FormInput
-          label="Correo electrónico"
+          label="Correo electronico"
           value={correo}
           onChange={setCorreo}
           error={errors.correo}
-          placeholder="Ingresa tu correo electrónico"
+          placeholder="tu-correo@ejemplo.com"
         />
 
         <FormInput
-          label="Contraseña"
+          label="Contrasena"
           type="password"
           value={contrasena}
           onChange={setContrasena}
           error={errors.contrasena}
-          placeholder="Ingresa tu contraseña"
+          placeholder="Ingresa tu contrasena"
         />
 
-        <div style={{ marginBottom: "16px" }}>
-          <Link to="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link>
+        <div className="inline-link-row">
+          <Link to="/recuperar-contrasena">Olvide mi contrasena</Link>
         </div>
 
-        <button type="submit" style={buttonPrimary}>
-          Iniciar sesión
+        <button type="submit" className="btn btn-primary btn-block">
+          Ingresar
         </button>
       </form>
 
-      <p style={{ marginTop: "16px" }}>
-        ¿No tienes cuenta? <Link to="/register">Regístrate</Link>
-      </p>
+      <div className="auth-links-row">
+        <span className="meta-text">Aun no tienes cuenta?</span>
+        <Link to="/register">Registrarte</Link>
+      </div>
     </AuthLayout>
   );
 }
 
-const buttonPrimary: React.CSSProperties = {
-  width: "100%",
-  padding: "12px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  fontWeight: 700,
-  cursor: "pointer",
-};

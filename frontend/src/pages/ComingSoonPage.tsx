@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 
 export default function ComingSoonPage() {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export default function ComingSoonPage() {
             padding: "14px 24px",
             borderRadius: "12px",
             border: "none",
-            background: "#2563eb",
+            background: "#10367D",
             color: "#ffffff",
             fontWeight: 700,
             cursor: "pointer",
@@ -46,3 +46,4 @@ export default function ComingSoonPage() {
     </div>
   );
 }
+
