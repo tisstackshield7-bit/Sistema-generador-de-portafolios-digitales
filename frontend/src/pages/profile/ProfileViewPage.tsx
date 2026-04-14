@@ -12,11 +12,15 @@ export default function ProfileViewPage() {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
 
   const loadProfile = useCallback(async () => {
-    const data = await getMyProfile();
-    if (data.perfil) {
-      setPerfil(data.perfil);
-    } else {
-      navigate("/perfil/crear", { replace: true });
+    try {
+      const data = await getMyProfile();
+      if (data.perfil) {
+        setPerfil(data.perfil);
+      } else {
+        navigate("/perfil/crear", { replace: true });
+      }
+    } catch {
+      setPerfil(null);
     }
   }, [navigate]);
 

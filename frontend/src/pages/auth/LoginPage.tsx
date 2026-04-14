@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
 import FormInput from "../../components/common/FormInput";
@@ -10,13 +10,14 @@ import { authStore } from "../../store/authStore";
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [storedRedirect] = useState(() => authStore.consumeRedirectNotice());
 
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [errors, setErrors] = useState<{ correo?: string; contrasena?: string }>({});
   const [serverError, setServerError] = useState("");
-  const redirectMessage = (location.state as any)?.message || "";
-  const redirectTo = (location.state as any)?.from || "/";
+  const redirectMessage = (location.state as any)?.message || storedRedirect.message || "";
+  const redirectTo = (location.state as any)?.from || storedRedirect.from || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,4 +83,3 @@ export default function LoginPage() {
     </AuthLayout>
   );
 }
-
