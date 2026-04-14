@@ -502,8 +502,10 @@ img {
   position: relative;
   overflow: hidden;
   min-height: 240px;
+  background-color: #10367D;
   background:
-    linear-gradient(135deg, rgba(16, 54, 125, 0.95), rgba(165, 192, 224, 0.92)),`r`n    linear-gradient(180deg, #10367D, #A5C0E0);
+    linear-gradient(135deg, rgba(16, 54, 125, 0.95), rgba(165, 192, 224, 0.92)),
+    linear-gradient(180deg, #10367D, #A5C0E0);
   color: #fff;
 }
 

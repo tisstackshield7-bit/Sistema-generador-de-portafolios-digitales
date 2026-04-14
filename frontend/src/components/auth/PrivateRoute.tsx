@@ -10,12 +10,17 @@ export default function PrivateRoute({ children }: Props) {
   const location = useLocation();
 
   if (!authStore.isAuthenticated()) {
+    authStore.setRedirectNotice(
+      "Debe iniciar sesión para acceder a esta sección.",
+      location.pathname,
+    );
+
     return (
       <Navigate
         to="/login"
         replace
         state={{
-          message: "Debe iniciar sesiÃ³n para acceder a esta secciÃ³n.",
+          message: "Debe iniciar sesión para acceder a esta sección.",
           from: location.pathname,
         }}
       />

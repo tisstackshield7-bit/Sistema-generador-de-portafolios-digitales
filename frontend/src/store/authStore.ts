@@ -1,5 +1,8 @@
 import type { UsuarioAuth } from "../types/auth";
 
+const REDIRECT_MESSAGE_KEY = "auth_redirect_message";
+const REDIRECT_FROM_KEY = "auth_redirect_from";
+
 export const authStore = {
   setSession(token: string, usuario: UsuarioAuth) {
     localStorage.setItem("token", token);
@@ -22,5 +25,20 @@ export const authStore = {
 
   isAuthenticated() {
     return !!localStorage.getItem("token");
+  },
+
+  setRedirectNotice(message: string, from: string) {
+    sessionStorage.setItem(REDIRECT_MESSAGE_KEY, message);
+    sessionStorage.setItem(REDIRECT_FROM_KEY, from);
+  },
+
+  consumeRedirectNotice() {
+    const message = sessionStorage.getItem(REDIRECT_MESSAGE_KEY) || "";
+    const from = sessionStorage.getItem(REDIRECT_FROM_KEY) || "/";
+
+    sessionStorage.removeItem(REDIRECT_MESSAGE_KEY);
+    sessionStorage.removeItem(REDIRECT_FROM_KEY);
+
+    return { message, from };
   },
 };
