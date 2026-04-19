@@ -28,6 +28,21 @@ class Perfil extends Model
         'eliminado_en',
     ];
 
+    public function habilidades()
+    {
+        return $this->belongsToMany(
+            Habilidad::class,
+            'perfil_habilidades',
+            'perfil_id',
+            'habilidad_id'
+        )->withPivot(['nivel', 'es_visible', 'anios_experiencia', 'creado_en', 'actualizado_en']);
+    }
+
+    public function perfilHabilidades()
+    {
+        return $this->hasMany(PerfilHabilidad::class, 'perfil_id');
+    }
+
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
