@@ -11,11 +11,14 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function ($middleware) {
-    $middleware->alias([
-        'auth.custom' => \App\Http\Middleware\EnsureAuthenticated::class,
-    ]);
-})
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'auth.custom' => \App\Http\Middleware\EnsureAuthenticated::class,
+        ]);
+
+        // CORS para peticiones del frontend en Vite (localhost:5173)
+        $middleware->appendToGroup('api', \App\Http\Middleware\Cors::class);
+    })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

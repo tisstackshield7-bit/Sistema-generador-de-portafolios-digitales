@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyProfile } from "../../api/profile";
+import { API_ORIGIN } from "../../api/axios";
 import type { Perfil } from "../../types/profile";
 import { getInitials } from "../../utils/avatar";
 import { logoutUser } from "../../api/auth";
@@ -10,14 +11,22 @@ export default function ProfileViewPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
 
-  useEffect(() => {
-    const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
+    try {
       const data = await getMyProfile();
-      setPerfil(data.perfil);
-    };
+      if (data.perfil) {
+        setPerfil(data.perfil);
+      } else {
+        navigate("/perfil/crear", { replace: true });
+      }
+    } catch {
+      setPerfil(null);
+    }
+  }, [navigate]);
 
+  useEffect(() => {
     loadProfile();
-  }, []);
+  }, [loadProfile]);
 
   const handleLogout = async () => {
     try {
@@ -25,83 +34,77 @@ export default function ProfileViewPage() {
     } catch {
     } finally {
       authStore.clearSession();
-      navigate("/login");
+      navigate("/");
     }
   };
 
   if (!perfil) {
-    return <p style={{ padding: "40px" }}>Cargando perfil...</p>;
+    return (
+      <div className="profile-page-shell app-shell">
+        <div className="page-section surface-card auth-card">
+          <p className="section-copy">Cargando perfil...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{ padding: "40px", background: "#f8fafc", minHeight: "100vh" }}>
-      <div style={{
-        maxWidth: "900px",
-        margin: "0 auto",
-        background: "#fff",
-        borderRadius: "16px",
-        padding: "32px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
-          <h1>Mi perfil</h1>
-          <div style={{ display: "flex", gap: "12px" }}>
-            <button onClick={() => navigate("/perfil/editar")} style={buttonSecondary}>
-              Editar perfil
-            </button>
-            <button onClick={handleLogout} style={buttonPrimary}>
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
+    <div className="profile-page-shell app-shell">
+      <div className="page-section profile-page-grid">
+        <section className="profile-main-area">
+          <header className="profile-cover surface-card">
+            <div className="profile-cover-content">
+              <div className="profile-identity">
+                {perfil.foto_perfil ? (
+                  <img src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`} alt={perfil.nombre_completo} className="profile-avatar-xl" />
+                ) : (
+                  <div className="profile-avatar-xl fallback-avatar">{getInitials(perfil.nombre_completo)}</div>
+                )}
+                <div className="profile-identity-content">
+                  <p className="section-label cover-label">Mi perfil</p>
+                  <h1>{perfil.nombre_completo}</h1>
+                  <p className="cover-role">{perfil.profesion}</p>
+                  <p className="cover-location">La Paz, Bolivia</p>
+                  <div className="profile-cover-actions">
+                    <button className="btn btn-secondary" onClick={() => navigate("/")}>
+                      Ir al inicio
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => navigate("/perfil/editar")}>
+                      Editar perfil
+                    </button>
+                    <button className="btn btn-tertiary cover-tertiary" onClick={handleLogout}>
+                      Cerrar sesion
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
 
-        {perfil.foto_perfil ? (
-          <img
-            src={`http://127.0.0.1:8000/storage/${perfil.foto_perfil}`}
-            alt="Perfil"
-            style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover" }}
-          />
-        ) : (
-          <div style={{
-            width: "120px",
-            height: "120px",
-            borderRadius: "50%",
-            background: "#dbeafe",
-            color: "#1d4ed8",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "36px",
-            fontWeight: 700
-          }}>
-            {getInitials(perfil.nombre_completo)}
-          </div>
-        )}
+          <section className="profile-main-card">
+            <div className="profile-section">
+              <div className="section-head">
+                <div>
+                  <p className="section-label">Resumen profesional</p>
+                  <h2>Presentacion principal</h2>
+                </div>
+              </div>
+              <p className="section-copy">{perfil.biografia || "Agrega un resumen para reforzar tu perfil profesional."}</p>
+            </div>
+          </section>
+        </section>
 
-        <h2 style={{ marginTop: "20px" }}>{perfil.nombre_completo}</h2>
-        <p style={{ color: "#475569", fontWeight: 600 }}>{perfil.profesion}</p>
-        <p style={{ marginTop: "16px", lineHeight: 1.6 }}>{perfil.biografia}</p>
+        <aside className="profile-side-column">
+          <section className="profile-side-card">
+            <p className="section-label">Informacion</p>
+            <ul className="side-detail-list">
+              <li>Profesion: {perfil.profesion}</li>
+              <li>Ubicacion: La Paz, Bolivia</li>
+              <li>Estado: Perfil activo</li>
+            </ul>
+          </section>
+        </aside>
       </div>
     </div>
   );
 }
-
-const buttonPrimary: React.CSSProperties = {
-  padding: "10px 16px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  fontWeight: 700,
-  cursor: "pointer",
-};
-
-const buttonSecondary: React.CSSProperties = {
-  padding: "10px 16px",
-  borderRadius: "10px",
-  border: "1px solid #cbd5e1",
-  background: "#fff",
-  color: "#0f172a",
-  fontWeight: 700,
-  cursor: "pointer",
-};

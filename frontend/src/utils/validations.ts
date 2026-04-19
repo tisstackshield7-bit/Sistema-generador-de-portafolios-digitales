@@ -41,3 +41,9 @@ export const validateProfilePhoto = (file?: File | null) => {
 
   return "";
 };
+
+// Remove any character that is not a letter (including tildes/umlauts) or a space.
+// Useful to sanitize nombres y apellidos en los formularios.
+export const sanitizeLettersAndSpaces = (value: string) => {
+  return value.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g, "");
+};

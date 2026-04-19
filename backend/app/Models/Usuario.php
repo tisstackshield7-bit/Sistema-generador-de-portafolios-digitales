@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Usuario extends Model
+class Usuario extends Authenticatable
 {
     use SoftDeletes;
 
@@ -30,5 +30,10 @@ class Usuario extends Model
     public function perfil()
     {
         return $this->hasOne(Perfil::class, 'usuario_id');
+    }
+
+    public function getAuthPassword()
+    {
+        return $this->contrasena;
     }
 }

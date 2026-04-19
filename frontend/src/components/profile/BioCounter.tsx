@@ -1,11 +1,8 @@
 type Props = {
-  value: string;
+  count: number;
+  limit?: number;
 };
 
-export default function BioCounter({ value }: Props) {
-  return (
-    <p style={{ textAlign: "right", fontSize: "13px", color: "#64748b", marginTop: "-8px", marginBottom: "12px" }}>
-      {value.length} / 500 caracteres
-    </p>
-  );
+export default function BioCounter({ count, limit = 500 }: Props) {
+  return <p className="counter-text">{count} / {limit} caracteres</p>;
 }

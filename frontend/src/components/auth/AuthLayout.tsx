@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
+import logo from "../../assets/logo.jpeg";
 
 type Props = {
   title: string;
@@ -8,37 +9,37 @@ type Props = {
 
 export default function AuthLayout({ title, subtitle, children }: Props) {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        alignItems: "center",
-        padding: "40px",
-        gap: "40px",
-        background: "#f8fafc",
-      }}
-    >
-      <div>
-        <h1 style={{ fontSize: "40px", marginBottom: "12px" }}>
-          Portafolio Digital de Proyectos de Software
-        </h1>
-        <p style={{ color: "#475569", fontSize: "18px" }}>
-          Impulsa tu carrera profesional y gestiona tu perfil digital.
-        </p>
-      </div>
+    <div className="auth-shell app-shell">
+      <div className="page-section auth-grid">
+        <section className="surface-card auth-hero">
+          <div className="flex flex-col gap-5">
+  <div className="flex items-center gap-4">
+    <img
+      src={logo}
+      alt="Portafolio Digital de Proyectos"
+      className="h-20 w-20 rounded-2xl object-cover border border-slate-200 bg-white shadow-sm"
+    />
 
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "16px",
-          padding: "32px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h2 style={{ marginBottom: "8px" }}>{title}</h2>
-        <p style={{ color: "#64748b", marginBottom: "24px" }}>{subtitle}</p>
-        {children}
+    <div>
+      <p className="section-label !mb-1">Portafolio Digital de Proyectos de Software</p>
+    </div>
+  </div>
+
+  <div>
+    <h1>Un acceso mas limpio para tu perfil profesional.</h1>
+    <p className="section-copy">
+      Unete a nuestra comunidad de mentes creativas. Al registrarte, podras explorar proyectos exclusivos, acceder a recursos y conectar con ideas que estan transformando la industria. Tu proximo gran paso comienza con un clic.
+    </p>
+  </div>
+</div>
+        </section>
+
+        <section className="auth-card">
+          <p className="section-label">Acceso</p>
+          <h2>{title}</h2>
+          <p className="section-copy">{subtitle}</p>
+          <div className="form-stack">{children}</div>
+        </section>
       </div>
     </div>
   );
