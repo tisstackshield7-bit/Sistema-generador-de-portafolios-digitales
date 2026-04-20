@@ -4,19 +4,10 @@ import { authStore } from "../store/authStore";
 import { getMyProfile, getPublicProfiles } from "../api/profile";
 import { API_ORIGIN } from "../api/axios";
 import { logoutUser } from "../api/auth";
-import type { Perfil } from "../types/profile";
+import type { Perfil, PublicProfileCard } from "../types/profile";
+import PrivateWorkspaceLayout from "../components/dashboard/PrivateWorkspaceLayout";
 import "./HomePage.css";
 import logo from "../assets/logo.jpeg";
-
-type PublicPortfolio = {
-  id: number;
-  nombre_completo: string;
-  profesion: string;
-  titular_profesional?: string | null;
-  biografia: string;
-  foto_perfil?: string | null;
-  slug: string;
-};
 
 function getInitials(name?: string | null) {
   if (!name) return "PF";
@@ -29,16 +20,43 @@ function getInitials(name?: string | null) {
     .toUpperCase();
 }
 
-function getProfileSkills(profile: PublicPortfolio) {
-  const base = profile.titular_profesional || profile.profesion || "Desarrollador";
-  const tokens = base.split(/[\s/,-]+/).filter((token) => token.length > 3);
-  return [...tokens.slice(0, 2), "Portafolio"].slice(0, 3);
+function getProfileHighlights(profile: PublicProfileCard) {
+  const visibleSkills = (profile.habilidades || []).slice(0, 3).map((skill) => skill.nombre);
+
+  if (visibleSkills.length) {
+    return visibleSkills;
+  }
+
+  const role = profile.titular_profesional || profile.profesion || "Perfil profesional";
+  const compactRole = role.length > 28 ? `${role.slice(0, 28).trim()}...` : role;
+
+  return [compactRole, "Perfil publico"].slice(0, 2);
+}
+
+function DashboardActionIcon({ kind }: { kind: "view" | "edit" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="dashboard-action-icon">
+      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {kind === "view" ? (
+          <>
+            <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z" />
+            <circle cx="12" cy="12" r="3" />
+          </>
+        ) : (
+          <>
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </>
+        )}
+      </g>
+    </svg>
+  );
 }
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [publicProfiles, setPublicProfiles] = useState<PublicPortfolio[]>([]);
+  const [publicProfiles, setPublicProfiles] = useState<PublicProfileCard[]>([]);
   const isAuth = authStore.isAuthenticated();
 
   useEffect(() => {
@@ -57,16 +75,8 @@ export default function HomePage() {
   const initials = useMemo(() => getInitials(perfil?.nombre_completo), [perfil]);
   const welcomeName = useMemo(() => perfil?.nombre_completo?.split(" ")[0] || "Profesional", [perfil]);
   const featuredProfiles = publicProfiles.slice(0, 6);
-  const profileChecks = [
-    { label: "Informacion basica", done: Boolean(perfil?.nombre_completo && perfil?.profesion) },
-    { label: "Biografia", done: Boolean(perfil?.biografia) },
-    { label: "Foto de perfil", done: Boolean(perfil?.foto_perfil) },
-  ];
-  const tips = [
-    "Completa tu biografia con un resumen corto y claro.",
-    "Usa una foto profesional para dar mas confianza.",
-    "Mantén tu informacion actualizada antes de compartir tu perfil.",
-  ];
+  const technicalSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "tecnica") || [];
+  const softSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "blanda") || [];
 
   const handleLogout = async () => {
     try {
@@ -135,9 +145,9 @@ export default function HomePage() {
                       {profile.biografia?.slice(0, 100) || "Perfil disponible dentro de la plataforma."}
                     </p>
                     <div className="profile-pill-list">
-                      {getProfileSkills(profile).map((skill) => (
-                        <span key={`${profile.id}-${skill}`} className="profile-pill neutral">
-                          {skill}
+                      {getProfileHighlights(profile).map((item) => (
+                        <span key={`${profile.id}-${item}`} className="profile-pill neutral">
+                          {item}
                         </span>
                       ))}
                     </div>
@@ -178,98 +188,132 @@ export default function HomePage() {
   );
 
   const loggedView = (
-    <div className="page-section home-content">
-      <div className="dashboard-grid simplified-dashboard">
-        <aside className="dashboard-column left">
-          <section className="surface-card dashboard-panel">
-            <div className="profile-summary">
-              {perfil?.foto_perfil ? (
-                <img src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`} alt={perfil.nombre_completo} className="summary-avatar" />
-              ) : (
-                <div className="summary-avatar fallback-avatar">{initials}</div>
-              )}
-              <div>
-                <h2>{perfil?.nombre_completo || "Completa tu perfil"}</h2>
-                <p>{perfil?.profesion || "Agrega tu profesion"}</p>
-                <span className="meta-text">Perfil profesional</span>
-              </div>
-            </div>
-            <button className="btn btn-secondary btn-block" onClick={() => navigate("/perfil/editar")}>
-              Editar perfil
+    <PrivateWorkspaceLayout
+      active="dashboard"
+      perfil={perfil}
+      title=""
+      subtitle=""
+    >
+      <section className="dashboard-hero-panel">
+        <div className="dashboard-hero-copy">
+          <h1 className="dashboard-title">¡Bienvenido/a, {perfil?.nombre_completo || welcomeName}!</h1>
+          <p className="dashboard-hero-role">{perfil?.profesion || "Completa tu perfil profesional"}</p>
+          <div className="dashboard-hero-actions">
+            <button className="btn btn-secondary dashboard-ghost-button" onClick={() => navigate(perfil?.slug ? `/perfil-publico/${perfil.slug}` : "/perfil")}>
+              <DashboardActionIcon kind="view" />
+              Ver Portafolio Público
             </button>
-          </section>
-        </aside>
+            <button className="btn btn-secondary dashboard-ghost-button" onClick={() => navigate("/perfil/editar")}>
+              <DashboardActionIcon kind="edit" />
+              Editar Perfil
+            </button>
+          </div>
+        </div>
+      </section>
 
-        <section className="dashboard-column center">
-          <section className="surface-card dashboard-panel">
-            <div className="section-head">
-              <div>
-                <p className="section-label">Inicio</p>
-                <h1 className="dashboard-title">Bienvenido, {welcomeName}</h1>
+      <section className="dashboard-stat-grid sprint-grid">
+        <article className="surface-card dashboard-stat-card">
+          <div className="dashboard-stat-head">
+            <h2>Proyectos</h2>
+          </div>
+          <strong>0</strong>
+          <p>Disponible en proximos sprints</p>
+        </article>
+        <article className="surface-card dashboard-stat-card">
+          <div className="dashboard-stat-head">
+            <h2>Habilidades</h2>
+          </div>
+          <strong>{perfil?.habilidades?.length || 0}</strong>
+          <p>{technicalSkills.length} tecnicas, {softSkills.length} blandas</p>
+        </article>
+        <article className="surface-card dashboard-stat-card">
+          <div className="dashboard-stat-head">
+            <h2>Experiencias</h2>
+          </div>
+          <strong>0</strong>
+          <p>Disponible en proximos sprints</p>
+        </article>
+      </section>
+
+      <section className="surface-card dashboard-profile-summary-card">
+        <div className="dashboard-summary-head">
+          <div>
+            <p className="section-label">Resumen del perfil</p>
+            <h2>Informacion basica de tu portafolio profesional</h2>
+          </div>
+        </div>
+
+        <div className="dashboard-profile-summary">
+          {perfil?.foto_perfil ? (
+            <img src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`} alt={perfil.nombre_completo} className="dashboard-profile-avatar" />
+          ) : (
+            <div className="dashboard-profile-avatar fallback-avatar">{initials}</div>
+          )}
+
+          <div className="dashboard-profile-copy">
+            <h3>{perfil?.nombre_completo || "Completa tu perfil"}</h3>
+            <p className="dashboard-profile-role">{perfil?.profesion || "Agrega tu profesion"}</p>
+            <p className="section-copy">
+              {perfil?.biografia || "Agrega una biografia clara para que tu perfil se vea mas profesional y completo."}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="surface-card dashboard-panel dashboard-skills-panel">
+        <div className="section-head dashboard-skills-head">
+          <div>
+            <p className="section-label">Habilidades principales</p>
+            <h2 className="section-title">Tus competencias tecnicas y blandas</h2>
+          </div>
+          <button className="btn btn-secondary" onClick={() => navigate("/perfil/habilidades")}>
+            Gestionar
+          </button>
+        </div>
+        {perfil?.habilidades?.length ? (
+          <div className="dashboard-skill-groups">
+            <div className="dashboard-skill-group">
+              <h3>Habilidades Tecnicas</h3>
+              <div className="dashboard-skill-chip-list">
+                {technicalSkills.length ? (
+                  technicalSkills.map((skill) => (
+                    <span key={skill.id} className="dashboard-skill-chip dark">
+                      {skill.nombre} - {skill.nivel_dominio}
+                    </span>
+                  ))
+                ) : (
+                  <span className="dashboard-skill-chip muted">Aun no registraste habilidades tecnicas</span>
+                )}
               </div>
             </div>
-            <p className="section-copy">Revisa tu informacion y manten una presentacion clara y profesional.</p>
-          </section>
 
-          <section className="surface-card dashboard-panel">
-            <div className="section-head">
-              <div>
-                <p className="section-label">Portafolio</p>
-                <h2 className="section-title">Vista previa de tu perfil</h2>
-              </div>
-              <Link to="/perfil" className="section-link">Ver perfil completo</Link>
-            </div>
-            <div className="portfolio-preview">
-              <div>
-                <h3>{perfil?.nombre_completo || "Tu nombre completo"}</h3>
-                <p className="preview-role">{perfil?.profesion || "Agrega un titulo profesional"}</p>
-                <p className="section-copy">
-                  {perfil?.biografia || "Tu resumen profesional aparecera aqui cuando completes tu perfil."}
-                </p>
+            <div className="dashboard-skill-group">
+              <h3>Habilidades Blandas</h3>
+              <div className="dashboard-skill-chip-list">
+                {softSkills.length ? (
+                  softSkills.map((skill) => (
+                    <span key={skill.id} className="dashboard-skill-chip light">
+                      {skill.nombre} - {skill.nivel_dominio}
+                    </span>
+                  ))
+                ) : (
+                  <span className="dashboard-skill-chip muted">Aun no registraste habilidades blandas</span>
+                )}
               </div>
             </div>
-          </section>
-        </section>
-
-        <aside className="dashboard-column right">
-          <section className="surface-card dashboard-panel">
-            <p className="section-label">Acciones</p>
-            <div className="action-stack">
-              <button className="btn btn-secondary btn-block" onClick={() => navigate("/perfil")}>
-                Ver mi perfil
-              </button>
-              <button className="btn btn-secondary btn-block" onClick={() => navigate("/perfil/editar")}>
-                Editar informacion
-              </button>
-            </div>
-          </section>
-
-          <section className="surface-card dashboard-panel">
-            <p className="section-label">Estado de perfil</p>
-            <div className="mini-list">
-              {profileChecks.map((item) => (
-                <div key={item.label} className="mini-list-item simple-status-item">
-                  <span className={`status-dot ${item.done ? "done" : ""}`} />
-                  <span>{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="surface-card dashboard-panel">
-            <p className="section-label">Consejos</p>
-            <div className="mini-list">
-              {tips.map((tip) => (
-                <div key={tip} className="tip-card compact-tip">
-                  <p>{tip}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </aside>
-      </div>
-    </div>
+          </div>
+        ) : (
+          <div className="dashboard-empty-note">
+            Registra habilidades tecnicas y blandas para reforzar tu portafolio profesional.
+          </div>
+        )}
+      </section>
+    </PrivateWorkspaceLayout>
   );
+
+  if (isAuth) {
+    return loggedView;
+  }
 
   return (
     <div className="home-shell app-shell">
@@ -290,7 +334,7 @@ export default function HomePage() {
           <nav className="nav-links">
             <Link to="/">Inicio</Link>
             <Link to="/en-proceso">Explorar</Link>
-            {isAuth ? <Link to="/perfil">Mi perfil</Link> : <Link to="/login">Ingresar</Link>}
+            {isAuth ? <Link to="/perfil/editar">Mi perfil</Link> : <Link to="/login">Ingresar</Link>}
           </nav>
 
           <div className="nav-actions">
@@ -317,7 +361,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main>{isAuth ? loggedView : visitorView}</main>
+      <main>{visitorView}</main>
     </div>
   );
 }

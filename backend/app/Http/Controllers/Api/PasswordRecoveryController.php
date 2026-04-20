@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Models\RecuperacionContrasena;
+use App\Models\Sesion;
 use App\Models\Usuario;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -20,38 +21,35 @@ class PasswordRecoveryController extends Controller
 
         if (!$usuario) {
             return response()->json([
-                'message' => 'No existe una cuenta asociada a ese correo.'
-            ], 404);
+                'message' => 'Si el correo existe, se envio una contrasena temporal.'
+            ]);
         }
 
-        $token = Str::random(64);
-        $resetUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/') .
-            '/restablecer-contrasena/' . $token;
+        $temporaryPassword = $this->generateTemporaryPassword();
 
-        RecuperacionContrasena::create([
-            'usuario_id' => $usuario->id,
-            'token' => $token,
-            'expira_en' => Carbon::now()->addMinutes(30),
-            'usado' => false,
-            'creado_en' => now(),
-            'actualizado_en' => now(),
-        ]);
+        $usuario->contrasena = Hash::make($temporaryPassword);
+        $usuario->debe_cambiar_contrasena = true;
+        $usuario->contrasena_temporal_expira_en = Carbon::now()->addMinutes(15);
+        $usuario->recuperacion_solicitada_en = now();
+        $usuario->actualizado_en = now();
+        $usuario->save();
 
-        // Enviar email con el enlace de restablecimiento
+        Sesion::where('usuario_id', $usuario->id)->delete();
+
         Mail::raw(
-            "Hola,\n\nRecibimos una solicitud para restablecer tu contraseña.\n\n" .
-            "Enlace de restablecimiento (vigente 30 minutos):\n{$resetUrl}\n\n" .
-            "Si no solicitaste este cambio, puedes ignorar este mensaje.",
+            "Hola,\n\nRecibimos una solicitud para recuperar el acceso a tu cuenta.\n\n" .
+            "Tu contrasena temporal es:\n{$temporaryPassword}\n\n" .
+            "Esta contrasena vence en 15 minutos. Inicia sesion y cambiala de inmediato desde tu perfil.\n\n" .
+            "Si no solicitaste este cambio, ignora este mensaje y vuelve a solicitar recuperacion si lo necesitas.",
             function ($message) use ($usuario) {
                 $message->to($usuario->correo)
-                    ->subject('Restablecer contraseña');
+                    ->subject('Contrasena temporal de acceso');
             }
         );
 
         return response()->json([
-            'message' => 'Se envió el enlace o código de recuperación.',
-            // En local se devuelve el token para pruebas rápidas; en otros entornos se oculta.
-            'token_prueba' => app()->environment('local') ? $token : null,
+            'message' => 'Si el correo existe, se envio una contrasena temporal.',
+            'contrasena_temporal_prueba' => app()->environment(['local', 'testing']) ? $temporaryPassword : null,
         ]);
     }
 
@@ -63,18 +61,18 @@ class PasswordRecoveryController extends Controller
 
         if (!$recovery) {
             return response()->json([
-                'message' => 'El enlace o código no es válido.'
+                'message' => 'El enlace o codigo no es valido.'
             ], 404);
         }
 
         if (Carbon::parse($recovery->expira_en)->isPast()) {
             return response()->json([
-                'message' => 'El enlace o código expiró.'
+                'message' => 'El enlace o codigo expiro.'
             ], 410);
         }
 
         return response()->json([
-            'message' => 'Token válido.'
+            'message' => 'Token valido.'
         ]);
     }
 
@@ -86,13 +84,13 @@ class PasswordRecoveryController extends Controller
 
         if (!$recovery) {
             return response()->json([
-                'message' => 'El enlace o código no es válido.'
+                'message' => 'El enlace o codigo no es valido.'
             ], 404);
         }
 
         if (Carbon::parse($recovery->expira_en)->isPast()) {
             return response()->json([
-                'message' => 'El enlace o código expiró.'
+                'message' => 'El enlace o codigo expiro.'
             ], 410);
         }
 
@@ -106,7 +104,20 @@ class PasswordRecoveryController extends Controller
         $recovery->save();
 
         return response()->json([
-            'message' => 'Contraseña actualizada correctamente.'
+            'message' => 'Contrasena actualizada correctamente.'
         ]);
+    }
+
+    private function generateTemporaryPassword(int $length = 12): string
+    {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*';
+        $password = '';
+        $max = strlen($alphabet) - 1;
+
+        for ($index = 0; $index < $length; $index++) {
+            $password .= $alphabet[random_int(0, $max)];
+        }
+
+        return $password;
     }
 }

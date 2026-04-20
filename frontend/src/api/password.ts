@@ -5,6 +5,20 @@ export const requestPasswordRecovery = async (correo: string) => {
   return data;
 };
 
+export const changePassword = async (
+  contrasena_actual: string,
+  contrasena_nueva: string,
+  contrasena_nueva_confirmation: string,
+) => {
+  const { data } = await api.put("/auth/change-password", {
+    contrasena_actual,
+    contrasena_nueva,
+    contrasena_nueva_confirmation,
+  });
+
+  return data;
+};
+
 export const validateResetToken = async (token: string) => {
   const { data } = await api.get(`/auth/reset-password/${token}`);
   return data;

@@ -108,7 +108,7 @@ export default function BasicProfileCreatePage() {
         foto_perfil: foto,
       });
 
-      navigate("/perfil");
+      navigate("/");
     } catch (err: any) {
       setServerError(err?.response?.data?.message || "No se pudo guardar el perfil.");
     }

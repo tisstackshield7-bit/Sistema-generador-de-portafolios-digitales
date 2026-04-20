@@ -15,6 +15,12 @@ class ProfileController extends Controller
     {
         $usuario = $request->attributes->get('auth_usuario');
 
+        if (Perfil::where('usuario_id', $usuario->id)->exists()) {
+            return response()->json([
+                'message' => 'Ya existe un perfil para esta cuenta.',
+            ], 409);
+        }
+
         $nombreCompleto = trim($request->nombres . ' ' . $request->apellidos);
 
         $slugBase = Str::slug($nombreCompleto);
@@ -28,6 +34,8 @@ class ProfileController extends Controller
 
         $perfil = Perfil::create([
             'usuario_id' => $usuario->id,
+            'nombres' => $request->nombres,
+            'apellidos' => $request->apellidos,
             'nombre_completo' => $nombreCompleto,
             'profesion' => $request->profesion,
             'titular_profesional' => $request->profesion,
@@ -49,7 +57,9 @@ class ProfileController extends Controller
     {
         $usuario = $request->attributes->get('auth_usuario');
 
-        $perfil = Perfil::where('usuario_id', $usuario->id)->first();
+        $perfil = Perfil::with(['habilidades' => function ($query) {
+            $query->orderBy('tipo')->orderByDesc('creado_en');
+        }])->where('usuario_id', $usuario->id)->first();
 
         return response()->json([
             'perfil' => $perfil,
@@ -64,6 +74,8 @@ class ProfileController extends Controller
 
         $nombreCompleto = trim($request->nombres . ' ' . $request->apellidos);
 
+        $perfil->nombres = $request->nombres;
+        $perfil->apellidos = $request->apellidos;
         $perfil->nombre_completo = $nombreCompleto;
         $perfil->profesion = $request->profesion;
         $perfil->titular_profesional = $request->profesion;
@@ -98,7 +110,11 @@ class ProfileController extends Controller
 
     public function listPublic()
     {
-        $perfiles = Perfil::where('es_publico', true)
+        $perfiles = Perfil::with(['habilidades' => function ($query) {
+            $query->where('visible_publico', true)
+                ->orderBy('tipo')
+                ->orderByDesc('creado_en');
+        }])->where('es_publico', true)
             ->latest('creado_en')
             ->limit(20)
             ->get([
@@ -114,6 +130,27 @@ class ProfileController extends Controller
 
         return response()->json([
             'perfiles' => $perfiles,
+        ]);
+    }
+
+    public function showPublicBySlug(string $slug)
+    {
+        $perfil = Perfil::with(['habilidades' => function ($query) {
+            $query->where('visible_publico', true)
+                ->orderBy('tipo')
+                ->orderByDesc('creado_en');
+        }])->where('es_publico', true)
+            ->where('slug', $slug)
+            ->first();
+
+        if (!$perfil) {
+            return response()->json([
+                'message' => 'Perfil publico no encontrado.',
+            ], 404);
+        }
+
+        return response()->json([
+            'perfil' => $perfil,
         ]);
     }
 }

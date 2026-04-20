@@ -5,7 +5,9 @@ import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import BasicProfileCreatePage from "../pages/profile/BasicProfileCreatePage";
 import BasicProfileEditPage from "../pages/profile/BasicProfileEditPage";
+import ChangePasswordPage from "../pages/profile/ChangePasswordPage";
 import ProfileViewPage from "../pages/profile/ProfileViewPage";
+import SkillsPage from "../pages/profile/SkillsPage";
 import PrivateRoute from "../components/auth/PrivateRoute";
 import HomePage from "../pages/HomePage";
 import ComingSoonPage from "../pages/ComingSoonPage";
@@ -49,10 +51,26 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/perfil/cambiar-contrasena",
+    element: (
+      <PrivateRoute>
+        <ChangePasswordPage />
+      </PrivateRoute>
+    ),
+  },
+  {
     path: "/perfil",
     element: (
       <PrivateRoute>
         <ProfileViewPage />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/perfil/habilidades",
+    element: (
+      <PrivateRoute>
+        <SkillsPage />
       </PrivateRoute>
     ),
   },

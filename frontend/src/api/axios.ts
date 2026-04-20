@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import { authStore } from "../store/authStore";
 
 export const API_BASE_URL = "http://127.0.0.1:8000/api";
@@ -28,7 +28,7 @@ api.interceptors.response.use(
     if (status === 401 && hasToken && !requestUrl.includes("/auth/logout")) {
       authStore.clearSession();
       authStore.setRedirectNotice(
-        "Debe iniciar sesión para acceder a esta sección.",
+        "Debe iniciar sesion para acceder a esta seccion.",
         window.location.pathname,
       );
 
