@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import FormInput from "../../components/common/FormInput";
 import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
-import BioCounter from "../../components/profile/BioCounter";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import { API_ORIGIN } from "../../api/axios";
 import {
@@ -207,8 +206,6 @@ const preview = useMemo(() => {
               maxLength={500}
               placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
             />
-
-            <BioCounter count={biografia.length} />
 
             <div className="form-actions-row">
               <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>

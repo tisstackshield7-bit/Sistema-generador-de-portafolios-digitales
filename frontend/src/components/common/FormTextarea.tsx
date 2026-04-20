@@ -5,6 +5,7 @@ type Props = {
   error?: string;
   placeholder?: string;
   maxLength?: number;
+  showCounter?: boolean;
 };
 
 export default function FormTextarea({
@@ -13,8 +14,11 @@ export default function FormTextarea({
   onChange,
   error,
   placeholder,
-  maxLength,
+  maxLength = 500,
+  showCounter = true,
 }: Props) {
+  const currentLength = value?.length ?? 0;
+
   return (
     <div className="form-field">
       <label className="form-label">{label}</label>
@@ -27,6 +31,7 @@ export default function FormTextarea({
         rows={5}
       />
       {error ? <p className="form-error">{error}</p> : null}
+      {showCounter ? <p className="counter-text">{currentLength} / {maxLength} caracteres</p> : null}
     </div>
   );
 }
