@@ -4,6 +4,7 @@ import FormInput from "../../components/common/FormInput";
 import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
+import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
 import { API_ORIGIN } from "../../api/axios";
 import {
   validateBiography,
@@ -12,9 +13,28 @@ import {
   sanitizeLettersAndSpaces,
 } from "../../utils/validations";
 import { getMyProfile, updateBasicProfile } from "../../api/profile";
+import type { Perfil } from "../../types/profile";
+
+function splitLegacyFullName(fullName: string) {
+  const parts = fullName.split(" ").filter(Boolean);
+
+  if (parts.length <= 1) {
+    return { nombres: parts[0] || "", apellidos: "" };
+  }
+
+  if (parts.length === 2) {
+    return { nombres: parts[0], apellidos: parts[1] };
+  }
+
+  return {
+    nombres: parts.slice(0, -2).join(" "),
+    apellidos: parts.slice(-2).join(" "),
+  };
+}
 
 export default function BasicProfileEditPage() {
   const navigate = useNavigate();
+  const [perfilData, setPerfilData] = useState<Perfil | null>(null);
 
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -38,14 +58,15 @@ export default function BasicProfileEditPage() {
       try {
         const data = await getMyProfile();
         const perfil = data.perfil;
+        setPerfilData(perfil || null);
 
-        if (perfil?.nombre_completo) {
-          const parts = perfil.nombre_completo.split(" ");
-          const rawNombres = parts.slice(0, -1).join(" ") || parts[0] || "";
-          const rawApellidos = parts.slice(-1).join(" ") || "";
-
-          setNombres(sanitizeLettersAndSpaces(rawNombres));
-          setApellidos(sanitizeLettersAndSpaces(rawApellidos));
+        if (perfil?.nombres || perfil?.apellidos) {
+          setNombres(sanitizeLettersAndSpaces(perfil.nombres || ""));
+          setApellidos(sanitizeLettersAndSpaces(perfil.apellidos || ""));
+        } else if (perfil?.nombre_completo) {
+          const legacyName = splitLegacyFullName(perfil.nombre_completo);
+          setNombres(sanitizeLettersAndSpaces(legacyName.nombres));
+          setApellidos(sanitizeLettersAndSpaces(legacyName.apellidos));
         }
 
         setProfesion(perfil?.profesion || "");
@@ -138,38 +159,46 @@ const preview = useMemo(() => {
       });
 
       setMessage("Informacion actualizada correctamente.");
-      setTimeout(() => navigate("/perfil"), 900);
+      setTimeout(() => navigate("/"), 900);
     } catch (err: any) {
       setServerError(err?.response?.data?.message || "No se pudo actualizar el perfil.");
     }
   };
 
   return (
-    <div className="profile-form-shell app-shell">
-      <div className="page-section profile-form-grid">
-        <aside className="surface-card profile-form-aside">
-          <p className="section-label">Editar perfil</p>
-          <h1 className="section-title">Mantén tu presencia profesional al dia.</h1>
-          <p className="section-copy">
-            Ajusta tu informacion principal para que la vista publica se vea mas solida y coherente.
-          </p>
-          <ul>
-            <li>Refuerza tu titular profesional.</li>
-            <li>Haz tu resumen mas claro y concreto.</li>
-            <li>Usa una foto actual para mejorar reconocimiento.</li>
-          </ul>
-        </aside>
+    <PrivateWorkspaceLayout
+      active="profile"
+      perfil={perfilData}
+      title="Perfil"
+      subtitle="Gestiona tu informacion personal y profesional con el alcance de Sprint 1."
+      actions={(
+        <>
+          <button type="button" className="btn btn-secondary" onClick={() => navigate("/perfil/cambiar-contrasena")}>
+            Cambiar contrasena
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>
+            Ir al inicio
+          </button>
+          <button type="submit" form="basic-profile-edit-form" className="btn btn-primary">
+            Guardar cambios
+          </button>
+        </>
+      )}
+    >
+      <section className="surface-card workspace-section-card">
+        <div className="workspace-section-head">
+          <div>
+            <p className="section-label">Informacion personal</p>
+            <h2>Datos basicos del perfil profesional</h2>
+          </div>
+        </div>
 
-        <section className="profile-form-card">
-          <p className="section-label">Ajustes principales</p>
-          <h1>Actualizar perfil</h1>
-          <p className="section-copy">Mantener tus datos claros ayuda a que el perfil se perciba mas confiable.</p>
+        <AlertMessage message={message || serverError} />
 
-          <AlertMessage message={message || serverError} />
+        <form id="basic-profile-edit-form" onSubmit={handleSubmit} className="form-stack">
+          <ProfilePhotoInput preview={preview} error={photoError} onFileChange={handlePhotoChange} />
 
-          <form onSubmit={handleSubmit} className="form-stack">
-            <ProfilePhotoInput preview={preview} error={photoError} onFileChange={handlePhotoChange} />
-
+          <div className="workspace-form-grid">
             <FormInput
               label="Nombre(s)"
               value={nombres}
@@ -188,38 +217,48 @@ const preview = useMemo(() => {
               title={onlyLettersMessage}
               inputMode="text"
             />
-            <FormInput
-              label="Profesion o titulo"
-              value={profesion}
-              onChange={handleProfesionChange}
-              error={errors.profesion}
-              pattern={lettersPattern}
-              title={onlyLettersMessage}
-              inputMode="text"
-            />
+          </div>
 
-            <FormTextarea
-              label="Resumen profesional"
-              value={biografia}
-              onChange={handleBiografiaChange}
-              error={errors.biografia}
-              maxLength={500}
-              placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
-            />
+          <FormInput
+            label="Profesion o titulo"
+            value={profesion}
+            onChange={handleProfesionChange}
+            error={errors.profesion}
+            pattern={lettersPattern}
+            title={onlyLettersMessage}
+            inputMode="text"
+          />
 
+<<<<<<< HEAD
             <div className="form-actions-row">
               <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>
                 Cancelar
               </button>
+=======
+          <FormTextarea
+            label="Biografia"
+            value={biografia}
+            onChange={handleBiografiaChange}
+            error={errors.biografia}
+            maxLength={500}
+            placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
+          />
 
-              <button type="submit" className="btn btn-primary">
-                Guardar cambios
-              </button>
-            </div>
-          </form>
-        </section>
-      </div>
-    </div>
+          <BioCounter count={biografia.length} />
+>>>>>>> origin/feature/login
+
+          <div className="form-actions-row">
+            <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>
+              Cancelar
+            </button>
+
+            <button type="submit" className="btn btn-primary">
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+      </section>
+    </PrivateWorkspaceLayout>
   );
 }
 

@@ -37,7 +37,7 @@ export default function LoginPage() {
     try {
       const data = await loginUser({ correo, contrasena });
       authStore.setSession(data.token, data.usuario);
-      navigate(redirectTo);
+      navigate(data.redirect_to || redirectTo);
     } catch (error: any) {
       const msg = error?.response?.data?.message || "Credenciales incorrectas.";
       setServerError(msg);

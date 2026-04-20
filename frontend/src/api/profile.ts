@@ -31,6 +31,11 @@ export const getPublicProfiles = async () => {
   return data;
 };
 
+export const getPublicProfileBySlug = async (slug: string) => {
+  const { data } = await api.get(`/perfiles-publicos/${slug}`);
+  return data;
+};
+
 export const updateBasicProfile = async (payload: BasicProfilePayload) => {
   const formData = new FormData();
   formData.append("_method", "PUT");

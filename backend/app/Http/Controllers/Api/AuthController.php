@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Sesion;
@@ -50,15 +51,26 @@ class AuthController extends Controller
             ], 422);
         }
 
+        if ($usuario->debe_cambiar_contrasena && $usuario->contrasena_temporal_expira_en && Carbon::parse($usuario->contrasena_temporal_expira_en)->isPast()) {
+            return response()->json([
+                'message' => 'La contrasena temporal expiro. Solicita una nueva recuperacion.',
+            ], 403);
+        }
+
         $sesion = $this->createSession($usuario, $request);
 
+        $requiereCambio = (bool) $usuario->debe_cambiar_contrasena;
+
         return response()->json([
-            'message' => 'Inicio de sesión exitoso.',
+            'message' => 'Inicio de sesion exitoso.',
             'token' => $sesion->token,
+            'requiere_cambio_contrasena' => $requiereCambio,
+            'redirect_to' => $requiereCambio ? '/perfil/cambiar-contrasena' : null,
             'usuario' => [
                 'id' => $usuario->id,
                 'correo' => $usuario->correo,
                 'estado' => $usuario->estado,
+                'debe_cambiar_contrasena' => $requiereCambio,
             ],
         ]);
     }
@@ -72,6 +84,39 @@ class AuthController extends Controller
         ]);
     }
 
+    public function changePassword(ChangePasswordRequest $request)
+    {
+        /** @var Usuario $usuario */
+        $usuario = $request->attributes->get('auth_usuario');
+
+        if (!Hash::check($request->contrasena_actual, $usuario->contrasena)) {
+            return response()->json([
+                'message' => 'La contrasena actual no es correcta.',
+            ], 422);
+        }
+
+        $usuario->contrasena = Hash::make($request->contrasena_nueva);
+        $usuario->debe_cambiar_contrasena = false;
+        $usuario->contrasena_temporal_expira_en = null;
+        $usuario->recuperacion_solicitada_en = null;
+        $usuario->actualizado_en = now();
+        $usuario->save();
+
+        $sesionActual = $request->attributes->get('auth_sesion');
+
+        $this->invalidateUserSessions($usuario->id, $sesionActual?->id);
+
+        return response()->json([
+            'message' => 'Contrasena actualizada correctamente.',
+            'usuario' => [
+                'id' => $usuario->id,
+                'correo' => $usuario->correo,
+                'estado' => $usuario->estado,
+                'debe_cambiar_contrasena' => false,
+            ],
+        ]);
+    }
+
     public function logout(Request $request)
     {
         $sesion = $request->attributes->get('auth_sesion');
@@ -81,9 +126,10 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'Sesión cerrada correctamente.'
+            'message' => 'Sesion cerrada correctamente.'
         ]);
     }
+
     private function createSession(Usuario $usuario, Request $request): Sesion
     {
         return Sesion::create([
@@ -96,5 +142,16 @@ class AuthController extends Controller
             'creado_en' => now(),
             'actualizado_en' => now(),
         ]);
+    }
+
+    private function invalidateUserSessions(int $usuarioId, ?int $exceptSessionId = null): void
+    {
+        $query = Sesion::where('usuario_id', $usuarioId);
+
+        if ($exceptSessionId) {
+            $query->where('id', '!=', $exceptSessionId);
+        }
+
+        $query->delete();
     }
 }

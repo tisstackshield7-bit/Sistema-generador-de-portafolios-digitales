@@ -17,7 +17,7 @@ class EnsureAuthenticated
 
         if (!$header || !str_starts_with($header, 'Bearer ')) {
             return response()->json([
-                'message' => 'Debe iniciar sesión para acceder a las funciones privadas de su cuenta.'
+                'message' => 'Debe iniciar sesion para acceder a las funciones privadas de su cuenta.'
             ], 401);
         }
 
@@ -27,13 +27,13 @@ class EnsureAuthenticated
 
         if (!$sesion) {
             return response()->json([
-                'message' => 'Debe iniciar sesión para acceder a las funciones privadas de su cuenta.'
+                'message' => 'Debe iniciar sesion para acceder a las funciones privadas de su cuenta.'
             ], 401);
         }
 
         if ($sesion->fecha_expiracion && Carbon::parse($sesion->fecha_expiracion)->isPast()) {
             return response()->json([
-                'message' => 'La sesión ha expirado. Inicie sesión nuevamente.'
+                'message' => 'La sesion ha expirado. Inicie sesion nuevamente.'
             ], 401);
         }
 
@@ -41,7 +41,7 @@ class EnsureAuthenticated
 
         if (!$usuario) {
             return response()->json([
-                'message' => 'Debe iniciar sesión para acceder a las funciones privadas de su cuenta.'
+                'message' => 'Debe iniciar sesion para acceder a las funciones privadas de su cuenta.'
             ], 401);
         }
 

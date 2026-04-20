@@ -12,6 +12,8 @@ class Perfil extends Model
 
     protected $fillable = [
         'usuario_id',
+        'nombres',
+        'apellidos',
         'nombre_completo',
         'profesion',
         'titular_profesional',
@@ -31,5 +33,10 @@ class Perfil extends Model
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
+    public function habilidades()
+    {
+        return $this->hasMany(Habilidad::class, 'perfil_id');
     }
 }

@@ -9,6 +9,10 @@ export const authStore = {
     localStorage.setItem("usuario", JSON.stringify(usuario));
   },
 
+  updateUser(usuario: UsuarioAuth) {
+    localStorage.setItem("usuario", JSON.stringify(usuario));
+  },
+
   clearSession() {
     localStorage.removeItem("token");
     localStorage.removeItem("usuario");

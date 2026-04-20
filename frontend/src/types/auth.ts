@@ -12,6 +12,7 @@ export interface UsuarioAuth {
   id: number;
   correo: string;
   estado: string;
+  debe_cambiar_contrasena?: boolean;
 }
 
 export interface AuthResponse {
@@ -20,4 +21,5 @@ export interface AuthResponse {
   usuario: UsuarioAuth;
   redirect_to?: string;
   usuario_id?: number;
+  requiere_cambio_contrasena?: boolean;
 }
