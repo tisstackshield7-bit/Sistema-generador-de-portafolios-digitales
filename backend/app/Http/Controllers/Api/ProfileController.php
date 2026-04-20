@@ -14,6 +14,7 @@ class ProfileController extends Controller
     public function storeBasic(StoreBasicProfileRequest $request)
     {
         $usuario = $request->attributes->get('auth_usuario');
+        $correo = trim((string) ($request->correo ?: $usuario->correo));
 
         $nombreCompleto = trim($request->nombres . ' ' . $request->apellidos);
 
@@ -26,18 +27,25 @@ class ProfileController extends Controller
             $rutaFoto = $request->file('foto_perfil')->store('perfiles', 'public');
         }
 
+        $usuario->correo = $correo;
+        $usuario->actualizado_en = now();
+        $usuario->save();
+
         $perfil = Perfil::create([
             'usuario_id' => $usuario->id,
             'nombre_completo' => $nombreCompleto,
             'profesion' => $request->profesion,
             'titular_profesional' => $request->profesion,
             'biografia' => $request->biografia,
+            'telefono' => $request->telefono,
             'foto_perfil' => $rutaFoto,
             'es_publico' => true,
             'slug' => $slug,
             'creado_en' => now(),
             'actualizado_en' => now(),
         ]);
+
+        $perfil->setAttribute('correo', $usuario->correo);
 
         return response()->json([
             'message' => 'Información básica guardada correctamente.',
@@ -50,6 +58,10 @@ class ProfileController extends Controller
         $usuario = $request->attributes->get('auth_usuario');
 
         $perfil = Perfil::where('usuario_id', $usuario->id)->first();
+
+        if ($perfil) {
+            $perfil->setAttribute('correo', $usuario->correo);
+        }
 
         return response()->json([
             'perfil' => $perfil,
@@ -64,10 +76,15 @@ class ProfileController extends Controller
 
         $nombreCompleto = trim($request->nombres . ' ' . $request->apellidos);
 
+        $usuario->correo = trim((string) ($request->correo ?: $usuario->correo));
+        $usuario->actualizado_en = now();
+        $usuario->save();
+
         $perfil->nombre_completo = $nombreCompleto;
         $perfil->profesion = $request->profesion;
         $perfil->titular_profesional = $request->profesion;
         $perfil->biografia = $request->biografia;
+        $perfil->telefono = $request->telefono;
 
         if ($request->hasFile('foto_perfil')) {
             $perfil->foto_perfil = $request->file('foto_perfil')->store('perfiles', 'public');
@@ -75,6 +92,7 @@ class ProfileController extends Controller
 
         $perfil->actualizado_en = now();
         $perfil->save();
+        $perfil->setAttribute('correo', $usuario->correo);
 
         return response()->json([
             'message' => 'Información actualizada correctamente.',

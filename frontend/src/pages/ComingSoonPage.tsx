@@ -7,7 +7,7 @@ export default function ComingSoonPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#ffffff",
+        background: "var(--surface)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -21,11 +21,11 @@ export default function ComingSoonPage() {
           textAlign: "center",
         }}
       >
-        <p style={{ margin: "0 0 12px", color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <p style={{ margin: "0 0 12px", color: "var(--text-muted)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
           PortaFolioPro
         </p>
-        <h1 style={{ margin: "0 0 16px", fontSize: "44px", color: "#0f172a" }}>P&aacute;gina en proceso</h1>
-        <p style={{ margin: "0 0 28px", color: "#475569", fontSize: "18px", lineHeight: 1.6 }}>
+        <h1 style={{ margin: "0 0 16px", fontSize: "44px", color: "var(--text)" }}>P&aacute;gina en proceso</h1>
+        <p style={{ margin: "0 0 28px", color: "var(--text-secondary)", fontSize: "18px", lineHeight: 1.6 }}>
           Esta secci&oacute;n todav&iacute;a est&aacute; en construcci&oacute;n.
         </p>
         <button
@@ -34,8 +34,8 @@ export default function ComingSoonPage() {
             padding: "14px 24px",
             borderRadius: "12px",
             border: "none",
-            background: "#10367D",
-            color: "#ffffff",
+            background: "var(--primary)",
+            color: "white",
             fontWeight: 700,
             cursor: "pointer",
           }}

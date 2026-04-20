@@ -11,7 +11,7 @@ export default function PrivateRoute({ children }: Props) {
 
   if (!authStore.isAuthenticated()) {
     authStore.setRedirectNotice(
-      "Debe iniciar sesi髇 para acceder a esta secci髇.",
+      "Debe iniciar sesi贸n para acceder a esta secci贸n.",
       location.pathname,
     );
 
@@ -20,7 +20,7 @@ export default function PrivateRoute({ children }: Props) {
         to="/login"
         replace
         state={{
-          message: "Debe iniciar sesi髇 para acceder a esta secci髇.",
+          message: "Debe iniciar sesi贸n para acceder a esta secci贸n.",
           from: location.pathname,
         }}
       />

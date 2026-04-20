@@ -82,7 +82,7 @@ export default function ProfileViewPage() {
           </header>
 
           <section className="profile-main-card">
-            <div className="profile-section">
+              <div className="profile-section">
               <div className="section-head">
                 <div>
                   <p className="section-label">Resumen profesional</p>
@@ -99,6 +99,8 @@ export default function ProfileViewPage() {
             <p className="section-label">Informacion</p>
             <ul className="side-detail-list">
               <li>Profesion: {perfil.profesion}</li>
+              <li>Correo: {perfil.correo || "No registrado"}</li>
+              <li>Celular: {perfil.telefono || "No registrado"}</li>
               <li>Ubicacion: La Paz, Bolivia</li>
               <li>Estado: Perfil activo</li>
             </ul>

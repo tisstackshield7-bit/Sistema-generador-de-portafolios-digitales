@@ -7,8 +7,8 @@ import {
   updateSkill,
 } from "../../api/skills";
 import SkillFormModal from "../../components/skills/SkillFormModal";
+import DashboardSidebar from "../../components/common/DashboardSidebar";
 import type { CreateSkillPayload, Skill, UpdateSkillPayload } from "../../types/skill";
-import { useNavigate } from "react-router-dom";
 
 const categoryOptions = [
   "Frontend",
@@ -22,7 +22,6 @@ const categoryOptions = [
 ];
 
 export default function SkillsPage() {
-  const navigate = useNavigate();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [tab, setTab] = useState<"tecnica" | "blanda">("tecnica");
   const [loading, setLoading] = useState(true);
@@ -114,33 +113,8 @@ export default function SkillsPage() {
   };
 
   return (
-    <div className="skills-page-shell">
-      <aside className="skills-sidebar">
-        <div className="skills-brand">Portfolio Pro</div>
-
-        <nav className="skills-sidebar-nav">
-          <button type="button" className="skills-nav-item" onClick={() => navigate("/")}>
-            Dashboard
-          </button>
-          <button type="button" className="skills-nav-item" onClick={() => navigate("/en-proceso")}>
-            Proyectos
-          </button>
-          <button type="button" className="skills-nav-item skills-nav-item--active">
-            Habilidades
-          </button>
-          <button type="button" className="skills-nav-item" onClick={() => navigate("/en-proceso")}>
-            Experiencia
-          </button>
-          <button type="button" className="skills-nav-item" onClick={() => navigate("/perfil")}>
-            Perfil
-          </button>
-        </nav>
-
-        <button type="button" className="skills-logout" onClick={() => navigate("/perfil")}>
-          Cerrar Sesión
-        </button>
-      </aside>
-
+    <div className="dashboard-with-sidebar">
+      <DashboardSidebar activePage="habilidades" />
       <main className="skills-main">
         <header className="skills-header">
           <div>
@@ -200,29 +174,29 @@ export default function SkillsPage() {
                       <div className="skills-card-actions">
                         <button
                           type="button"
-                          className="icon-btn"
+                          className="skill-action-btn"
                           onClick={() => handleToggleVisibility(skill.id)}
                           title={skill.es_visible ? "Ocultar" : "Mostrar"}
                         >
-                          {skill.es_visible ? "👁️" : "🙈"}
+                          {skill.es_visible ? "Visible" : "Oculto"}
                         </button>
 
                         <button
                           type="button"
-                          className="icon-btn"
+                          className="skill-action-btn"
                           onClick={() => openEditModal(skill)}
                           title="Editar"
                         >
-                          ✏️
+                          Editar
                         </button>
 
                         <button
                           type="button"
-                          className="icon-btn icon-btn--danger"
+                          className="skill-action-btn skill-action-btn--danger"
                           onClick={() => handleDelete(skill.id)}
                           title="Eliminar"
                         >
-                          🗑️
+                          Eliminar
                         </button>
                       </div>
                     </article>

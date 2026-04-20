@@ -5,9 +5,12 @@ import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
 import BioCounter from "../../components/profile/BioCounter";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
+import DashboardSidebar from "../../components/common/DashboardSidebar";
 import { API_ORIGIN } from "../../api/axios";
 import {
   validateBiography,
+  validateOptionalEmail,
+  validatePhone,
   validateProfilePhoto,
   validateRequired,
   sanitizeLettersAndSpaces,
@@ -20,6 +23,8 @@ export default function BasicProfileEditPage() {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [profesion, setProfesion] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [biografia, setBiografia] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
   const [existingPhoto, setExistingPhoto] = useState<string | null>(null);
@@ -31,6 +36,8 @@ export default function BasicProfileEditPage() {
     nombres?: string;
     apellidos?: string;
     profesion?: string;
+    correo?: string;
+    telefono?: string;
     biografia?: string;
   }>({});
 
@@ -50,6 +57,8 @@ export default function BasicProfileEditPage() {
         }
 
         setProfesion(perfil?.profesion || "");
+        setCorreo(perfil?.correo || "");
+        setTelefono(perfil?.telefono || "");
         setBiografia(perfil?.biografia || "");
         setExistingPhoto(perfil?.foto_perfil || null);
       } catch {
@@ -113,6 +122,22 @@ const preview = useMemo(() => {
     }));
   };
 
+  const handleCorreoChange = (value: string) => {
+    setCorreo(value);
+    setErrors((prev) => ({
+      ...prev,
+      correo: validateOptionalEmail(value),
+    }));
+  };
+
+  const handleTelefonoChange = (value: string) => {
+    setTelefono(value);
+    setErrors((prev) => ({
+      ...prev,
+      telefono: validatePhone(value),
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -120,6 +145,8 @@ const preview = useMemo(() => {
       nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
       apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
       profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
+      correo: validateOptionalEmail(correo),
+      telefono: validatePhone(telefono),
       biografia: validateBiography(biografia),
     };
 
@@ -134,6 +161,8 @@ const preview = useMemo(() => {
         nombres,
         apellidos,
         profesion,
+        correo,
+        telefono,
         biografia,
         foto_perfil: foto,
       });
@@ -146,20 +175,14 @@ const preview = useMemo(() => {
   };
 
   return (
-    <div className="profile-form-shell app-shell">
-      <div className="page-section profile-form-grid">
-        <aside className="surface-card profile-form-aside">
-          <p className="section-label">Editar perfil</p>
-          <h1 className="section-title">Mantén tu presencia profesional al dia.</h1>
-          <p className="section-copy">
-            Ajusta tu informacion principal para que la vista publica se vea mas solida y coherente.
-          </p>
-          <ul>
-            <li>Refuerza tu titular profesional.</li>
-            <li>Haz tu resumen mas claro y concreto.</li>
-            <li>Usa una foto actual para mejorar reconocimiento.</li>
-          </ul>
-        </aside>
+    <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", minHeight: "100vh", background: "#f4f2ef" }}>
+      <DashboardSidebar activePage="perfil" />
+      
+      <div style={{ padding: "32px" }}>
+        <section className="surface-card profile-form-aside" style={{ marginBottom: "24px" }}>
+          <p className="section-label">Perfil</p>
+          <h1 className="section-title">Gestiona tu información personal y profesional</h1>
+        </section>
 
         <section className="profile-form-card">
           <p className="section-label">Ajustes principales</p>
@@ -197,6 +220,26 @@ const preview = useMemo(() => {
               pattern={lettersPattern}
               title={onlyLettersMessage}
               inputMode="text"
+            />
+
+            <FormInput
+              label="Correo electronico"
+              type="email"
+              value={correo}
+              onChange={handleCorreoChange}
+              error={errors.correo}
+              inputMode="email"
+              placeholder="tu-correo@ejemplo.com"
+            />
+
+            <FormInput
+              label="Numero de celular"
+              type="tel"
+              value={telefono}
+              onChange={handleTelefonoChange}
+              error={errors.telefono}
+              inputMode="tel"
+              placeholder="Ej. +591 70000000"
             />
 
             <FormTextarea

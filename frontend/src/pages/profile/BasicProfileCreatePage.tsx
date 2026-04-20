@@ -7,6 +7,7 @@ import BioCounter from "../../components/profile/BioCounter";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import {
   validateBiography,
+  validatePhone,
   validateProfilePhoto,
   validateRequired,
   sanitizeLettersAndSpaces,
@@ -19,6 +20,7 @@ export default function BasicProfileCreatePage() {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [profesion, setProfesion] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [biografia, setBiografia] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
   const [photoError, setPhotoError] = useState("");
@@ -28,6 +30,7 @@ export default function BasicProfileCreatePage() {
     nombres?: string;
     apellidos?: string;
     profesion?: string;
+    telefono?: string;
     biografia?: string;
   }>({});
 
@@ -80,6 +83,14 @@ export default function BasicProfileCreatePage() {
     }));
   };
 
+  const handleTelefonoChange = (value: string) => {
+    setTelefono(value);
+    setErrors((prev) => ({
+      ...prev,
+      telefono: validatePhone(value),
+    }));
+  };
+
   const handleVolver = () => {
     navigate("/register");
   };
@@ -91,6 +102,7 @@ export default function BasicProfileCreatePage() {
       nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
       apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
       profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
+      telefono: validatePhone(telefono),
       biografia: validateBiography(biografia),
     };
 
@@ -104,6 +116,7 @@ export default function BasicProfileCreatePage() {
         nombres,
         apellidos,
         profesion,
+        telefono,
         biografia,
         foto_perfil: foto,
       });
@@ -171,6 +184,16 @@ export default function BasicProfileCreatePage() {
               title={onlyLettersMessage}
               inputMode="text"
               placeholder="Ej. Ingeniero de sistemas"
+            />
+
+            <FormInput
+              label="Numero de celular"
+              type="tel"
+              value={telefono}
+              onChange={handleTelefonoChange}
+              error={errors.telefono}
+              inputMode="tel"
+              placeholder="Ej. +591 70000000"
             />
 
             <FormTextarea

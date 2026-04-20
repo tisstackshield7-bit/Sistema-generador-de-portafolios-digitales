@@ -25,6 +25,11 @@ export default function SkillFormModal({
   const [nivel, setNivel] = useState<"basico" | "intermedio" | "avanzado">("intermedio");
   const [esVisible, setEsVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [errors, setErrors] = useState<{
+    nombre?: string;
+    categoria?: string;
+  }>({});
 
   useEffect(() => {
     if (mode === "edit" && initialSkill) {
@@ -32,6 +37,8 @@ export default function SkillFormModal({
       setCategoria(initialSkill.categoria ?? "");
       setNivel(initialSkill.nivel);
       setEsVisible(initialSkill.es_visible);
+      setFormError("");
+      setErrors({});
       return;
     }
 
@@ -39,6 +46,8 @@ export default function SkillFormModal({
     setCategoria("");
     setNivel("intermedio");
     setEsVisible(false);
+    setFormError("");
+    setErrors({});
   }, [mode, initialSkill, isOpen]);
 
   if (!isOpen) return null;
@@ -47,8 +56,22 @@ export default function SkillFormModal({
     e.preventDefault();
 
     if (mode === "create") {
-      if (!nombre.trim()) return;
-      if (skillType === "tecnica" && !categoria.trim()) return;
+      const nextErrors = {
+        nombre: !nombre.trim() ? "El nombre de la habilidad es obligatorio." : "",
+        categoria:
+          skillType === "tecnica" && !categoria.trim()
+            ? "La categoria es obligatoria para una habilidad tecnica."
+            : "",
+      };
+
+      setErrors(nextErrors);
+
+      if (nextErrors.nombre || nextErrors.categoria) {
+        setFormError("Completa los campos obligatorios antes de guardar la habilidad.");
+        return;
+      }
+
+      setFormError("");
 
       const payload: CreateSkillPayload = {
         nombre: nombre.trim(),
@@ -90,29 +113,41 @@ export default function SkillFormModal({
             <h3>
               {mode === "create"
                 ? skillType === "tecnica"
-                  ? "Nueva Habilidad Técnica"
+                  ? "Nueva Habilidad Tecnica"
                   : "Nueva Habilidad Blanda"
                 : "Editar Habilidad"}
             </h3>
             <p>
               {skillType === "tecnica"
-                ? "Agrega una nueva habilidad a tu portafolio y organízala por categoría"
+                ? "Agrega una nueva habilidad a tu portafolio y organizala por categoria"
                 : "Agrega una nueva habilidad a tu portafolio"}
             </p>
           </div>
 
           <button type="button" className="skill-close-btn" onClick={onClose}>
-            ×
+            x
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="skill-form">
+          {formError ? <p className="skill-form-error">{formError}</p> : null}
+
           <label className="skill-label">
             Nombre de la Habilidad *
             <input
-              className="skill-input"
+              className={`skill-input${errors.nombre ? " skill-input--error" : ""}`}
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setNombre(value);
+                setErrors((prev) => ({
+                  ...prev,
+                  nombre: value.trim() ? "" : prev.nombre,
+                }));
+                if (value.trim()) {
+                  setFormError("");
+                }
+              }}
               disabled={mode === "edit"}
               placeholder={
                 skillType === "tecnica"
@@ -120,24 +155,36 @@ export default function SkillFormModal({
                   : "Ej: Trabajo en equipo, Liderazgo"
               }
             />
+            {errors.nombre ? <span className="skill-field-error">{errors.nombre}</span> : null}
           </label>
 
           {skillType === "tecnica" && (
             <label className="skill-label">
-              Categoría *
+              Categoria *
               <select
-                className="skill-input"
+                className={`skill-input${errors.categoria ? " skill-input--error" : ""}`}
                 value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCategoria(value);
+                  setErrors((prev) => ({
+                    ...prev,
+                    categoria: value.trim() ? "" : prev.categoria,
+                  }));
+                  if (value.trim()) {
+                    setFormError("");
+                  }
+                }}
                 disabled={mode === "edit"}
               >
-                <option value="">Selecciona una categoría</option>
+                <option value="">Selecciona una categoria</option>
                 {categoryOptions.map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
                 ))}
               </select>
+              {errors.categoria ? <span className="skill-field-error">{errors.categoria}</span> : null}
             </label>
           )}
 
@@ -148,7 +195,7 @@ export default function SkillFormModal({
               value={nivel}
               onChange={(e) => setNivel(e.target.value as typeof nivel)}
             >
-              <option value="basico">Básico</option>
+              <option value="basico">Basico</option>
               <option value="intermedio">Intermedio</option>
               <option value="avanzado">Avanzado</option>
             </select>
@@ -156,8 +203,8 @@ export default function SkillFormModal({
 
           <div className="skill-visibility-box">
             <div>
-              <strong>Visible en portafolio público</strong>
-              <p>Controla si esta habilidad aparece en tu portafolio público</p>
+              <strong>Visible en portafolio publico</strong>
+              <p>Controla si esta habilidad aparece en tu portafolio publico</p>
             </div>
 
             <label className="skill-switch">

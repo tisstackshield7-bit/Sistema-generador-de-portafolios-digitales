@@ -8,20 +8,21 @@
   -moz-osx-font-smoothing: grayscale;
   --bg: #EBEBEB;
   --surface: #ffffff;
-  --surface-muted: #EBEBEB;
-  --surface-strong: #A5C0E0;
+  --surface-muted: #F2F4F8;
+  --surface-strong: rgba(165, 192, 224, 0.24);
   --text: #111827;
-  --text-secondary: #5b6474;
-  --text-muted: #7b8494;
-  --border: #D6D9DE;
-  --border-strong: #A5C0E0;
+  --text-secondary: #4b5f7f;
+  --text-muted: #64748b;
+  --border: rgba(16, 54, 125, 0.12);
+  --border-strong: rgba(16, 54, 125, 0.22);
   --primary: #10367D;
   --primary-strong: #0D2B64;
   --primary-soft: #A5C0E0;
+  --primary-faint: rgba(165, 192, 224, 0.18);
   --success: #0f9f6e;
   --danger: #c2410c;
-  --shadow-sm: 0 10px 25px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 20px 45px rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 14px 40px rgba(16, 54, 125, 0.12);
+  --shadow-md: 0 20px 60px rgba(16, 54, 125, 0.16);
   --radius-sm: 12px;
   --radius-md: 16px;
   --radius-lg: 20px;
@@ -49,8 +50,8 @@ body {
   font-family: inherit;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(165, 192, 224, 0.24), transparent 30%),
-    linear-gradient(180deg, #F4F4F4 0%, #EBEBEB 48%, #E3E7ED 100%);
+    radial-gradient(circle at top left, rgba(165, 192, 224, 0.24), transparent 28%),
+    linear-gradient(180deg, var(--bg) 0%, #E8EDF7 45%, #D9E3F4 100%);
 }
 
 button,
@@ -85,7 +86,7 @@ img {
 
 .surface-card {
   background: var(--surface);
-  border: 1px solid rgba(203, 214, 228, 0.7);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
@@ -141,7 +142,7 @@ img {
 
 .btn-primary {
   background: var(--primary);
-  color: #fff;
+  color: white;
   box-shadow: 0 10px 22px rgba(16, 54, 125, 0.22);
 }
 
@@ -157,7 +158,7 @@ img {
 
 .btn-secondary:hover {
   border-color: var(--border-strong);
-  background: #F4F4F4;
+  background: var(--surface-muted);
 }
 
 .btn-tertiary {
@@ -225,7 +226,7 @@ img {
   outline: none;
   border-color: var(--primary-soft);
   box-shadow: 0 0 0 4px rgba(165, 192, 224, 0.35);
-  background: #fff;
+  background: var(--surface);
 }
 
 .form-input.error,
@@ -510,7 +511,7 @@ img {
   background:
     linear-gradient(135deg, rgba(16, 54, 125, 0.95), rgba(165, 192, 224, 0.92)),
     linear-gradient(180deg, #10367D, #A5C0E0);
-  color: #fff;
+  color: white;
 }
 
 .profile-cover::after {
@@ -602,7 +603,7 @@ img {
 }
 
 .cover-tertiary {
-  color: #fff;
+  color: white;
 }
 
 .profile-section {
