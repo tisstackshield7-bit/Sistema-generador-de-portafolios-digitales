@@ -176,11 +176,6 @@ export default function HomePage() {
               <h2 className="section-title">Crea una presencia profesional mas ordenada.</h2>
               <p className="section-copy">Registra tu cuenta y completa tu perfil con una interfaz mas cuidada.</p>
             </div>
-            <div className="cta-actions">
-              <button className="btn btn-primary btn-block" onClick={() => navigate("/register")}>
-                Registrarte
-              </button>
-            </div>
           </section>
         </aside>
       </div>

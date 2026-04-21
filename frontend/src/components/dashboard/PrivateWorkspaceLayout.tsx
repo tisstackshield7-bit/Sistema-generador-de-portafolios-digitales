@@ -91,10 +91,6 @@ export default function PrivateWorkspaceLayout({ active, perfil, title, subtitle
               <strong>{perfil?.nombre_completo || "Mi cuenta"}</strong>
               <span>{perfil?.profesion || "Perfil profesional"}</span>
             </div>
-            <button type="button" className="workspace-logout" onClick={handleLogout}>
-              <WorkspaceIcon kind="logout" />
-              <span>Salir</span>
-            </button>
           </div>
         </div>
       </header>

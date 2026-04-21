@@ -77,6 +77,11 @@ export default function LoginPage() {
       </form>
 
       <div className="auth-links-row">
+        <span className="meta-text">Quieres volver?</span>
+        <Link to="/">Volver al inicio</Link>
+      </div>
+
+      <div className="auth-links-row">
         <span className="meta-text">Aun no tienes cuenta?</span>
         <Link to="/register">Registrarte</Link>
       </div>
