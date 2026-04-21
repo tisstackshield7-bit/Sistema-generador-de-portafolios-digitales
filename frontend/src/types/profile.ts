@@ -4,6 +4,7 @@ export interface BasicProfilePayload {
   nombres: string;
   apellidos: string;
   profesion: string;
+  telefono?: string;
   biografia: string;
   foto_perfil?: File | null;
 }
@@ -17,6 +18,7 @@ export interface Perfil {
   profesion: string;
   titular_profesional?: string | null;
   biografia: string;
+  telefono?: string | null;
   foto_perfil?: string | null;
   slug: string;
   habilidades?: Skill[];
@@ -28,6 +30,7 @@ export interface PublicProfileCard {
   profesion: string;
   titular_profesional?: string | null;
   biografia: string;
+  telefono?: string | null;
   foto_perfil?: string | null;
   slug: string;
   habilidades?: Skill[];

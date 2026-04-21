@@ -4,9 +4,10 @@ type Props = {
   preview: string | null;
   error?: string;
   onFileChange: (file: File | null) => void;
+  onBlur?: () => void;
 };
 
-export default function ProfilePhotoInput({ preview, error, onFileChange }: Props) {
+export default function ProfilePhotoInput({ preview, error, onFileChange, onBlur }: Props) {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     onFileChange(file);
@@ -26,7 +27,13 @@ export default function ProfilePhotoInput({ preview, error, onFileChange }: Prop
           <p className="form-help">JPG, PNG o WEBP. Tamano maximo de 5 MB.</p>
         </div>
       </div>
-      <input className={`form-file${error ? " error" : ""}`} type="file" accept=".jpg,.jpeg,.png,.webp" onChange={handleChange} />
+      <input
+        className={`form-file${error ? " error" : ""}`}
+        type="file"
+        accept=".jpg,.jpeg,.png,.webp"
+        onChange={handleChange}
+        onBlur={onBlur}
+      />
       {error ? <p className="form-error">{error}</p> : null}
     </div>
   );

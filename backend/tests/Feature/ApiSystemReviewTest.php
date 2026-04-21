@@ -7,7 +7,7 @@ use App\Models\Perfil;
 use App\Models\Sesion;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -28,7 +28,7 @@ class ApiSystemReviewTest extends TestCase
 
     public function test_forgot_password_does_not_reveal_if_email_exists(): void
     {
-        Mail::fake();
+        Notification::fake();
 
         $response = $this->postJson('/api/auth/forgot-password', [
             'correo' => 'desconocido@example.com',
@@ -36,15 +36,15 @@ class ApiSystemReviewTest extends TestCase
 
         $response->assertOk()
             ->assertJson([
-                'message' => 'Si el correo existe, se envio una contrasena temporal.',
+                'message' => 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.',
             ]);
 
-        Mail::assertNothingSent();
+        Notification::assertNothingSent();
     }
 
     public function test_forgot_password_sets_temporary_password_flags(): void
     {
-        Mail::fake();
+        Notification::fake();
 
         $usuario = $this->createUsuario('recovery@example.com');
 
@@ -53,19 +53,19 @@ class ApiSystemReviewTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('message', 'Si el correo existe, se envio una contrasena temporal.');
+            ->assertJsonPath('message', 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.');
 
         $usuario->refresh();
 
         $this->assertTrue((bool) $usuario->debe_cambiar_contrasena);
         $this->assertNotNull($usuario->contrasena_temporal_expira_en);
         $this->assertNotNull($usuario->recuperacion_solicitada_en);
-        $this->assertNotEmpty($response->json('contrasena_temporal_prueba'));
+        Notification::assertSentTo($usuario, \App\Notifications\TemporaryPasswordNotification::class);
     }
 
     public function test_login_with_temporary_password_requires_change(): void
     {
-        Mail::fake();
+        Notification::fake();
 
         $usuario = $this->createUsuario('temporary-login@example.com');
 
@@ -73,7 +73,7 @@ class ApiSystemReviewTest extends TestCase
             'correo' => $usuario->correo,
         ]);
 
-        $temporaryPassword = $response->json('contrasena_temporal_prueba');
+        $temporaryPassword = $this->extractTemporaryPasswordFromNotification($usuario);
 
         $this->postJson('/api/auth/login', [
             'correo' => $usuario->correo,
@@ -84,9 +84,37 @@ class ApiSystemReviewTest extends TestCase
             ->assertJsonPath('usuario.debe_cambiar_contrasena', true);
     }
 
+    public function test_login_without_profile_redirects_to_profile_creation(): void
+    {
+        $usuario = $this->createUsuario('pending-profile@example.com');
+
+        $this->postJson('/api/auth/login', [
+            'correo' => $usuario->correo,
+            'contrasena' => 'Password1!',
+        ])->assertOk()
+            ->assertJsonPath('redirect_to', '/perfil/crear')
+            ->assertJsonPath('usuario.debe_cambiar_contrasena', false);
+    }
+
+    public function test_login_with_existing_profile_does_not_force_profile_creation(): void
+    {
+        [, $token] = $this->createPerfilConSesion('ready-profile@example.com', str_repeat('z', 80), 'perfil-listo');
+
+        $response = $this->postJson('/api/auth/login', [
+            'correo' => 'ready-profile@example.com',
+            'contrasena' => 'Password1!',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('redirect_to', null)
+            ->assertJsonPath('usuario.debe_cambiar_contrasena', false);
+
+        $this->assertNotSame($token, $response->json('token'));
+    }
+
     public function test_authenticated_user_can_change_temporary_password(): void
     {
-        Mail::fake();
+        Notification::fake();
 
         $usuario = $this->createUsuario('change-pass@example.com');
 
@@ -94,7 +122,7 @@ class ApiSystemReviewTest extends TestCase
             'correo' => $usuario->correo,
         ]);
 
-        $temporaryPassword = $response->json('contrasena_temporal_prueba');
+        $temporaryPassword = $this->extractTemporaryPasswordFromNotification($usuario);
 
         $login = $this->postJson('/api/auth/login', [
             'correo' => $usuario->correo,
@@ -144,6 +172,7 @@ class ApiSystemReviewTest extends TestCase
             'nombre_completo' => 'Juan Perez Gomez',
             'profesion' => 'Ingeniero de Sistemas',
             'titular_profesional' => 'Ingeniero de Sistemas',
+            'telefono' => '71234567',
             'biografia' => 'Biografia inicial suficientemente larga.',
             'es_publico' => true,
             'slug' => 'juan-perez-gomez',
@@ -156,6 +185,7 @@ class ApiSystemReviewTest extends TestCase
                 'nombres' => 'Juan',
                 'apellidos' => 'Perez Gomez',
                 'profesion' => 'Ingeniero de Sistemas',
+                'telefono' => '71234567',
                 'biografia' => 'Otra biografia valida con longitud suficiente.',
             ]);
 
@@ -175,6 +205,7 @@ class ApiSystemReviewTest extends TestCase
                 'nombres' => 'Juan Carlos',
                 'apellidos' => 'Perez de la Cruz',
                 'profesion' => 'Arquitecto de Software',
+                'telefono' => '71234567',
                 'biografia' => 'Biografia valida con suficientes caracteres para pasar la validacion.',
             ]);
 
@@ -355,6 +386,7 @@ class ApiSystemReviewTest extends TestCase
             'nombre_completo' => 'Maria Lopez Garcia',
             'profesion' => 'Desarrolladora Backend',
             'titular_profesional' => 'Desarrolladora Backend',
+            'telefono' => '71234567',
             'biografia' => 'Perfil de prueba con informacion suficiente para las validaciones.',
             'es_publico' => true,
             'slug' => $slug,
@@ -377,6 +409,7 @@ class ApiSystemReviewTest extends TestCase
                 'nombre_completo' => "Nombre {$index} Apellido {$index}",
                 'profesion' => 'Desarrollador Full Stack',
                 'titular_profesional' => 'Desarrollador Full Stack',
+                'telefono' => '71234567',
                 'biografia' => "Biografia valida del perfil {$index}.",
                 'es_publico' => true,
                 'slug' => "perfil-{$index}",
@@ -384,5 +417,27 @@ class ApiSystemReviewTest extends TestCase
                 'actualizado_en' => now()->addSeconds($index),
             ]);
         }
+    }
+
+    private function extractTemporaryPasswordFromNotification(Usuario $usuario): string
+    {
+        $temporaryPassword = null;
+
+        Notification::assertSentTo(
+            $usuario,
+            \App\Notifications\TemporaryPasswordNotification::class,
+            function ($notification) use (&$temporaryPassword) {
+                $reflection = new \ReflectionClass($notification);
+                $property = $reflection->getProperty('temporaryPassword');
+                $property->setAccessible(true);
+                $temporaryPassword = $property->getValue($notification);
+
+                return !empty($temporaryPassword);
+            }
+        );
+
+        $this->assertNotEmpty($temporaryPassword);
+
+        return $temporaryPassword;
     }
 }

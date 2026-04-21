@@ -6,6 +6,7 @@ export const createBasicProfile = async (payload: BasicProfilePayload) => {
   formData.append("nombres", payload.nombres);
   formData.append("apellidos", payload.apellidos);
   formData.append("profesion", payload.profesion);
+  formData.append("telefono", payload.telefono || "");
   formData.append("biografia", payload.biografia);
 
   if (payload.foto_perfil) {
@@ -42,6 +43,7 @@ export const updateBasicProfile = async (payload: BasicProfilePayload) => {
   formData.append("nombres", payload.nombres);
   formData.append("apellidos", payload.apellidos);
   formData.append("profesion", payload.profesion);
+  formData.append("telefono", payload.telefono || "");
   formData.append("biografia", payload.biografia);
 
   if (payload.foto_perfil) {

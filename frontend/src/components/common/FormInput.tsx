@@ -5,6 +5,7 @@ type Props = {
   type?: string;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   error?: string;
   placeholder?: string;
   pattern?: string;
@@ -18,6 +19,7 @@ export default function FormInput({
   type = "text",
   value,
   onChange,
+  onBlur,
   error,
   placeholder,
   pattern,
@@ -48,6 +50,7 @@ export default function FormInput({
           title={title}
           inputMode={inputMode}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
         />
 
         {type === "password" && togglePassword ? (

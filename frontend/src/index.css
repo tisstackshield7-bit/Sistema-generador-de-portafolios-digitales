@@ -1229,6 +1229,16 @@ img {
   padding: 20px;
 }
 
+.skill-category-toggle {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
 .skill-category-head {
   display: flex;
   justify-content: space-between;
@@ -1239,6 +1249,29 @@ img {
 
 .skill-category-head h3 {
   margin: 0;
+}
+
+.skill-category-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-chevron {
+  width: 20px;
+  height: 20px;
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+
+.category-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.skill-category-toggle:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 6px;
+  border-radius: 14px;
 }
 
 .skills-card-grid {
@@ -1403,12 +1436,35 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(10px);
   font-weight: 700;
-  color: #0f172a;
+  color: #ffffff;
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .public-portfolio-brand {
   font-size: 1.02rem;
+}
+
+.public-portfolio-brand:hover,
+.public-portfolio-backlink:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+  transform: translateY(-1px);
+}
+
+.public-portfolio-brand:focus-visible,
+.public-portfolio-backlink:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.88);
+  outline-offset: 3px;
 }
 
 .public-portfolio-icon {
@@ -1430,16 +1486,8 @@ img {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 42px;
-  min-height: 440px;
-}
-
-.public-portfolio-floating-bar {
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: center;
+  min-height: 360px;
 }
 
 .public-portfolio-identity {
@@ -1497,6 +1545,7 @@ img {
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
+  gap: 10px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
@@ -1523,6 +1572,7 @@ img {
   color: #111827;
   font-weight: 700;
   box-shadow: 0 12px 22px rgba(15, 23, 42, 0.1);
+  cursor: pointer;
 }
 
 .public-tag-icon {
@@ -1619,7 +1669,290 @@ img {
   border-color: #bdd4ff;
 }
 
+.public-profile-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f7f8fb 0%, #eef1f6 100%);
+}
+
+.public-profile-layout {
+  display: grid;
+  grid-template-columns: 266px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  max-width: 990px;
+  margin: 0 auto;
+  padding-top: 24px;
+  padding-bottom: 40px;
+}
+
+.public-profile-left-column,
+.public-profile-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.public-profile-hero-card {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 14px 16px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #2a4f96 0%, #85a2d1 100%);
+  color: #ffffff;
+  box-shadow: 0 20px 42px rgba(45, 74, 130, 0.2);
+}
+
+.public-profile-hero-card::after {
+  content: "";
+  position: absolute;
+  right: -54px;
+  bottom: -64px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.public-profile-light-label {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.public-profile-hero-card h1 {
+  margin: 6px 0 0;
+  max-width: 5.5ch;
+  font-size: clamp(1.9rem, 2.6vw, 2.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.public-profile-role {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.94);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.public-profile-caption {
+  margin: 8px 0 0;
+  max-width: 18ch;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.55;
+  font-size: 0.86rem;
+}
+
+.public-profile-hero-main {
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 16px;
+}
+
+.public-profile-avatar-card {
+  width: 66px;
+  height: 66px;
+  border-radius: 18px;
+  object-fit: cover;
+  background: #ffffff;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14);
+}
+
+.public-profile-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.public-profile-stat-card {
+  min-height: 68px;
+  padding: 8px 6px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.public-profile-stat-card span {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.public-profile-stat-card strong {
+  font-size: 0.72rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.public-profile-action-stack {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.public-profile-action-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.92rem;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.1);
+}
+
+.public-profile-action-btn:hover {
+  background: #f8fafc;
+}
+
+.public-profile-action-btn span {
+  white-space: nowrap;
+}
+
+.public-card-action-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.public-profile-section-card,
+.public-profile-side-card {
+  padding: 14px;
+  border-radius: 22px;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.public-profile-section-head h2 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.public-profile-summary-box,
+.public-profile-side-item {
+  min-height: 50px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(191, 209, 235, 0.9);
+  background: #f7fbff;
+}
+
+.public-profile-summary-box p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.55;
+}
+
+.public-profile-divider {
+  width: 100%;
+  height: 1px;
+  margin: 14px 0;
+  background: rgba(203, 213, 225, 0.9);
+}
+
+.public-profile-skill-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.public-profile-skill-column {
+  min-width: 0;
+  border: 1px solid rgba(191, 209, 235, 0.85);
+  border-radius: 16px;
+  background: #fbfdff;
+  padding: 12px;
+}
+
+.public-profile-skill-column-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.public-profile-skill-column-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.public-profile-skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.public-profile-skill-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(209, 220, 239, 0.9);
+  background: #ffffff;
+}
+
+.public-profile-skill-item strong,
+.public-profile-skill-item span {
+  display: block;
+}
+
+.public-profile-skill-item > div span {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.public-profile-skill-item .skill-status-tag {
+  align-self: flex-end;
+}
+
+.public-profile-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.public-profile-side-item span {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.public-profile-side-item strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
 @media (max-width: 980px) {
+  .public-profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .public-profile-skill-columns {
+    grid-template-columns: 1fr;
+  }
+
   .public-portfolio-hero {
     padding: 18px 0 42px;
   }
@@ -1628,7 +1961,6 @@ img {
     min-height: 0;
   }
 
-  .public-portfolio-floating-bar,
   .public-portfolio-identity {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1636,10 +1968,12 @@ img {
 }
 
 @media (max-width: 640px) {
-  .public-portfolio-floating-bar {
-    min-height: 0;
-    flex-direction: column;
-    align-items: flex-start;
+  .public-profile-hero-main {
+    grid-template-columns: 1fr;
+  }
+
+  .public-profile-stat-strip {
+    grid-template-columns: 1fr;
   }
 
   .public-portfolio-avatar {

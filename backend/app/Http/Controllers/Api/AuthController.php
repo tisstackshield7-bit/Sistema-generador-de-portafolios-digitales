@@ -43,7 +43,7 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
-        $usuario = Usuario::where('correo', $request->correo)->first();
+        $usuario = Usuario::with('perfil')->where('correo', $request->correo)->first();
 
         if (!$usuario || !Hash::check($request->contrasena, $usuario->contrasena)) {
             return response()->json([
@@ -60,12 +60,19 @@ class AuthController extends Controller
         $sesion = $this->createSession($usuario, $request);
 
         $requiereCambio = (bool) $usuario->debe_cambiar_contrasena;
+        $redirectTo = null;
+
+        if ($requiereCambio) {
+            $redirectTo = '/perfil/cambiar-contrasena';
+        } elseif (!$usuario->perfil) {
+            $redirectTo = '/perfil/crear';
+        }
 
         return response()->json([
             'message' => 'Inicio de sesion exitoso.',
             'token' => $sesion->token,
             'requiere_cambio_contrasena' => $requiereCambio,
-            'redirect_to' => $requiereCambio ? '/perfil/cambiar-contrasena' : null,
+            'redirect_to' => $redirectTo,
             'usuario' => [
                 'id' => $usuario->id,
                 'correo' => $usuario->correo,

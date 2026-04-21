@@ -38,6 +38,7 @@ class ProfileController extends Controller
             'nombre_completo' => $nombreCompleto,
             'profesion' => $request->profesion,
             'titular_profesional' => $request->profesion,
+            'telefono' => $request->telefono,
             'biografia' => $request->biografia,
             'foto_perfil' => $rutaFoto,
             'es_publico' => true,
@@ -88,6 +89,7 @@ class ProfileController extends Controller
         $perfil->nombre_completo = $nombreCompleto;
         $perfil->profesion = $request->profesion;
         $perfil->titular_profesional = $request->profesion;
+        $perfil->telefono = $request->telefono;
         $perfil->biografia = $request->biografia;
 
         if ($request->hasFile('foto_perfil')) {

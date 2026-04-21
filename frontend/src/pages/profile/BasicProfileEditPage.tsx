@@ -9,6 +9,7 @@ import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceL
 import { API_ORIGIN } from "../../api/axios";
 import {
   validateBiography,
+  validateBoliviaPhone,
   validateProfilePhoto,
   validateRequired,
   sanitizeLettersAndSpaces,
@@ -40,6 +41,7 @@ export default function BasicProfileEditPage() {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [profesion, setProfesion] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [biografia, setBiografia] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
   const [existingPhoto, setExistingPhoto] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export default function BasicProfileEditPage() {
     nombres?: string;
     apellidos?: string;
     profesion?: string;
+    telefono?: string;
     biografia?: string;
   }>({});
 
@@ -71,6 +74,7 @@ export default function BasicProfileEditPage() {
         }
 
         setProfesion(perfil?.profesion || "");
+        setTelefono(perfil?.telefono || "");
         setBiografia(perfil?.biografia || "");
         setExistingPhoto(perfil?.foto_perfil || null);
       } catch {
@@ -141,6 +145,7 @@ const preview = useMemo(() => {
       nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
       apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
       profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
+      telefono: validateBoliviaPhone(telefono),
       biografia: validateBiography(biografia),
     };
 
@@ -155,6 +160,7 @@ const preview = useMemo(() => {
         nombres,
         apellidos,
         profesion,
+        telefono,
         biografia,
         foto_perfil: foto,
       });
@@ -176,12 +182,6 @@ const preview = useMemo(() => {
         <>
           <button type="button" className="btn btn-secondary" onClick={() => navigate("/perfil/cambiar-contrasena")}>
             Cambiar contrasena
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>
-            Ir al inicio
-          </button>
-          <button type="submit" form="basic-profile-edit-form" className="btn btn-primary">
-            Guardar cambios
           </button>
         </>
       )}
@@ -228,6 +228,15 @@ const preview = useMemo(() => {
             pattern={lettersPattern}
             title={onlyLettersMessage}
             inputMode="text"
+          />
+
+          <FormInput
+            label="Numero telefonico"
+            value={telefono}
+            onChange={setTelefono}
+            error={errors.telefono}
+            inputMode="tel"
+            placeholder="Ej. 71234567 o +59171234567"
           />
 
           <FormTextarea

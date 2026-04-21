@@ -1,108 +1,191 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FormInput from "../../components/common/FormInput";
 import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import {
+  sanitizeDigits,
+  sanitizeLettersAndSpaces,
   validateBiography,
+  validateBoliviaPhone,
   validateProfilePhoto,
   validateRequired,
-  sanitizeLettersAndSpaces,
 } from "../../utils/validations";
 import { createBasicProfile } from "../../api/profile";
 import "./BasicProfileCreatePage.css";
+
+type FieldName = "nombres" | "apellidos" | "profesion" | "telefono" | "biografia";
+
 export default function BasicProfileCreatePage() {
   const navigate = useNavigate();
 
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [profesion, setProfesion] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [biografia, setBiografia] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [serverError, setServerError] = useState("");
-
-  const [errors, setErrors] = useState<{
-    nombres?: string;
-    apellidos?: string;
-    profesion?: string;
-    biografia?: string;
-  }>({});
+  const [errors, setErrors] = useState<Record<FieldName, string>>({
+    nombres: "",
+    apellidos: "",
+    profesion: "",
+    telefono: "",
+    biografia: "",
+  });
+  const [touched, setTouched] = useState<Record<FieldName | "foto", boolean>>({
+    foto: false,
+    nombres: false,
+    apellidos: false,
+    profesion: false,
+    telefono: false,
+    biografia: false,
+  });
 
   const preview = useMemo(() => (foto ? URL.createObjectURL(foto) : null), [foto]);
 
   const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
+  const requiredPhotoMessage = "La foto de perfil es obligatoria.";
   const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
-  const [profesionError, setProfesionError] = useState("");
+
+  const validateField = (field: FieldName, value: string, customError = "") => {
+    if (customError) return customError;
+
+    switch (field) {
+      case "nombres":
+        return validateRequired(value, "El nombre es obligatorio.");
+      case "apellidos":
+        return validateRequired(value, "Los apellidos son obligatorios.");
+      case "profesion":
+        return validateRequired(value, "La profesion es obligatoria.");
+      case "telefono":
+        return validateBoliviaPhone(value);
+      case "biografia":
+        return validateBiography(value);
+      default:
+        return "";
+    }
+  };
+
+  const markFieldAsTouched = (field: FieldName | "foto") => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const setFieldError = (field: FieldName, value: string, customError = "") => {
+    setErrors((prev) => ({
+      ...prev,
+      [field]: validateField(field, value, customError),
+    }));
+  };
+
+  const handlePhotoChange = (file: File | null) => {
+    const nextError = !file ? requiredPhotoMessage : validateProfilePhoto(file);
+    setPhotoError(nextError);
+    setFoto(nextError ? null : file);
+  };
+
+  const handleNombresChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    const customError = value !== cleaned ? onlyLettersMessage : "";
+    setNombres(cleaned);
+
+    if (touched.nombres) {
+      setFieldError("nombres", cleaned, customError);
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, nombres: customError }));
+  };
+
+  const handleApellidosChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    const customError = value !== cleaned ? onlyLettersMessage : "";
+    setApellidos(cleaned);
+
+    if (touched.apellidos) {
+      setFieldError("apellidos", cleaned, customError);
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, apellidos: customError }));
+  };
+
+  const handleProfesionChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    const customError = value !== cleaned ? onlyLettersMessage : "";
+    setProfesion(cleaned);
+
+    if (touched.profesion) {
+      setFieldError("profesion", cleaned, customError);
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, profesion: customError }));
+  };
+
+  const handleTelefonoChange = (value: string) => {
+    const digitsOnly = sanitizeDigits(value);
+    setTelefono(digitsOnly);
+
+    if (touched.telefono) {
+      setFieldError("telefono", digitsOnly);
+    }
+  };
+
   const handleBiografiaChange = (value: string) => {
     const nextValue = value.slice(0, 500);
     setBiografia(nextValue);
+
+    if (touched.biografia) {
+      setFieldError("biografia", nextValue);
+      return;
+    }
+
     setErrors((prev) => ({
       ...prev,
       biografia: nextValue.length === 500 ? "La biografia no puede superar los 500 caracteres." : "",
     }));
   };
 
-  const handlePhotoChange = (file: File | null) => {
-    const error = validateProfilePhoto(file);
-    setPhotoError(error);
-    if (!error) setFoto(file);
-  };
-
-  const handleNombresChange = (value: string) => {
-    const cleaned = sanitizeLettersAndSpaces(value);
-    setErrors((prev) => ({
-      ...prev,
-      nombres: value !== cleaned ? onlyLettersMessage : "",
-    }));
-    setNombres(cleaned);
-  };
-
-  const handleApellidosChange = (value: string) => {
-    const cleaned = sanitizeLettersAndSpaces(value);
-    setErrors((prev) => ({
-      ...prev,
-      apellidos: value !== cleaned ? onlyLettersMessage : "",
-    }));
-    setApellidos(cleaned);
-  };
-
-  const handleProfesionChange = (value: string) => {
-    const cleaned = sanitizeLettersAndSpaces(value);
-    const fieldError = value !== cleaned ? onlyLettersMessage : "";
-    setProfesion(cleaned);
-    setProfesionError(fieldError);
-    setErrors((prev) => ({
-      ...prev,
-      profesion: fieldError,
-    }));
-  };
-
   const handleVolver = () => {
-    navigate("/register");
+    navigate("/login");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const nextErrors = {
-      nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
-      apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
-      profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
-      biografia: validateBiography(biografia),
+    const nextTouched = {
+      foto: true,
+      nombres: true,
+      apellidos: true,
+      profesion: true,
+      telefono: true,
+      biografia: true,
     };
+    const nextErrors = {
+      nombres: validateField("nombres", nombres, errors.nombres),
+      apellidos: validateField("apellidos", apellidos, errors.apellidos),
+      profesion: validateField("profesion", profesion, errors.profesion),
+      telefono: validateField("telefono", telefono),
+      biografia: validateField("biografia", biografia),
+    };
+    const nextPhotoError = foto ? validateProfilePhoto(foto) : requiredPhotoMessage;
 
+    setTouched(nextTouched);
     setErrors(nextErrors);
+    setPhotoError(nextPhotoError);
     setServerError("");
 
-    if (Object.values(nextErrors).some(Boolean) || photoError) return;
+    if (Object.values(nextErrors).some(Boolean) || nextPhotoError) return;
 
     try {
       await createBasicProfile({
         nombres,
         apellidos,
         profesion,
+        telefono,
         biografia,
         foto_perfil: foto,
       });
@@ -137,12 +220,24 @@ export default function BasicProfileCreatePage() {
           <AlertMessage message={serverError} />
 
           <form onSubmit={handleSubmit} className="form-stack">
-            <ProfilePhotoInput preview={preview} error={photoError} onFileChange={handlePhotoChange} />
+            <ProfilePhotoInput
+              preview={preview}
+              error={photoError}
+              onFileChange={handlePhotoChange}
+              onBlur={() => {
+                markFieldAsTouched("foto");
+                setPhotoError(foto ? validateProfilePhoto(foto) : requiredPhotoMessage);
+              }}
+            />
 
             <FormInput
               label="Nombre(s)"
               value={nombres}
               onChange={handleNombresChange}
+              onBlur={() => {
+                markFieldAsTouched("nombres");
+                setFieldError("nombres", nombres, errors.nombres);
+              }}
               error={errors.nombres}
               pattern={lettersPattern}
               title={onlyLettersMessage}
@@ -154,6 +249,10 @@ export default function BasicProfileCreatePage() {
               label="Apellidos"
               value={apellidos}
               onChange={handleApellidosChange}
+              onBlur={() => {
+                markFieldAsTouched("apellidos");
+                setFieldError("apellidos", apellidos, errors.apellidos);
+              }}
               error={errors.apellidos}
               pattern={lettersPattern}
               title={onlyLettersMessage}
@@ -165,6 +264,10 @@ export default function BasicProfileCreatePage() {
               label="Profesion o titulo"
               value={profesion}
               onChange={handleProfesionChange}
+              onBlur={() => {
+                markFieldAsTouched("profesion");
+                setFieldError("profesion", profesion, errors.profesion);
+              }}
               error={errors.profesion}
               pattern={lettersPattern}
               title={onlyLettersMessage}
@@ -172,10 +275,27 @@ export default function BasicProfileCreatePage() {
               placeholder="Ej. Ingeniero de sistemas"
             />
 
+            <FormInput
+              label="Numero telefonico"
+              value={telefono}
+              onChange={handleTelefonoChange}
+              onBlur={() => {
+                markFieldAsTouched("telefono");
+                setFieldError("telefono", telefono);
+              }}
+              error={errors.telefono}
+              inputMode="numeric"
+              placeholder="Ej. 71234567 o 59171234567"
+            />
+
             <FormTextarea
               label="Resumen profesional"
               value={biografia}
               onChange={handleBiografiaChange}
+              onBlur={() => {
+                markFieldAsTouched("biografia");
+                setFieldError("biografia", biografia);
+              }}
               error={errors.biografia}
               maxLength={500}
               placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
@@ -187,7 +307,7 @@ export default function BasicProfileCreatePage() {
               </button>
 
               <button type="submit" className="basic-profile-actions__submit">
-                Guardar y continuar
+                Guardar
               </button>
             </div>
           </form>
@@ -196,4 +316,3 @@ export default function BasicProfileCreatePage() {
     </div>
   );
 }
-

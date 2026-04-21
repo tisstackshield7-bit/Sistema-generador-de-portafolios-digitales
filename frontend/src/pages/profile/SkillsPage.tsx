@@ -58,6 +58,21 @@ function EyeIcon({ off = false }: { off?: boolean }) {
   );
 }
 
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={`icon-16 category-chevron ${expanded ? "expanded" : ""}`}>
+      <path
+        d="m6 9 6 6 6-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function normalizeSkillType(value: SkillType) {
   return value === "tecnica" ? "Tecnica" : "Blanda";
 }
@@ -84,6 +99,7 @@ export default function SkillsPage() {
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [technicalCategories, setTechnicalCategories] = useState<string[]>(FALLBACK_TECHNICAL_CATEGORIES);
   const [softCategories, setSoftCategories] = useState<string[]>(FALLBACK_SOFT_CATEGORIES);
   const [levels, setLevels] = useState<string[]>(FALLBACK_LEVELS);
@@ -134,6 +150,29 @@ export default function SkillsPage() {
     () => (form.tipo === "tecnica" ? technicalCategories : softCategories),
     [form.tipo, softCategories, technicalCategories],
   );
+  const activeGroups = activeTab === "tecnica" ? groupedTechnical : groupedSoft;
+
+  useEffect(() => {
+    setCollapsedCategories((prev) => {
+      const next = { ...prev };
+
+      Object.keys(groupedTechnical).forEach((category) => {
+        const key = `tecnica:${category}`;
+        if (!(key in next)) {
+          next[key] = false;
+        }
+      });
+
+      Object.keys(groupedSoft).forEach((category) => {
+        const key = `blanda:${category}`;
+        if (!(key in next)) {
+          next[key] = false;
+        }
+      });
+
+      return next;
+    });
+  }, [groupedSoft, groupedTechnical]);
 
   const openCreateForm = (tipo: SkillType) => {
     setActiveTab(tipo);
@@ -269,6 +308,14 @@ export default function SkillsPage() {
     }
   };
 
+  const toggleCategory = (category: string) => {
+    const key = `${activeTab}:${category}`;
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
   if (loading) {
     return (
       <div className="profile-page-shell app-shell">
@@ -284,12 +331,7 @@ export default function SkillsPage() {
       active="skills"
       perfil={perfil}
       title="Habilidades"
-      subtitle="Gestiona tus habilidades organizadas con el alcance de Sprint 2."
-      actions={(
-        <button className="btn btn-primary" onClick={() => openCreateForm(activeTab)}>
-          {activeTab === "tecnica" ? "+ Nueva Habilidad Tecnica" : "+ Nueva Habilidad Blanda"}
-        </button>
-      )}
+      subtitle=""
     >
       <div className="skills-page">
 
@@ -334,50 +376,67 @@ export default function SkillsPage() {
 
           {filteredSkills.length ? (
             <div className="skills-category-list">
-              {Object.entries(activeTab === "tecnica" ? groupedTechnical : groupedSoft).map(([category, skills]) => (
+              {Object.entries(activeGroups).map(([category, skills]) => {
+                const categoryKey = `${activeTab}:${category}`;
+                const isCollapsed = collapsedCategories[categoryKey] ?? false;
+
+                return (
                 <section key={category} className="surface-card skill-category-panel">
-                  <div className="skill-category-head">
-                    <div>
-                      <p className="section-label">Categoria</p>
-                      <h3>{category}</h3>
+                  <button
+                    type="button"
+                    className="skill-category-toggle"
+                    onClick={() => toggleCategory(category)}
+                    aria-expanded={!isCollapsed}
+                  >
+                    <div className="skill-category-head">
+                      <div>
+                        <p className="section-label">Categoria</p>
+                        <h3>{category}</h3>
+                      </div>
+                      <div className="skill-category-meta">
+                        <span className="skill-count-badge">{skills.length}</span>
+                        <ChevronIcon expanded={!isCollapsed} />
+                      </div>
                     </div>
-                    <span className="skill-count-badge">{skills.length}</span>
-                  </div>
+                  </button>
 
-                  <div className="skills-card-grid">
-                    {skills.map((skill) => (
-                      <article key={skill.id} className="skill-card compact-skill-card">
-                        <div className="skill-card-head">
-                          <div>
-                            <p className="section-label">Habilidad {normalizeSkillType(skill.tipo)}</p>
-                            <h3>{skill.nombre}</h3>
+                  {!isCollapsed ? (
+                    <div className="skills-card-grid">
+                      {skills.map((skill) => (
+                        <article key={skill.id} className="skill-card compact-skill-card">
+                          <div className="skill-card-head">
+                            <div>
+                              <p className="section-label">Habilidad {normalizeSkillType(skill.tipo)}</p>
+                              <h3>{skill.nombre}</h3>
+                            </div>
+                            <span className={`skill-visibility-pill ${skill.visible_publico ? "visible" : "hidden"}`}>
+                              {skill.visible_publico ? "Visible" : "Oculta"}
+                            </span>
                           </div>
-                          <span className={`skill-visibility-pill ${skill.visible_publico ? "visible" : "hidden"}`}>
-                            {skill.visible_publico ? "Visible" : "Oculta"}
-                          </span>
-                        </div>
 
-                        <div className="profile-pill-list">
-                          <span className="profile-pill neutral">{skill.nivel_dominio}</span>
-                        </div>
+                          <div className="profile-pill-list">
+                            <span className="profile-pill neutral">{skill.nivel_dominio}</span>
+                          </div>
 
-                        <div className="skill-actions">
-                          <button type="button" className="btn btn-secondary" onClick={() => openEditForm(skill)}>
-                            Editar
-                          </button>
-                          <button type="button" className="btn btn-secondary icon-button-text" onClick={() => handleToggleVisibility(skill)}>
-                            <EyeIcon off={!skill.visible_publico} />
-                            {skill.visible_publico ? "Ocultar" : "Mostrar"}
-                          </button>
-                          <button type="button" className="btn btn-secondary danger-outline" onClick={() => setPendingDelete(skill)}>
-                            Eliminar
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
+                          <div className="skill-actions">
+                            <button type="button" className="btn btn-secondary" onClick={() => openEditForm(skill)}>
+                              Editar
+                            </button>
+                            <button type="button" className="btn btn-secondary icon-button-text" onClick={() => handleToggleVisibility(skill)}>
+                              <EyeIcon off={!skill.visible_publico} />
+                              {skill.visible_publico ? "Ocultar" : "Mostrar"}
+                            </button>
+                            <button type="button" className="btn btn-secondary danger-outline" onClick={() => setPendingDelete(skill)}>
+                              Eliminar
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
                 </section>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="empty-state-card empty-skills-card">
@@ -395,9 +454,6 @@ export default function SkillsPage() {
                   <p className="section-label">{editingSkill ? "Editar habilidad" : "Nueva habilidad"}</p>
                   <h2>{form.tipo === "tecnica" ? "Nueva Habilidad Tecnica" : "Nueva Habilidad Blanda"}</h2>
                 </div>
-                <button type="button" className="btn btn-tertiary" onClick={closeForm}>
-                  X
-                </button>
               </div>
 
               <form className="form-stack" onSubmit={handleSubmit}>

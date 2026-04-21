@@ -2,6 +2,7 @@ type Props = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   error?: string;
   placeholder?: string;
   maxLength?: number;
@@ -12,6 +13,7 @@ export default function FormTextarea({
   label,
   value,
   onChange,
+  onBlur,
   error,
   placeholder,
   maxLength = 500,
@@ -28,6 +30,7 @@ export default function FormTextarea({
         placeholder={placeholder}
         maxLength={maxLength}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         rows={5}
       />
       {error ? <p className="form-error">{error}</p> : null}
