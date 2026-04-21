@@ -45,7 +45,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout title="Iniciar sesion" subtitle="Accede a tu perfil, revisa tu portafolio y continua tu progreso profesional.">
+    <AuthLayout title="Iniciar sesion" subtitle="Accede a tu perfil con tu contrasena habitual o con la contrasena temporal enviada por correo si solicitaste recuperacion.">
       <AlertMessage message={redirectMessage || serverError} />
 
       <form onSubmit={handleSubmit} className="form-stack">

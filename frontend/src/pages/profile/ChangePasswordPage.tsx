@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { logoutUser } from "../../api/auth";
 import AlertMessage from "../../components/common/AlertMessage";
 import FormInput from "../../components/common/FormInput";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
@@ -11,6 +12,8 @@ import { validatePassword, validateRequired } from "../../utils/validations";
 
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
+  const currentUser = authStore.getUser();
+  const requiereCambioObligatorio = !!currentUser?.debe_cambiar_contrasena;
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [contrasenaActual, setContrasenaActual] = useState("");
   const [contrasenaNueva, setContrasenaNueva] = useState("");
@@ -79,18 +82,37 @@ export default function ChangePasswordPage() {
     }
   };
 
+  const handleCancel = async () => {
+    if (!requiereCambioObligatorio) {
+      navigate("/");
+      return;
+    }
+
+    try {
+      await logoutUser();
+    } catch {
+    } finally {
+      authStore.clearSession();
+      navigate("/login");
+    }
+  };
+
   return (
     <PrivateWorkspaceLayout
       active="profile"
       perfil={perfil}
       title="Cambiar contrasena"
-      subtitle="Actualiza tu acceso y reemplaza la contrasena temporal por una definitiva."
+      subtitle={
+        requiereCambioObligatorio
+          ? "Debes reemplazar la contrasena temporal por una definitiva para continuar."
+          : "Actualiza tu acceso y reemplaza la contrasena temporal por una definitiva."
+      }
     >
       <section className="surface-card workspace-section-card">
         <div className="workspace-section-head">
           <div>
             <p className="section-label">Seguridad</p>
-            <h2>Define una nueva contrasena</h2>
+            <h2>{requiereCambioObligatorio ? "Cambio obligatorio de contrasena" : "Define una nueva contrasena"}</h2>
           </div>
         </div>
 
@@ -104,6 +126,7 @@ export default function ChangePasswordPage() {
             onChange={setContrasenaActual}
             error={errors.contrasena_actual}
             placeholder="Ingresa tu contrasena actual o temporal"
+            togglePassword
           />
 
           <FormInput
@@ -113,6 +136,7 @@ export default function ChangePasswordPage() {
             onChange={setContrasenaNueva}
             error={errors.contrasena_nueva}
             placeholder="Define una contrasena segura"
+            togglePassword
           />
 
           <FormInput
@@ -122,11 +146,12 @@ export default function ChangePasswordPage() {
             onChange={setConfirmacion}
             error={errors.confirmacion}
             placeholder="Repite la nueva contrasena"
+            togglePassword
           />
 
           <div className="form-actions-row">
-            <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>
-              Cancelar
+            <button type="button" className="btn btn-secondary" onClick={handleCancel}>
+              {requiereCambioObligatorio ? "Cerrar sesion" : "Cancelar"}
             </button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
               Guardar contrasena

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Notifications\CustomResetPasswordNotification;
+use App\Notifications\TemporaryPasswordNotification;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
@@ -61,8 +61,8 @@ class Usuario extends Model implements AuthenticatableContract, CanResetPassword
         return $this->correo;
     }
 
-    public function sendPasswordResetNotification($token): void
+    public function sendTemporaryPasswordNotification(string $temporaryPassword, int $expireMinutes): void
     {
-        $this->notify(new CustomResetPasswordNotification($token, $this->correo));
+        $this->notify(new TemporaryPasswordNotification($temporaryPassword, $expireMinutes));
     }
 }
