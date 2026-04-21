@@ -1,5 +1,5 @@
-﻿import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
 import FormInput from "../../components/common/FormInput";
 import AlertMessage from "../../components/common/AlertMessage";
@@ -9,6 +9,8 @@ import { resetPassword, validateResetToken } from "../../api/password";
 export default function ResetPasswordPage() {
   const { token = "" } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const correo = searchParams.get("correo") || "";
 
   const [contrasena, setContrasena] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
@@ -18,8 +20,14 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const checkToken = async () => {
+      if (!correo) {
+        setTokenValid(false);
+        setServerError("El enlace de recuperacion es incompleto.");
+        return;
+      }
+
       try {
-        await validateResetToken(token);
+        await validateResetToken(token, correo);
         setTokenValid(true);
       } catch (err: any) {
         setTokenValid(false);
@@ -28,7 +36,7 @@ export default function ResetPasswordPage() {
     };
 
     checkToken();
-  }, [token]);
+  }, [correo, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +53,7 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const data = await resetPassword(token, contrasena, confirmacion);
+      const data = await resetPassword(correo, token, contrasena, confirmacion);
       setMessage(data.message);
       setServerError("");
       setTimeout(() => navigate("/login"), 1200);
@@ -56,7 +64,7 @@ export default function ResetPasswordPage() {
 
   if (tokenValid === false) {
     return (
-      <AuthLayout title="Restablecer contrasena" subtitle="Enlace invalido o expirado">
+      <AuthLayout title="Restablecer contrasena" subtitle="El enlace de recuperacion no es valido o ya expiro.">
         <AlertMessage message={serverError} />
       </AuthLayout>
     );
@@ -73,7 +81,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthLayout title="Nueva contrasena" subtitle="Define una contrasena segura para recuperar el acceso.">
+    <AuthLayout title="Nueva contrasena" subtitle="Define una contrasena segura. Recuerda que el enlace de recuperacion solo dura 30 minutos.">
       <AlertMessage message={message || serverError} />
 
       <form onSubmit={handleSubmit} className="form-stack">
@@ -88,4 +96,3 @@ export default function ResetPasswordPage() {
     </AuthLayout>
   );
 }
-

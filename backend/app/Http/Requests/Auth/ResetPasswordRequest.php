@@ -14,6 +14,7 @@ class ResetPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'correo' => ['required', 'email'],
             'token' => ['required', 'string'],
             'contrasena' => [
                 'required',
@@ -31,9 +32,11 @@ class ResetPasswordRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'correo.required' => 'El correo es obligatorio.',
+            'correo.email' => 'El correo no es valido.',
             'token.required' => 'El token es obligatorio.',
-            'contrasena.required' => 'La contraseña es obligatoria.',
-            'contrasena.confirmed' => 'La confirmación de contraseña no coincide.',
+            'contrasena.required' => 'La contrasena es obligatoria.',
+            'contrasena.confirmed' => 'La confirmacion de contrasena no coincide.',
         ];
     }
 }

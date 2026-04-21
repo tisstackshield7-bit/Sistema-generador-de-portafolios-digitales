@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import FormInput from "../../components/common/FormInput";
 import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
+import BioCounter from "../../components/profile/BioCounter";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
 import { API_ORIGIN } from "../../api/axios";
@@ -229,12 +230,6 @@ const preview = useMemo(() => {
             inputMode="text"
           />
 
-<<<<<<< HEAD
-            <div className="form-actions-row">
-              <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>
-                Cancelar
-              </button>
-=======
           <FormTextarea
             label="Biografia"
             value={biografia}
@@ -245,7 +240,6 @@ const preview = useMemo(() => {
           />
 
           <BioCounter count={biografia.length} />
->>>>>>> origin/feature/login
 
           <div className="form-actions-row">
             <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>

@@ -19,17 +19,21 @@ export const changePassword = async (
   return data;
 };
 
-export const validateResetToken = async (token: string) => {
-  const { data } = await api.get(`/auth/reset-password/${token}`);
+export const validateResetToken = async (token: string, correo: string) => {
+  const { data } = await api.get(`/auth/reset-password/${token}`, {
+    params: { correo },
+  });
   return data;
 };
 
 export const resetPassword = async (
+  correo: string,
   token: string,
   contrasena: string,
   contrasena_confirmation: string
 ) => {
   const { data } = await api.post("/auth/reset-password", {
+    correo,
     token,
     contrasena,
     contrasena_confirmation,

@@ -7,6 +7,7 @@ use App\Http\Requests\Profile\StoreBasicProfileRequest;
 use App\Http\Requests\Profile\UpdateBasicProfileRequest;
 use App\Models\Perfil;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ProfileController extends Controller
@@ -32,10 +33,8 @@ class ProfileController extends Controller
             $rutaFoto = $request->file('foto_perfil')->store('perfiles', 'public');
         }
 
-        $perfil = Perfil::create([
+        $perfilData = [
             'usuario_id' => $usuario->id,
-            'nombres' => $request->nombres,
-            'apellidos' => $request->apellidos,
             'nombre_completo' => $nombreCompleto,
             'profesion' => $request->profesion,
             'titular_profesional' => $request->profesion,
@@ -45,7 +44,14 @@ class ProfileController extends Controller
             'slug' => $slug,
             'creado_en' => now(),
             'actualizado_en' => now(),
-        ]);
+        ];
+
+        if ($this->hasSplitNameColumns()) {
+            $perfilData['nombres'] = $request->nombres;
+            $perfilData['apellidos'] = $request->apellidos;
+        }
+
+        $perfil = Perfil::create($perfilData);
 
         return response()->json([
             'message' => 'Información básica guardada correctamente.',
@@ -74,8 +80,11 @@ class ProfileController extends Controller
 
         $nombreCompleto = trim($request->nombres . ' ' . $request->apellidos);
 
-        $perfil->nombres = $request->nombres;
-        $perfil->apellidos = $request->apellidos;
+        if ($this->hasSplitNameColumns()) {
+            $perfil->nombres = $request->nombres;
+            $perfil->apellidos = $request->apellidos;
+        }
+
         $perfil->nombre_completo = $nombreCompleto;
         $perfil->profesion = $request->profesion;
         $perfil->titular_profesional = $request->profesion;
@@ -106,6 +115,11 @@ class ProfileController extends Controller
         }
 
         return $slug;
+    }
+
+    private function hasSplitNameColumns(): bool
+    {
+        return Schema::hasColumns('perfiles', ['nombres', 'apellidos']);
     }
 
     public function listPublic()

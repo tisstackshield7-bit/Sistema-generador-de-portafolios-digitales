@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthLayout title="Recuperar acceso" subtitle="Te enviaremos una contrasena temporal para que ingreses y la cambies desde tu perfil.">
+    <AuthLayout title="Recuperar acceso" subtitle="Te enviaremos un enlace de recuperacion a tu correo. El enlace dura 30 minutos y te permitira restablecer tu contrasena.">
       <AlertMessage message={message || serverError} />
 
       <form onSubmit={handleSubmit} className="form-stack">
@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
         />
 
         <button type="submit" className="btn btn-primary btn-block">
-          Enviar contrasena temporal
+          Enviar enlace de recuperacion
         </button>
       </form>
 
