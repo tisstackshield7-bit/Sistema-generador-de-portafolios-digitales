@@ -2,10 +2,10 @@
 import { Link, useNavigate } from "react-router-dom";
 import { authStore } from "../store/authStore";
 import { getMyProfile, getPublicProfiles } from "../api/profile";
-import { API_ORIGIN } from "../api/axios";
 import { logoutUser } from "../api/auth";
 import type { Perfil, PublicProfileCard } from "../types/profile";
 import PrivateWorkspaceLayout from "../components/dashboard/PrivateWorkspaceLayout";
+import { getProfilePhotoUrl } from "../utils/profilePhoto";
 import "./HomePage.css";
 import logo from "../assets/logo.jpeg";
 
@@ -77,6 +77,7 @@ export default function HomePage() {
   const featuredProfiles = publicProfiles.slice(0, 6);
   const technicalSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "tecnica") || [];
   const softSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "blanda") || [];
+  const profilePhotoUrl = getProfilePhotoUrl(perfil?.foto_perfil);
 
   const handleLogout = async () => {
     try {
@@ -124,38 +125,42 @@ export default function HomePage() {
 
             <div className="profile-grid two-columns">
               {featuredProfiles.length ? (
-                featuredProfiles.map((profile) => (
-                  <article key={profile.id} className="network-card">
-                    <div className="network-card-top">
-                      {profile.foto_perfil ? (
-                        <img
-                          src={`${API_ORIGIN}/storage/${profile.foto_perfil}`}
-                          alt={profile.nombre_completo}
-                          className="network-avatar"
-                        />
-                      ) : (
-                        <div className="network-avatar fallback-avatar">{getInitials(profile.nombre_completo)}</div>
-                      )}
-                      <div>
-                        <h3>{profile.nombre_completo}</h3>
-                        <p>{profile.titular_profesional || profile.profesion}</p>
+                featuredProfiles.map((profile) => {
+                  const photoUrl = getProfilePhotoUrl(profile.foto_perfil);
+
+                  return (
+                    <article key={profile.id} className="network-card">
+                      <div className="network-card-top">
+                        {photoUrl ? (
+                          <img
+                            src={photoUrl}
+                            alt={profile.nombre_completo}
+                            className="network-avatar"
+                          />
+                        ) : (
+                          <div className="network-avatar fallback-avatar">{getInitials(profile.nombre_completo)}</div>
+                        )}
+                        <div>
+                          <h3>{profile.nombre_completo}</h3>
+                          <p>{profile.titular_profesional || profile.profesion}</p>
+                        </div>
                       </div>
-                    </div>
-                    <p className="network-summary">
-                      {profile.biografia?.slice(0, 100) || "Perfil disponible dentro de la plataforma."}
-                    </p>
-                    <div className="profile-pill-list">
-                      {getProfileHighlights(profile).map((item) => (
-                        <span key={`${profile.id}-${item}`} className="profile-pill neutral">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                    <button className="btn btn-secondary btn-block" onClick={() => navigate(`/perfil-publico/${profile.slug}`)}>
-                      Ver perfil
-                    </button>
-                  </article>
-                ))
+                      <p className="network-summary">
+                        {profile.biografia?.slice(0, 100) || "Perfil disponible dentro de la plataforma."}
+                      </p>
+                      <div className="profile-pill-list">
+                        {getProfileHighlights(profile).map((item) => (
+                          <span key={`${profile.id}-${item}`} className="profile-pill neutral">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                      <button className="btn btn-secondary btn-block" onClick={() => navigate(`/perfil-publico/${profile.slug}`)}>
+                        Ver perfil
+                      </button>
+                    </article>
+                  );
+                })
               ) : (
                 <article className="empty-state-card">
                   <h3>Aun no hay perfiles destacados</h3>
@@ -239,8 +244,8 @@ export default function HomePage() {
         </div>
 
         <div className="dashboard-profile-summary">
-          {perfil?.foto_perfil ? (
-            <img src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`} alt={perfil.nombre_completo} className="dashboard-profile-avatar" />
+          {profilePhotoUrl ? (
+            <img src={profilePhotoUrl} alt={perfil?.nombre_completo} className="dashboard-profile-avatar" />
           ) : (
             <div className="dashboard-profile-avatar fallback-avatar">{initials}</div>
           )}

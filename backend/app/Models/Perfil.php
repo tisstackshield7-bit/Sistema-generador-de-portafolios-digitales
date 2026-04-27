@@ -30,6 +30,15 @@ class Perfil extends Model
         'eliminado_en',
     ];
 
+    public function getFotoPerfilAttribute($value)
+    {
+        if (!$value || $value === '0') {
+            return null;
+        }
+
+        return $value;
+    }
+
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');

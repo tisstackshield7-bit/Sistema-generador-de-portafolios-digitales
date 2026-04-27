@@ -29,7 +29,7 @@ export default function FormTextarea({
         value={value}
         placeholder={placeholder}
         maxLength={maxLength}
-        onChange={(e) => onChange(e.target.value)}
+        onInput={(e) => onChange((e.target as HTMLTextAreaElement).value)}
         onBlur={onBlur}
         rows={5}
       />

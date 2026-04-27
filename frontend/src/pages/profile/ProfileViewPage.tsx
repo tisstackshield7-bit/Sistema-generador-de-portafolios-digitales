@@ -1,11 +1,11 @@
 ﻿import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyProfile } from "../../api/profile";
-import { API_ORIGIN } from "../../api/axios";
 import type { Perfil } from "../../types/profile";
 import { getInitials } from "../../utils/avatar";
 import { logoutUser } from "../../api/auth";
 import { authStore } from "../../store/authStore";
+import { getProfilePhotoUrl } from "../../utils/profilePhoto";
 
 function splitSkills(perfil: Perfil) {
   const technicalSkills = perfil.habilidades?.filter((skill) => skill.tipo === "tecnica") || [];
@@ -59,6 +59,7 @@ export default function ProfileViewPage() {
   const { technicalSkills, softSkills, publicSkills } = splitSkills(perfil);
   const topTechnicalSkills = technicalSkills.slice(0, 6);
   const topSoftSkills = softSkills.slice(0, 6);
+  const profilePhotoUrl = getProfilePhotoUrl(perfil.foto_perfil);
 
   return (
     <div className="profile-page-shell app-shell">
@@ -67,8 +68,8 @@ export default function ProfileViewPage() {
           <header className="profile-cover surface-card">
             <div className="profile-cover-content">
               <div className="profile-identity">
-                {perfil.foto_perfil ? (
-                  <img src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`} alt={perfil.nombre_completo} className="profile-avatar-xl" />
+                {profilePhotoUrl ? (
+                  <img src={profilePhotoUrl} alt={perfil.nombre_completo} className="profile-avatar-xl" />
                 ) : (
                   <div className="profile-avatar-xl fallback-avatar">{getInitials(perfil.nombre_completo)}</div>
                 )}

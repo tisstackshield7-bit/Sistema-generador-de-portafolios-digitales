@@ -25,6 +25,7 @@ Route::middleware('auth.custom')->group(function () {
     Route::post('/perfil', [ProfileController::class, 'storeBasic']);
     Route::get('/perfil', [ProfileController::class, 'showMine']);
     Route::put('/perfil', [ProfileController::class, 'updateBasic']);
+    Route::post('/perfil/actualizar', [ProfileController::class, 'updateBasic']);
 
     Route::get('/habilidades', [SkillController::class, 'index']);
     Route::post('/habilidades', [SkillController::class, 'store']);

@@ -40,7 +40,14 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            'root' => env('FILESYSTEM_PUBLIC_ROOT')
+                ? (
+                    str_starts_with(env('FILESYSTEM_PUBLIC_ROOT'), DIRECTORY_SEPARATOR)
+                    || preg_match('/^[A-Za-z]:[\/\\\\]/', env('FILESYSTEM_PUBLIC_ROOT'))
+                        ? env('FILESYSTEM_PUBLIC_ROOT')
+                        : base_path(env('FILESYSTEM_PUBLIC_ROOT'))
+                )
+                : storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
             'throw' => false,

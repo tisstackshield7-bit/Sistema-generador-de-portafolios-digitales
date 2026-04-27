@@ -3,10 +3,8 @@ import { useNavigate } from "react-router-dom";
 import FormInput from "../../components/common/FormInput";
 import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
-import BioCounter from "../../components/profile/BioCounter";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
-import { API_ORIGIN } from "../../api/axios";
 import {
   validateBiography,
   validateBoliviaPhone,
@@ -16,6 +14,7 @@ import {
 } from "../../utils/validations";
 import { getMyProfile, updateBasicProfile } from "../../api/profile";
 import type { Perfil } from "../../types/profile";
+import { getProfilePhotoUrl } from "../../utils/profilePhoto";
 
 function splitLegacyFullName(fullName: string) {
   const parts = fullName.split(" ").filter(Boolean);
@@ -76,7 +75,7 @@ export default function BasicProfileEditPage() {
         setProfesion(perfil?.profesion || "");
         setTelefono(perfil?.telefono || "");
         setBiografia(perfil?.biografia || "");
-        setExistingPhoto(perfil?.foto_perfil || null);
+        setExistingPhoto(getProfilePhotoUrl(perfil?.foto_perfil) ? perfil?.foto_perfil || null : null);
       } catch {
         setServerError("No se pudo cargar el perfil.");
       }
@@ -87,7 +86,7 @@ export default function BasicProfileEditPage() {
 
 const preview = useMemo(() => {
   if (foto) return URL.createObjectURL(foto);
-  if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
+  if (existingPhoto) return getProfilePhotoUrl(existingPhoto);
   return null;
 }, [foto, existingPhoto]);
 
@@ -245,10 +244,11 @@ const preview = useMemo(() => {
             onChange={handleBiografiaChange}
             error={errors.biografia}
             maxLength={500}
+            showCounter={false}
             placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
           />
 
-          <BioCounter count={biografia.length} />
+          <p className="counter-text">{biografia.length} / 500 caracteres</p>
 
           <div className="form-actions-row">
             <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>

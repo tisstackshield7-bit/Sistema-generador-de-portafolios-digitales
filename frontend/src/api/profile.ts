@@ -38,8 +38,19 @@ export const getPublicProfileBySlug = async (slug: string) => {
 };
 
 export const updateBasicProfile = async (payload: BasicProfilePayload) => {
+  if (!payload.foto_perfil) {
+    const { data } = await api.put("/perfil", {
+      nombres: payload.nombres,
+      apellidos: payload.apellidos,
+      profesion: payload.profesion,
+      telefono: payload.telefono || "",
+      biografia: payload.biografia,
+    });
+
+    return data;
+  }
+
   const formData = new FormData();
-  formData.append("_method", "PUT");
   formData.append("nombres", payload.nombres);
   formData.append("apellidos", payload.apellidos);
   formData.append("profesion", payload.profesion);
@@ -50,7 +61,7 @@ export const updateBasicProfile = async (payload: BasicProfilePayload) => {
     formData.append("foto_perfil", payload.foto_perfil);
   }
 
-  const { data } = await api.post("/perfil", formData, {
+  const { data } = await api.post("/perfil/actualizar", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },

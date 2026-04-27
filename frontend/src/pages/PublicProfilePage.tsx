@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { API_ORIGIN } from "../api/axios";
 import { getPublicProfileBySlug } from "../api/profile";
 import type { Perfil } from "../types/profile";
 import type { Skill } from "../types/skill";
+import { getProfilePhotoUrl } from "../utils/profilePhoto";
 
 function getInitials(name?: string | null) {
   if (!name) return "PF";
@@ -54,6 +54,7 @@ export default function PublicProfilePage() {
   const technicalSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "tecnica" && skill.visible_publico) || [];
   const softSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "blanda" && skill.visible_publico) || [];
   const summaryText = perfil?.biografia || "Perfil publico disponible dentro de la plataforma.";
+  const profilePhotoUrl = getProfilePhotoUrl(perfil?.foto_perfil);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -104,9 +105,9 @@ export default function PublicProfilePage() {
       <section className="public-portfolio-hero">
         <div className="page-section public-portfolio-hero-inner">
           <div className="public-portfolio-identity">
-            {perfil.foto_perfil ? (
+            {profilePhotoUrl ? (
               <img
-                src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`}
+                src={profilePhotoUrl}
                 alt={perfil.nombre_completo}
                 className="public-portfolio-avatar"
               />
