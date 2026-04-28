@@ -10,14 +10,12 @@ class StoreSkillRequest extends FormRequest
     public const TECHNICAL_CATEGORIES = [
         'Frontend',
         'Backend',
-        'Bases de datos',
-        'DevOps',
-        'Cloud',
         'Mobile',
-        'Lenguajes',
+        'Bases de datos',
+        'DevOps / Cloud',
+        'Lenguajes de programacion',
         'Herramientas',
-        'Diseno',
-        'UX research',
+        'Diseno y UX',
     ];
 
     public const SOFT_CATEGORIES = [
@@ -54,18 +52,17 @@ class StoreSkillRequest extends FormRequest
             'blanda' => self::SOFT_CATEGORIES,
             default => [],
         };
+        $nameRules = $skillType === 'blanda'
+            ? ['nullable', 'string', 'max:150']
+            : ['required', 'string', 'max:150'];
 
         return [
             'tipo' => ['required', Rule::in(['tecnica', 'blanda'])],
-            'nombre' => ['required', 'string', 'max:150'],
-            'categoria' => [
-                'required',
-                'string',
-                'max:100',
-                Rule::in($allowedCategories),
-            ],
+            'nombre' => $nameRules,
+            'categoria' => ['required', 'string', 'max:100', Rule::in($allowedCategories)],
             'nivel_dominio' => ['required', Rule::in(self::LEVELS)],
             'visible_publico' => ['nullable', 'boolean'],
+            'certificado_pdf' => [Rule::requiredIf($skillType === 'tecnica' && $this->boolean('visible_publico')), 'file', 'mimes:pdf', 'max:5120'],
         ];
     }
 
@@ -79,6 +76,10 @@ class StoreSkillRequest extends FormRequest
             'categoria.in' => 'La categoria seleccionada no es valida.',
             'nivel_dominio.required' => 'El nivel de dominio es obligatorio.',
             'nivel_dominio.in' => 'El nivel de dominio seleccionado no es valido.',
+            'certificado_pdf.required_if' => 'Debes subir un certificado PDF para publicar esta habilidad.',
+            'certificado_pdf.file' => 'El certificado debe ser un archivo PDF valido.',
+            'certificado_pdf.mimes' => 'El certificado debe estar en formato PDF.',
+            'certificado_pdf.max' => 'El certificado no puede superar los 5 MB.',
         ];
     }
 }

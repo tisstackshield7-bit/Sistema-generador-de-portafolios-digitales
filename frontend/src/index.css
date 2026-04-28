@@ -952,6 +952,13 @@ img {
   border: 1px solid rgba(219, 227, 238, 0.8);
 }
 
+.skill-certificate-link {
+  white-space: nowrap;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .skill-detail-main {
   display: flex;
   flex-direction: column;
@@ -1598,7 +1605,13 @@ img {
 .public-skills-intro h2 {
   margin: 0;
   font-size: clamp(2.35rem, 3vw, 3.2rem);
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
+}
+
+.public-skills-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .public-skills-title-mark {
@@ -1610,6 +1623,13 @@ img {
   background: linear-gradient(135deg, #5a30f6, #255fe8);
   color: #fff;
   box-shadow: 0 18px 35px rgba(66, 64, 219, 0.2);
+}
+
+.public-skill-help {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .public-skills-layout {
@@ -1624,14 +1644,80 @@ img {
 }
 
 .public-skills-card h3 {
-  margin: 0 0 24px;
+  margin: 0;
   font-size: 1.1rem;
 }
 
+.public-skills-card-head {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
 .public-skill-chip-list {
+  margin-top: 14px;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.public-certificate-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.public-certificate-modal {
+  width: min(100%, 1090px);
+  height: min(88vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.36);
+}
+
+.public-certificate-head {
+  min-height: 58px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.9);
+  background: #f8fafc;
+}
+
+.public-certificate-head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.public-certificate-head button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.public-certificate-frame {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  border: 0;
+  background: #f1f5f9;
 }
 
 .public-skill-chip {
@@ -1640,9 +1726,18 @@ img {
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
+  font-family: inherit;
   font-size: 0.89rem;
   font-weight: 500;
   border: 1px solid transparent;
+}
+
+.public-skill-chip.is-clickable {
+  cursor: pointer;
+}
+
+.public-skill-chip.is-clickable:hover {
+  transform: translateY(-1px);
 }
 
 .public-skill-chip.tone-violet {
@@ -1996,4 +2091,5 @@ img {
   .public-skills-card {
     padding: 22px 18px;
   }
+
 }

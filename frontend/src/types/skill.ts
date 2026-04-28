@@ -10,6 +10,7 @@ export interface Skill {
   categoria?: string | null;
   nivel_dominio: SkillLevel;
   visible_publico: boolean;
+  certificado_pdf?: string | null;
   creado_en?: string | null;
   actualizado_en?: string | null;
 }
@@ -20,4 +21,5 @@ export interface SkillPayload {
   categoria: string;
   nivel_dominio: SkillLevel | "";
   visible_publico: boolean;
+  certificado_pdf?: File | null;
 }

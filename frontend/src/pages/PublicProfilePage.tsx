@@ -45,10 +45,15 @@ function getSkillTone(skill: Skill) {
   return skill.tipo === "tecnica" ? "blue" : "violet";
 }
 
+function buildCertificateViewerUrl(path: string) {
+  return `${API_ORIGIN}/storage/${path}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+}
+
 export default function PublicProfilePage() {
   const navigate = useNavigate();
   const { slug } = useParams();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [certificateUrl, setCertificateUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const title = perfil?.titular_profesional || perfil?.profesion || "Perfil profesional";
   const technicalSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "tecnica" && skill.visible_publico) || [];
@@ -145,8 +150,9 @@ export default function PublicProfilePage() {
           <div className="public-skills-title-mark">
             <RibbonIcon />
           </div>
-          <div>
+          <div className="public-skills-heading">
             <h2>Habilidades</h2>
+            <p className="public-skill-help">Pulsa una habilidad para ver su certificado.</p>
           </div>
         </section>
 
@@ -156,9 +162,20 @@ export default function PublicProfilePage() {
             {technicalSkills.length ? (
               <div className="public-skill-chip-list">
                 {technicalSkills.map((skill) => (
-                  <span key={skill.id} className={`public-skill-chip tone-${getSkillTone(skill)}`}>
-                    {skill.nombre} - {skill.nivel_dominio}
-                  </span>
+                  skill.certificado_pdf ? (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
+                      onClick={() => setCertificateUrl(buildCertificateViewerUrl(skill.certificado_pdf || ""))}
+                    >
+                      {skill.nombre} - {skill.nivel_dominio}
+                    </button>
+                  ) : (
+                    <span key={skill.id} className={`public-skill-chip tone-${getSkillTone(skill)}`}>
+                      {skill.nombre} - {skill.nivel_dominio}
+                    </span>
+                  )
                 ))}
               </div>
             ) : (
@@ -171,9 +188,20 @@ export default function PublicProfilePage() {
             {softSkills.length ? (
               <div className="public-skill-chip-list">
                 {softSkills.map((skill) => (
-                  <span key={skill.id} className={`public-skill-chip tone-${getSkillTone(skill)}`}>
-                    {skill.nombre} - {skill.nivel_dominio}
-                  </span>
+                  skill.certificado_pdf ? (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
+                      onClick={() => setCertificateUrl(buildCertificateViewerUrl(skill.certificado_pdf || ""))}
+                    >
+                      {skill.nombre} - {skill.nivel_dominio}
+                    </button>
+                  ) : (
+                    <span key={skill.id} className={`public-skill-chip tone-${getSkillTone(skill)}`}>
+                      {skill.nombre} - {skill.nivel_dominio}
+                    </span>
+                  )
                 ))}
               </div>
             ) : (
@@ -182,6 +210,20 @@ export default function PublicProfilePage() {
           </article>
         </section>
       </main>
+
+      {certificateUrl ? (
+        <div className="public-certificate-backdrop" role="presentation" onClick={() => setCertificateUrl("")}>
+          <section className="public-certificate-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="public-certificate-head">
+              <h2>Certificado</h2>
+              <button type="button" onClick={() => setCertificateUrl("")}>
+                Cerrar
+              </button>
+            </div>
+            <iframe src={certificateUrl} title="Certificado de habilidad" className="public-certificate-frame" />
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

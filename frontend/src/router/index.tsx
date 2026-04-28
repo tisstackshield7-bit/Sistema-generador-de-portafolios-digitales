@@ -12,6 +12,7 @@ import PrivateRoute from "../components/auth/PrivateRoute";
 import HomePage from "../pages/HomePage";
 import ComingSoonPage from "../pages/ComingSoonPage";
 import PublicProfilePage from "../pages/PublicProfilePage";
+import DashboardPage from "../pages/DashboardPage";
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,14 @@ export const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <BasicProfileCreatePage />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/dashboard",
+    element: (
+      <PrivateRoute>
+        <DashboardPage />
       </PrivateRoute>
     ),
   },

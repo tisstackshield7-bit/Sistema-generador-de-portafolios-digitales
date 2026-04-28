@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\StoreBasicProfileRequest;
 use App\Http\Requests\Profile\UpdateBasicProfileRequest;
+use App\Models\Habilidad;
 use App\Models\Perfil;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -124,14 +125,60 @@ class ProfileController extends Controller
         return Schema::hasColumns('perfiles', ['nombres', 'apellidos']);
     }
 
-    public function listPublic()
+    public function listPublic(Request $request)
     {
-        $perfiles = Perfil::with(['habilidades' => function ($query) {
+        $filters = $request->validate([
+            'buscar' => ['nullable', 'string', 'max:120'],
+            'categoria' => ['nullable', 'string', 'max:100'],
+            'nivel' => ['nullable', 'string', 'in:Basico,Intermedio,Avanzado'],
+        ]);
+
+        $search = trim($filters['buscar'] ?? '');
+        $category = trim($filters['categoria'] ?? '');
+        $level = $filters['nivel'] ?? null;
+
+        $applySkillFilters = function ($query) use ($category, $level) {
             $query->where('visible_publico', true)
-                ->orderBy('tipo')
-                ->orderByDesc('creado_en');
-        }])->where('es_publico', true)
-            ->latest('creado_en')
+                ->where('tipo', 'tecnica');
+
+            if ($category !== '') {
+                $query->where('categoria', $category);
+            }
+
+            if ($level) {
+                $query->where('nivel_dominio', $level);
+            }
+        };
+
+        $perfilesQuery = Perfil::with(['habilidades' => function ($query) use ($applySkillFilters) {
+            $applySkillFilters($query);
+            $query->orderBy('tipo')->orderByDesc('creado_en');
+        }])->where('es_publico', true);
+
+        if ($search !== '') {
+            $perfilesQuery->where(function ($query) use ($search) {
+                $query->where('nombre_completo', 'ilike', "%{$search}%")
+                    ->orWhere('profesion', 'ilike', "%{$search}%")
+                    ->orWhere('titular_profesional', 'ilike', "%{$search}%")
+                    ->orWhere('biografia', 'ilike', "%{$search}%")
+                    ->orWhereHas('habilidades', function ($skillQuery) use ($search) {
+                        $skillQuery->where('visible_publico', true)
+                            ->where('tipo', 'tecnica')
+                            ->where(function ($matchQuery) use ($search) {
+                                $matchQuery->where('nombre', 'ilike', "%{$search}%")
+                                    ->orWhere('categoria', 'ilike', "%{$search}%");
+                            });
+                    });
+            });
+        }
+
+        if ($category !== '' || $level) {
+            $perfilesQuery->whereHas('habilidades', $applySkillFilters);
+        }
+
+        $perfilesQuery->latest('creado_en');
+
+        $perfiles = $perfilesQuery
             ->limit(20)
             ->get([
                 'id',
@@ -146,6 +193,19 @@ class ProfileController extends Controller
 
         return response()->json([
             'perfiles' => $perfiles,
+            'categorias' => Habilidad::where('visible_publico', true)
+                ->where('tipo', 'tecnica')
+                ->whereNotNull('categoria')
+                ->distinct()
+                ->orderBy('categoria')
+                ->pluck('categoria')
+                ->values(),
+            'niveles' => ['Avanzado', 'Intermedio', 'Basico'],
+            'filtros' => [
+                'buscar' => $search,
+                'categoria' => $category,
+                'nivel' => $level,
+            ],
         ]);
     }
 

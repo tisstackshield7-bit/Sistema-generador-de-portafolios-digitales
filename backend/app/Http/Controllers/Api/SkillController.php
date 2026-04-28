@@ -9,6 +9,7 @@ use App\Http\Requests\Skill\UpdateSkillVisibilityRequest;
 use App\Models\Habilidad;
 use App\Models\Perfil;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class SkillController extends Controller
 {
@@ -32,14 +33,20 @@ class SkillController extends Controller
     public function store(StoreSkillRequest $request)
     {
         $perfil = $this->resolveProfile($request);
+        $rutaCertificado = null;
+
+        if ($request->hasFile('certificado_pdf')) {
+            $rutaCertificado = $request->file('certificado_pdf')->store('certificados', 'public');
+        }
 
         $habilidad = Habilidad::create([
             'perfil_id' => $perfil->id,
             'tipo' => $request->tipo,
-            'nombre' => trim($request->nombre),
+            'nombre' => $request->tipo === 'blanda' ? $request->categoria : trim($request->nombre),
             'categoria' => $request->categoria,
             'nivel_dominio' => $request->nivel_dominio,
             'visible_publico' => (bool) $request->boolean('visible_publico', false),
+            'certificado_pdf' => $rutaCertificado,
             'creado_en' => now(),
             'actualizado_en' => now(),
         ]);
@@ -55,10 +62,28 @@ class SkillController extends Controller
         $habilidad = $this->resolveOwnedSkill($request, $habilidadId);
 
         $habilidad->tipo = $request->tipo;
-        $habilidad->nombre = trim($request->nombre);
+        $habilidad->nombre = $request->tipo === 'blanda' ? $request->categoria : trim($request->nombre);
         $habilidad->categoria = $request->categoria;
         $habilidad->nivel_dominio = $request->nivel_dominio;
         $habilidad->visible_publico = (bool) $request->boolean('visible_publico', false);
+
+        if ($request->hasFile('certificado_pdf')) {
+            if ($habilidad->certificado_pdf) {
+                Storage::disk('public')->delete($habilidad->certificado_pdf);
+            }
+
+            $habilidad->certificado_pdf = $request->file('certificado_pdf')->store('certificados', 'public');
+        }
+
+        if ($habilidad->tipo === 'tecnica' && $habilidad->visible_publico && !$habilidad->certificado_pdf) {
+            return response()->json([
+                'message' => 'Debes subir un certificado PDF para publicar esta habilidad.',
+                'errors' => [
+                    'certificado_pdf' => ['Debes subir un certificado PDF para publicar esta habilidad.'],
+                ],
+            ], 422);
+        }
+
         $habilidad->actualizado_en = now();
         $habilidad->save();
 
@@ -71,6 +96,15 @@ class SkillController extends Controller
     public function updateVisibility(UpdateSkillVisibilityRequest $request, int $habilidadId)
     {
         $habilidad = $this->resolveOwnedSkill($request, $habilidadId);
+
+        if ($habilidad->tipo === 'tecnica' && $request->boolean('visible_publico') && !$habilidad->certificado_pdf) {
+            return response()->json([
+                'message' => 'Debes subir un certificado PDF para publicar esta habilidad.',
+                'errors' => [
+                    'certificado_pdf' => ['Debes subir un certificado PDF para publicar esta habilidad.'],
+                ],
+            ], 422);
+        }
 
         $habilidad->visible_publico = $request->boolean('visible_publico');
         $habilidad->actualizado_en = now();
@@ -85,6 +119,11 @@ class SkillController extends Controller
     public function destroy(Request $request, int $habilidadId)
     {
         $habilidad = $this->resolveOwnedSkill($request, $habilidadId);
+
+        if ($habilidad->certificado_pdf) {
+            Storage::disk('public')->delete($habilidad->certificado_pdf);
+        }
+
         $habilidad->delete();
 
         return response()->json([

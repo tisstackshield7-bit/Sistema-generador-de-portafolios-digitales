@@ -10,14 +10,12 @@ import type { Skill, SkillPayload, SkillType } from "../../types/skill";
 const FALLBACK_TECHNICAL_CATEGORIES = [
   "Frontend",
   "Backend",
-  "Bases de datos",
-  "DevOps",
-  "Cloud",
   "Mobile",
-  "Lenguajes",
+  "Bases de datos",
+  "DevOps / Cloud",
+  "Lenguajes de programacion",
   "Herramientas",
-  "Diseno",
-  "UX research",
+  "Diseno y UX",
 ];
 
 const FALLBACK_SOFT_CATEGORIES = [
@@ -39,6 +37,7 @@ const EMPTY_FORM: SkillPayload = {
   categoria: "",
   nivel_dominio: "",
   visible_publico: false,
+  certificado_pdf: null,
 };
 
 function EyeIcon({ off = false }: { off?: boolean }) {
@@ -95,7 +94,6 @@ export default function SkillsPage() {
   const [pendingDelete, setPendingDelete] = useState<Skill | null>(null);
   const [form, setForm] = useState<SkillPayload>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState("");
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -184,7 +182,6 @@ export default function SkillsPage() {
     });
     setErrors({});
     setServerError("");
-    setMessage("");
     setShowForm(true);
   };
 
@@ -193,13 +190,13 @@ export default function SkillsPage() {
     setForm({
       tipo: skill.tipo,
       nombre: skill.nombre,
-      categoria: skill.categoria || "",
+      categoria: skill.categoria || (skill.tipo === "blanda" ? skill.nombre : ""),
       nivel_dominio: skill.nivel_dominio,
       visible_publico: skill.visible_publico,
+      certificado_pdf: null,
     });
     setErrors({});
     setServerError("");
-    setMessage("");
     setShowForm(true);
   };
 
@@ -217,7 +214,7 @@ export default function SkillsPage() {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
 
-    if (!form.nombre.trim()) {
+    if (form.tipo === "tecnica" && !form.nombre.trim()) {
       nextErrors.nombre = "El nombre de la habilidad es obligatorio.";
     }
 
@@ -229,6 +226,10 @@ export default function SkillsPage() {
       nextErrors.nivel_dominio = "El nivel de dominio es obligatorio.";
     }
 
+    if (form.tipo === "tecnica" && form.visible_publico && !form.certificado_pdf && !editingSkill?.certificado_pdf) {
+      nextErrors.certificado_pdf = "Debes subir un certificado PDF para publicar esta habilidad.";
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -236,7 +237,6 @@ export default function SkillsPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setServerError("");
-    setMessage("");
 
     if (!validate()) return;
 
@@ -245,7 +245,7 @@ export default function SkillsPage() {
     try {
       const payload = {
         ...form,
-        nombre: form.nombre.trim(),
+        nombre: form.tipo === "tecnica" ? form.nombre.trim() : form.categoria,
         categoria: form.categoria,
       };
 
@@ -263,7 +263,6 @@ export default function SkillsPage() {
         return [updatedSkill, ...prev];
       });
 
-      setMessage(editingSkill ? "Habilidad actualizada correctamente." : "Habilidad creada correctamente.");
       closeForm();
     } catch (error: any) {
       const apiErrors = error?.response?.data?.errors || {};
@@ -286,7 +285,6 @@ export default function SkillsPage() {
       const updatedSkill = data.habilidad as Skill;
 
       setHabilidades((prev) => prev.map((item) => (item.id === updatedSkill.id ? updatedSkill : item)));
-      setMessage(updatedSkill.visible_publico ? "La habilidad ahora es visible en el portafolio publico." : "La habilidad fue ocultada del portafolio publico.");
       setServerError("");
     } catch (error: any) {
       setServerError(error?.response?.data?.message || "No se pudo actualizar la visibilidad.");
@@ -299,7 +297,6 @@ export default function SkillsPage() {
     try {
       await deleteSkill(pendingDelete.id);
       setHabilidades((prev) => prev.filter((item) => item.id !== pendingDelete.id));
-      setMessage("Habilidad eliminada correctamente.");
       setServerError("");
     } catch (error: any) {
       setServerError(error?.response?.data?.message || "No se pudo eliminar la habilidad.");
@@ -335,7 +332,7 @@ export default function SkillsPage() {
     >
       <div className="skills-page">
 
-        <AlertMessage message={serverError || message} />
+        <AlertMessage message={serverError} />
 
         <section className="skills-summary-grid">
           <article className="surface-card skills-summary-card">
@@ -416,6 +413,9 @@ export default function SkillsPage() {
 
                           <div className="profile-pill-list">
                             <span className="profile-pill neutral">{skill.nivel_dominio}</span>
+                            <span className={`profile-pill ${skill.certificado_pdf ? "" : "neutral"}`}>
+                              {skill.certificado_pdf ? "Certificado adjunto" : "Sin certificado"}
+                            </span>
                           </div>
 
                           <div className="skill-actions">
@@ -457,18 +457,18 @@ export default function SkillsPage() {
               </div>
 
               <form className="form-stack" onSubmit={handleSubmit}>
-                <div className="form-field">
-                  <label className="form-label">
-                    {form.tipo === "tecnica" ? "Nombre de la Habilidad *" : "Nombre de la Habilidad Blanda *"}
-                  </label>
-                  <input
-                    className={`form-input${errors.nombre ? " error" : ""}`}
-                    value={form.nombre}
-                    placeholder={form.tipo === "tecnica" ? "Ej: React, Python, Docker" : "Ej: Comunicacion"}
-                    onChange={(event) => setForm((prev) => ({ ...prev, nombre: event.target.value }))}
-                  />
-                  {errors.nombre ? <p className="form-error">{errors.nombre}</p> : null}
-                </div>
+                {form.tipo === "tecnica" ? (
+                  <div className="form-field">
+                    <label className="form-label">Nombre de la Habilidad *</label>
+                    <input
+                      className={`form-input${errors.nombre ? " error" : ""}`}
+                      value={form.nombre}
+                      placeholder="Ej: React, Python, Docker"
+                      onChange={(event) => setForm((prev) => ({ ...prev, nombre: event.target.value }))}
+                    />
+                    {errors.nombre ? <p className="form-error">{errors.nombre}</p> : null}
+                  </div>
+                ) : null}
 
                 <div className="form-field">
                   <label className="form-label">Categoria *</label>
@@ -502,6 +502,29 @@ export default function SkillsPage() {
                     ))}
                   </select>
                   {errors.nivel_dominio ? <p className="form-error">{errors.nivel_dominio}</p> : null}
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">
+                    Certificado PDF {form.tipo === "tecnica" ? (form.visible_publico && !editingSkill?.certificado_pdf ? "*" : "") : "(opcional)"}
+                  </label>
+                  <input
+                    className={`form-file${errors.certificado_pdf ? " error" : ""}`}
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      setForm((prev) => ({ ...prev, certificado_pdf: file }));
+                    }}
+                  />
+                  <p className="form-help">
+                    {editingSkill?.certificado_pdf
+                      ? "Ya existe un certificado. Sube otro PDF solo si quieres reemplazarlo."
+                      : form.tipo === "blanda"
+                        ? "Puedes subir un PDF si quieres respaldar esta habilidad. Maximo 5 MB."
+                        : "PDF publico que respalda esta habilidad. Maximo 5 MB."}
+                  </p>
+                  {errors.certificado_pdf ? <p className="form-error">{errors.certificado_pdf}</p> : null}
                 </div>
 
                 <label className="visibility-toggle">

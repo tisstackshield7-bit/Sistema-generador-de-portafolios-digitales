@@ -1,5 +1,12 @@
 import api from "./axios";
 import type { BasicProfilePayload } from "../types/profile";
+import type { SkillLevel } from "../types/skill";
+
+export interface PublicProfileFilters {
+  buscar?: string;
+  categoria?: string;
+  nivel?: SkillLevel | "";
+}
 
 export const createBasicProfile = async (payload: BasicProfilePayload) => {
   const formData = new FormData();
@@ -27,8 +34,15 @@ export const getMyProfile = async () => {
   return data;
 };
 
-export const getPublicProfiles = async () => {
-  const { data } = await api.get("/perfiles-publicos");
+export const getPublicProfiles = async (filters: PublicProfileFilters = {}, signal?: AbortSignal) => {
+  const { data } = await api.get("/perfiles-publicos", {
+    signal,
+    params: {
+      buscar: filters.buscar || undefined,
+      categoria: filters.categoria || undefined,
+      nivel: filters.nivel || undefined,
+    },
+  });
   return data;
 };
 

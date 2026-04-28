@@ -1,16 +1,16 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { authStore } from "../store/authStore";
-import { getMyProfile, getPublicProfiles } from "../api/profile";
-import { API_ORIGIN } from "../api/axios";
 import { logoutUser } from "../api/auth";
+import { API_ORIGIN } from "../api/axios";
+import { getMyProfile, getPublicProfiles } from "../api/profile";
+import { authStore } from "../store/authStore";
 import type { Perfil, PublicProfileCard } from "../types/profile";
-import PrivateWorkspaceLayout from "../components/dashboard/PrivateWorkspaceLayout";
+import type { SkillLevel } from "../types/skill";
 import "./HomePage.css";
-import logo from "../assets/logo.jpeg";
 
 function getInitials(name?: string | null) {
   if (!name) return "PF";
+
   return name
     .split(" ")
     .filter(Boolean)
@@ -20,343 +20,595 @@ function getInitials(name?: string | null) {
     .toUpperCase();
 }
 
-function getProfileHighlights(profile: PublicProfileCard) {
-  const visibleSkills = (profile.habilidades || []).slice(0, 3).map((skill) => skill.nombre);
-
-  if (visibleSkills.length) {
-    return visibleSkills;
-  }
-
-  const role = profile.titular_profesional || profile.profesion || "Perfil profesional";
-  const compactRole = role.length > 28 ? `${role.slice(0, 28).trim()}...` : role;
-
-  return [compactRole, "Perfil publico"].slice(0, 2);
+function normalizeText(value?: string | null) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
-function DashboardActionIcon({ kind }: { kind: "view" | "edit" }) {
+const skillLevelOrder: Record<string, number> = {
+  avanzado: 0,
+  intermedio: 1,
+  basico: 2,
+};
+
+const skillLevels: SkillLevel[] = ["Avanzado", "Intermedio", "Basico"];
+
+function getSkillLevelRank(level?: string | null) {
+  return skillLevelOrder[normalizeText(level)] ?? 99;
+}
+
+function getProfileHighlights(profile: PublicProfileCard, category?: string) {
+  const normalizedCategory = normalizeText(category);
+
+  return (profile.habilidades || [])
+    .filter((skill) => skill.tipo === "tecnica")
+    .filter((skill) => !normalizedCategory || normalizeText(skill.categoria) === normalizedCategory)
+    .sort((left, right) => {
+      const leftLevel = getSkillLevelRank(left.nivel_dominio);
+      const rightLevel = getSkillLevelRank(right.nivel_dominio);
+
+      return leftLevel - rightLevel || left.nombre.localeCompare(right.nombre);
+    })
+    .slice(0, 3);
+}
+
+function compareProfilesBySkillLevel(left: PublicProfileCard, right: PublicProfileCard, category?: string) {
+  const leftHighlights = getProfileHighlights(left, category);
+  const rightHighlights = getProfileHighlights(right, category);
+  const maxComparedSkills = Math.max(leftHighlights.length, rightHighlights.length);
+
+  for (let index = 0; index < maxComparedSkills; index += 1) {
+    const levelDifference = getSkillLevelRank(leftHighlights[index]?.nivel_dominio) - getSkillLevelRank(rightHighlights[index]?.nivel_dominio);
+
+    if (levelDifference !== 0) {
+      return levelDifference;
+    }
+  }
+
+  return left.nombre_completo.localeCompare(right.nombre_completo);
+}
+
+function getProfileCategories(profile: PublicProfileCard) {
+  const categories = (profile.habilidades || [])
+    .filter((skill) => skill.tipo === "tecnica")
+    .map((skill) => skill.categoria?.trim())
+    .filter((category): category is string => Boolean(category));
+
+  return Array.from(new Set(categories));
+}
+
+function getCategoryPanelId(category: string) {
+  return `category-${normalizeText(category).replace(/[^a-z0-9]+/g, "-")}`;
+}
+
+function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="dashboard-action-icon">
-      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        {kind === "view" ? (
-          <>
-            <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z" />
-            <circle cx="12" cy="12" r="3" />
-          </>
-        ) : (
-          <>
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-          </>
-        )}
-      </g>
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+      <path
+        d="M8.8 14.4a5.6 5.6 0 1 1 0-11.2 5.6 5.6 0 0 1 0 11.2Zm4.1-1.5 3.9 3.9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+      <path
+        d="M5.5 7.5 10 12l4.5-4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+      <path
+        d="m6 6 8 8M14 6l-8 8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ProfileCard({
+  profile,
+  category,
+  onViewProfile,
+}: {
+  profile: PublicProfileCard;
+  category?: string;
+  onViewProfile: (slug: string) => void;
+}) {
+  const highlights = getProfileHighlights(profile, category);
+
+  return (
+    <article className="landing-profile-card">
+      <div className="landing-profile-cover" />
+      <div className="landing-profile-body">
+        {profile.foto_perfil ? (
+          <img
+            src={`${API_ORIGIN}/storage/${profile.foto_perfil}`}
+            alt={profile.nombre_completo}
+            className="landing-profile-avatar"
+          />
+        ) : (
+          <div className="landing-profile-avatar landing-profile-fallback">{getInitials(profile.nombre_completo)}</div>
+        )}
+
+        <h3>{profile.nombre_completo}</h3>
+        <p>{profile.titular_profesional || profile.profesion}</p>
+
+        {highlights.length > 0 && (
+          <div className="landing-tag-row">
+            {highlights.map((skill) => (
+              <span key={`${profile.id}-${skill.id}`}>
+                {skill.nombre} - {skill.nivel_dominio}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <button type="button" onClick={() => onViewProfile(profile.slug)}>
+          Ver perfil
+        </button>
+      </div>
+    </article>
   );
 }
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const isAuth = authStore.isAuthenticated();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [publicProfiles, setPublicProfiles] = useState<PublicProfileCard[]>([]);
-  const isAuth = authStore.isAuthenticated();
+  const [profileCategories, setProfileCategories] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState<SkillLevel | "">("");
+  const [appliedQuery, setAppliedQuery] = useState("");
+  const [openFilter, setOpenFilter] = useState<"category" | "level" | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [showAllProfileCategories, setShowAllProfileCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!isAuth) return;
+    const trimmedQuery = query.trim();
+    const searchableQuery = trimmedQuery.length >= 2 ? trimmedQuery : "";
+    const controller = new AbortController();
+
+    const timeoutId = window.setTimeout(() => {
+      setAppliedQuery(searchableQuery);
+      getPublicProfiles({
+        buscar: searchableQuery,
+        categoria: selectedCategory,
+        nivel: selectedLevel,
+      }, controller.signal)
+        .then((data) => {
+          setPublicProfiles(data.perfiles || []);
+          setProfileCategories(data.categorias || []);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setPublicProfiles([]);
+          }
+        });
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [query, selectedCategory, selectedLevel]);
+
+  useEffect(() => {
+    if (!isAuth) {
+      setPerfil(null);
+      return;
+    }
+
     getMyProfile()
       .then((data) => setPerfil(data.perfil || null))
       .catch(() => setPerfil(null));
   }, [isAuth]);
 
-  useEffect(() => {
-    getPublicProfiles()
-      .then((data) => setPublicProfiles(data.perfiles || []))
-      .catch(() => setPublicProfiles([]));
-  }, []);
+  const user = authStore.getUser();
+  const welcomeName = useMemo(
+    () => perfil?.nombres || perfil?.nombre_completo?.split(" ")[0] || user?.correo?.split("@")[0] || "Profesional",
+    [perfil, user],
+  );
 
-  const initials = useMemo(() => getInitials(perfil?.nombre_completo), [perfil]);
-  const welcomeName = useMemo(() => perfil?.nombre_completo?.split(" ")[0] || "Profesional", [perfil]);
-  const featuredProfiles = publicProfiles.slice(0, 6);
-  const technicalSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "tecnica") || [];
-  const softSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "blanda") || [];
+  const filteredProfiles = useMemo(() => {
+    const currentProfileId = isAuth ? perfil?.id : null;
+
+    return publicProfiles.filter((profile) => !currentProfileId || profile.id !== currentProfileId);
+  }, [isAuth, perfil?.id, publicProfiles]);
+
+  const hasActiveSearch = Boolean(appliedQuery || selectedCategory || selectedLevel);
+  const searchResults = useMemo(
+    () =>
+      filteredProfiles
+        .filter((profile) => getProfileHighlights(profile, selectedCategory || undefined).length > 0)
+        .sort((left, right) => compareProfilesBySkillLevel(left, right, selectedCategory || undefined))
+        .slice(0, 6),
+    [filteredProfiles, selectedCategory],
+  );
+
+  const featuredProfileGroups = useMemo(() => {
+    const categories = selectedCategory
+      ? [selectedCategory]
+      : Array.from(new Set(filteredProfiles.flatMap(getProfileCategories))).sort((left, right) => left.localeCompare(right));
+
+    return categories
+      .map((category) => {
+        const profiles = filteredProfiles
+          .filter((profile) => getProfileHighlights(profile, category).length > 0)
+          .sort((left, right) => compareProfilesBySkillLevel(left, right, category));
+
+        return { category, profiles };
+      })
+      .filter((group) => group.profiles.length > 0);
+  }, [filteredProfiles, selectedCategory]);
+
+  useEffect(() => {
+    setExpandedCategories((current) => {
+      const availableCategories = featuredProfileGroups.map((group) => group.category);
+      return current.filter((category) => availableCategories.includes(category));
+    });
+  }, [featuredProfileGroups]);
+
+  useEffect(() => {
+    setShowAllProfileCategories((current) => {
+      const availableCategories = featuredProfileGroups.map((group) => group.category);
+
+      return current.filter((category) => availableCategories.includes(category));
+    });
+  }, [featuredProfileGroups]);
 
   const handleLogout = async () => {
     try {
       await logoutUser();
     } catch {
+      // The local session is cleared even if the backend session already expired.
     } finally {
       authStore.clearSession();
+      setPerfil(null);
       navigate("/");
     }
   };
 
-  const visitorView = (
-    <div className="page-section home-content">
-      <div className="visitor-layout">
-        <div className="visitor-main">
-          <section className="hero-panel surface-card hero-panel-compact">
-            <div className="hero-copy">
-              <p className="section-label">Red profesional</p>
-              <h1>Descubre perfiles profesionales con una presentacion mas clara.</h1>
-          <p className="section-copy">
-            Explora portafolios y perfiles desde una interfaz mas limpia, sobria y enfocada en el contenido.
-          </p>
-        </div>
-      </section>
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((current) => {
+      const isExpanded = current.includes(category);
 
-          <section className="search-highlight surface-card">
-            <div>
-              <p className="section-label">Buscador</p>
-              <h2 className="section-title">Busca perfiles o habilidades</h2>
-            </div>
-            <div className="search-box">
-              <span className="search-icon" aria-hidden="true">o</span>
-              <input className="form-input" type="text" placeholder="Buscar perfiles, tecnologias o roles" />
-              <button className="btn btn-primary" type="button">Explorar</button>
-            </div>
-          </section>
+      setShowAllProfileCategories((visibleCategories) => visibleCategories.filter((item) => item !== category));
 
-          <section className="surface-card section-panel">
-            <div className="section-head">
-              <div>
-                <p className="section-label">Perfiles destacados</p>
-                <h2 className="section-title">Explora perfiles recomendados</h2>
-              </div>
-            </div>
+      return isExpanded ? current.filter((item) => item !== category) : [...current, category];
+    });
+  };
 
-            <div className="profile-grid two-columns">
-              {featuredProfiles.length ? (
-                featuredProfiles.map((profile) => (
-                  <article key={profile.id} className="network-card">
-                    <div className="network-card-top">
-                      {profile.foto_perfil ? (
-                        <img
-                          src={`${API_ORIGIN}/storage/${profile.foto_perfil}`}
-                          alt={profile.nombre_completo}
-                          className="network-avatar"
-                        />
-                      ) : (
-                        <div className="network-avatar fallback-avatar">{getInitials(profile.nombre_completo)}</div>
-                      )}
-                      <div>
-                        <h3>{profile.nombre_completo}</h3>
-                        <p>{profile.titular_profesional || profile.profesion}</p>
-                      </div>
-                    </div>
-                    <p className="network-summary">
-                      {profile.biografia?.slice(0, 100) || "Perfil disponible dentro de la plataforma."}
-                    </p>
-                    <div className="profile-pill-list">
-                      {getProfileHighlights(profile).map((item) => (
-                        <span key={`${profile.id}-${item}`} className="profile-pill neutral">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                    <button className="btn btn-secondary btn-block" onClick={() => navigate(`/perfil-publico/${profile.slug}`)}>
-                      Ver perfil
-                    </button>
-                  </article>
-                ))
-              ) : (
-                <article className="empty-state-card">
-                  <h3>Aun no hay perfiles destacados</h3>
-                  <p className="section-copy">Crea tu portafolio para aparecer aqui.</p>
-                  <button className="btn btn-primary" onClick={() => navigate("/register")}>
-                    Registrarte
-                  </button>
-                </article>
-              )}
-            </div>
-          </section>
-        </div>
+  const toggleAllProfiles = (category: string) => {
+    setShowAllProfileCategories((current) =>
+      current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
+    );
+  };
 
-        <aside className="visitor-aside">
-          <section className="surface-card cta-panel cta-side">
-            <div>
-              <p className="section-label">Comienza hoy</p>
-              <h2 className="section-title">Crea una presencia profesional mas ordenada.</h2>
-              <p className="section-copy">Registra tu cuenta y completa tu perfil con una interfaz mas cuidada.</p>
-            </div>
-          </section>
-        </aside>
-      </div>
-    </div>
-  );
-
-  const loggedView = (
-    <PrivateWorkspaceLayout
-      active="dashboard"
-      perfil={perfil}
-      title=""
-      subtitle=""
-    >
-      <section className="dashboard-hero-panel">
-        <div className="dashboard-hero-copy">
-          <h1 className="dashboard-title">¡Bienvenido/a, {perfil?.nombre_completo || welcomeName}!</h1>
-          <p className="dashboard-hero-role">{perfil?.profesion || "Completa tu perfil profesional"}</p>
-          <div className="dashboard-hero-actions">
-            <button className="btn btn-secondary dashboard-ghost-button" onClick={() => navigate(perfil?.slug ? `/perfil-publico/${perfil.slug}` : "/perfil")}>
-              <DashboardActionIcon kind="view" />
-              Ver Portafolio Público
-            </button>
-            <button className="btn btn-secondary dashboard-ghost-button" onClick={() => navigate("/perfil/editar")}>
-              <DashboardActionIcon kind="edit" />
-              Editar Perfil
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="dashboard-stat-grid sprint-grid">
-        <article className="surface-card dashboard-stat-card">
-          <div className="dashboard-stat-head">
-            <h2>Proyectos</h2>
-          </div>
-          <strong>0</strong>
-          <p>Disponible en proximos sprints</p>
-        </article>
-        <article className="surface-card dashboard-stat-card">
-          <div className="dashboard-stat-head">
-            <h2>Habilidades</h2>
-          </div>
-          <strong>{perfil?.habilidades?.length || 0}</strong>
-          <p>{technicalSkills.length} tecnicas, {softSkills.length} blandas</p>
-        </article>
-        <article className="surface-card dashboard-stat-card">
-          <div className="dashboard-stat-head">
-            <h2>Experiencias</h2>
-          </div>
-          <strong>0</strong>
-          <p>Disponible en proximos sprints</p>
-        </article>
-      </section>
-
-      <section className="surface-card dashboard-profile-summary-card">
-        <div className="dashboard-summary-head">
-          <div>
-            <p className="section-label">Resumen del perfil</p>
-            <h2>Informacion basica de tu portafolio profesional</h2>
-          </div>
-        </div>
-
-        <div className="dashboard-profile-summary">
-          {perfil?.foto_perfil ? (
-            <img src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`} alt={perfil.nombre_completo} className="dashboard-profile-avatar" />
-          ) : (
-            <div className="dashboard-profile-avatar fallback-avatar">{initials}</div>
-          )}
-
-          <div className="dashboard-profile-copy">
-            <h3>{perfil?.nombre_completo || "Completa tu perfil"}</h3>
-            <p className="dashboard-profile-role">{perfil?.profesion || "Agrega tu profesion"}</p>
-            <p className="section-copy">
-              {perfil?.biografia || "Agrega una biografia clara para que tu perfil se vea mas profesional y completo."}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="surface-card dashboard-panel dashboard-skills-panel">
-        <div className="section-head dashboard-skills-head">
-          <div>
-            <p className="section-label">Habilidades principales</p>
-            <h2 className="section-title">Tus competencias tecnicas y blandas</h2>
-          </div>
-          <button className="btn btn-secondary" onClick={() => navigate("/perfil/habilidades")}>
-            Gestionar
-          </button>
-        </div>
-        {perfil?.habilidades?.length ? (
-          <div className="dashboard-skill-groups">
-            <div className="dashboard-skill-group">
-              <h3>Habilidades Tecnicas</h3>
-              <div className="dashboard-skill-chip-list">
-                {technicalSkills.length ? (
-                  technicalSkills.map((skill) => (
-                    <span key={skill.id} className="dashboard-skill-chip dark">
-                      {skill.nombre} - {skill.nivel_dominio}
-                    </span>
-                  ))
-                ) : (
-                  <span className="dashboard-skill-chip muted">Aun no registraste habilidades tecnicas</span>
-                )}
-              </div>
-            </div>
-
-            <div className="dashboard-skill-group">
-              <h3>Habilidades Blandas</h3>
-              <div className="dashboard-skill-chip-list">
-                {softSkills.length ? (
-                  softSkills.map((skill) => (
-                    <span key={skill.id} className="dashboard-skill-chip light">
-                      {skill.nombre} - {skill.nivel_dominio}
-                    </span>
-                  ))
-                ) : (
-                  <span className="dashboard-skill-chip muted">Aun no registraste habilidades blandas</span>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="dashboard-empty-note">
-            Registra habilidades tecnicas y blandas para reforzar tu portafolio profesional.
-          </div>
-        )}
-      </section>
-    </PrivateWorkspaceLayout>
-  );
-
-  if (isAuth) {
-    return loggedView;
-  }
+  const closeFilterMenu = () => setOpenFilter(null);
+  const viewPublicProfile = (slug: string) => navigate(`/perfil-publico/${slug}`);
 
   return (
-    <div className="home-shell app-shell">
-      <header className="home-nav">
-        <div className="page-section nav-inner">
-          <Link to="/" className="brand">
-            <span className="brand-mark">
-              <img src={logo} alt="Portafolio Digital de Proyectos" className="brand-logo" />
+    <div className="home-landing-shell">
+      <header className="landing-nav">
+        <div className="landing-container landing-nav-inner">
+          <Link to="/" className="landing-brand">
+            <span className="landing-brand-mark">P</span>
+            <span>
+              Porta<span>FolioPro</span>
             </span>
-            <span>PortaFolioPro</span>
           </Link>
 
-          <div className={`nav-search ${isAuth ? "show" : ""}`}>
-            <span className="search-icon" aria-hidden="true">o</span>
-            <input className="form-input" type="text" placeholder="Buscar perfiles o habilidades" />
-          </div>
-
-          <nav className="nav-links">
-            <Link to="/">Inicio</Link>
-            <Link to="/en-proceso">Explorar</Link>
-            {isAuth ? <Link to="/perfil/editar">Mi perfil</Link> : <Link to="/login">Ingresar</Link>}
+          <nav className="landing-links" aria-label="Navegacion principal">
+            <a href="#inicio">Inicio</a>
+            <a href="#explorar">Explorar</a>
           </nav>
 
-          <div className="nav-actions">
-            {!isAuth ? (
+          <div className="landing-actions">
+            {isAuth ? (
               <>
-                <Link to="/login" className="btn btn-secondary">Iniciar sesion</Link>
-                <Link to="/register" className="btn btn-primary">Registrarte</Link>
+                <Link to="/dashboard" className="landing-login-link">
+                  Dashboard
+                </Link>
+                <button className="landing-primary-button" type="button" onClick={handleLogout}>
+                  Cerrar sesion
+                </button>
               </>
             ) : (
               <>
-                <button className="icon-button" type="button" aria-label="Notificaciones">•</button>
-                <div className="user-menu">
-                  <div className="avatar-badge">{initials}</div>
-                  <div className="user-meta">
-                    <strong>{welcomeName}</strong>
-                    <button className="btn btn-tertiary" type="button" onClick={handleLogout}>
-                      Cerrar sesion
-                    </button>
-                  </div>
-                </div>
+                <Link to="/login" className="landing-login-link">
+                  Iniciar sesion
+                </Link>
+                <Link to="/register" className="landing-primary-button">
+                  Registrarse
+                </Link>
               </>
             )}
           </div>
         </div>
       </header>
 
-      <main>{visitorView}</main>
+      <main>
+        <section id="inicio" className="landing-hero">
+          <div className="landing-container landing-hero-inner">
+            <div className="landing-hero-copy">
+              <span className="landing-badge">
+                <span aria-hidden="true">*</span>
+                {isAuth ? `Bienvenido, ${welcomeName}` : "Plataforma profesional para mostrar tu talento"}
+              </span>
+
+              <h1>
+                {isAuth
+                  ? "Continua construyendo tu presencia profesional"
+                  : "Crea un portafolio digital que destaque tu perfil profesional"}
+              </h1>
+
+              <p>
+                {isAuth
+                  ? "Revisa perfiles publicados, actualiza tu informacion y vuelve a tu panel para gestionar tu portafolio."
+                  : "Publica tus proyectos, habilidades, experiencia y conecta con empresas o profesionales interesados en tu talento."}
+              </p>
+
+            </div>
+          </div>
+        </section>
+
+        <section id="explorar" className="landing-search-section">
+          <div className="landing-search-card">
+            <label className="landing-search-input">
+              <span aria-hidden="true">
+                <SearchIcon />
+              </span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar por nombre, tecnologia o proyecto..."
+              />
+              {query ? (
+                <button
+                  type="button"
+                  className="landing-search-clear"
+                  onClick={() => setQuery("")}
+                  aria-label="Limpiar busqueda"
+                >
+                  <CloseIcon />
+                </button>
+              ) : null}
+            </label>
+
+            <div className="landing-filter-menu">
+              <button type="button" onClick={() => setOpenFilter(openFilter === "category" ? null : "category")}>
+                <span>{selectedCategory || "Todas las areas"}</span>
+                <ChevronIcon />
+              </button>
+              {openFilter === "category" ? (
+                <div className="landing-filter-options">
+                  <button type="button" className={!selectedCategory ? "active" : ""} onClick={() => { setSelectedCategory(""); closeFilterMenu(); }}>
+                    Todas las areas
+                  </button>
+                  {profileCategories.map((category) => (
+                    <button type="button" key={category} className={selectedCategory === category ? "active" : ""} onClick={() => { setSelectedCategory(category); closeFilterMenu(); }}>
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="landing-filter-menu">
+              <button type="button" onClick={() => setOpenFilter(openFilter === "level" ? null : "level")}>
+                <span>{selectedLevel || "Todos los niveles"}</span>
+                <ChevronIcon />
+              </button>
+              {openFilter === "level" ? (
+                <div className="landing-filter-options">
+                  <button type="button" className={!selectedLevel ? "active" : ""} onClick={() => { setSelectedLevel(""); closeFilterMenu(); }}>
+                    Todos los niveles
+                  </button>
+                  {skillLevels.map((level) => (
+                    <button type="button" key={level} className={selectedLevel === level ? "active" : ""} onClick={() => { setSelectedLevel(level); closeFilterMenu(); }}>
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <button
+              type="button"
+              className="landing-search-submit"
+              onClick={() => document.getElementById("perfiles")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              Buscar
+            </button>
+          </div>
+        </section>
+
+        {hasActiveSearch && (
+          <section className="landing-container landing-results-section">
+            <div className="landing-results-head">
+              <div>
+                <h2>Resultados de busqueda</h2>
+                <p>{searchResults.length ? `${searchResults.length} perfiles encontrados` : "No hay perfiles con esos filtros."}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setSelectedCategory("");
+                  setSelectedLevel("");
+                }}
+              >
+                Limpiar filtros
+              </button>
+            </div>
+
+            {searchResults.length ? (
+              <div className="landing-profile-grid">
+                {searchResults.map((profile) => (
+                  <ProfileCard
+                    key={`result-${profile.id}`}
+                    profile={profile}
+                    category={selectedCategory || undefined}
+                    onViewProfile={viewPublicProfile}
+                  />
+                ))}
+              </div>
+            ) : (
+              <article className="landing-empty-card">
+                <h3>No hay perfiles para esa busqueda</h3>
+                <p>Prueba con otro nombre, tecnologia, area o nivel.</p>
+              </article>
+            )}
+          </section>
+        )}
+
+        <section id="perfiles" className={`landing-container landing-featured-section ${isAuth ? "landing-featured-section-auth" : ""}`}>
+          <div className="landing-section-head">
+            <div>
+              <h2>Perfiles destacados</h2>
+              <p>Profesionales con portafolios actualizados.</p>
+            </div>
+          </div>
+
+          <div className="landing-category-stack">
+            {featuredProfileGroups.length ? (
+              featuredProfileGroups.map((group) => {
+                const isExpanded = expandedCategories.includes(group.category);
+                const isShowingAllProfiles = showAllProfileCategories.includes(group.category);
+                const categoryPanelId = getCategoryPanelId(group.category);
+                const visibleProfiles = isShowingAllProfiles ? group.profiles : group.profiles.slice(0, 3);
+
+                return (
+                  <section key={group.category} className={`landing-category-group ${isExpanded ? "is-expanded" : ""}`}>
+                    <div className="landing-category-head">
+                      <h3>{group.category}</h3>
+                      <div className="landing-category-actions">
+                        {isExpanded ? (
+                          <button
+                            type="button"
+                            className="landing-show-all-profiles"
+                            onClick={() => toggleAllProfiles(group.category)}
+                            disabled={group.profiles.length <= 3}
+                          >
+                            {group.profiles.length <= 3 ? "Ver mas" : isShowingAllProfiles ? "Ver solo 3" : `Ver mas (${group.profiles.length - 3})`}
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="landing-category-toggle"
+                          onClick={() => toggleCategory(group.category)}
+                          aria-expanded={isExpanded}
+                          aria-controls={categoryPanelId}
+                        >
+                          <span className="sr-only">{isExpanded ? "Ocultar categoria" : "Mostrar categoria"}</span>
+                          <svg
+                            className={`landing-category-chevron ${isExpanded ? "is-expanded" : ""}`}
+                            viewBox="0 0 20 20"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            <path
+                              d="M5.5 7.5L10 12l4.5-4.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div id={categoryPanelId} className="landing-category-body" hidden={!isExpanded}>
+                      <div className="landing-profile-grid">
+                        {visibleProfiles.map((profile) => (
+                          <ProfileCard
+                            key={`${group.category}-${profile.id}`}
+                            profile={profile}
+                            category={group.category}
+                            onViewProfile={viewPublicProfile}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                );
+              })
+            ) : (
+              <article className="landing-empty-card">
+                <h3>No hay perfiles para esa busqueda</h3>
+                <p>Prueba con otro nombre, tecnologia o area profesional.</p>
+              </article>
+            )}
+          </div>
+        </section>
+
+        {!isAuth && (
+          <section className="landing-container landing-cta-section">
+            <div className="landing-cta-card">
+              <h2>Construye tu presencia profesional hoy</h2>
+              <p>Empieza gratis y crea un portafolio que represente tu experiencia, habilidades y proyectos.</p>
+              <Link to="/register">Crear cuenta gratis</Link>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className="landing-footer">
+        <div className="landing-container landing-footer-grid">
+          <div>
+            <h2>
+              Porta<span>FolioPro</span>
+            </h2>
+            <p>Plataforma para crear y compartir portafolios digitales.</p>
+          </div>
+          <div>
+            <h3>Producto</h3>
+            <a href="#explorar">Explorar</a>
+            <a href="#perfiles">Perfiles</a>
+            <Link to={isAuth ? "/dashboard" : "/register"}>{isAuth ? "Dashboard" : "Registrarse"}</Link>
+          </div>
+          <div>
+            <h3>Cuenta</h3>
+            <Link to="/login">Iniciar sesion</Link>
+            <Link to="/perfil/editar">Mi perfil</Link>
+          </div>
+          <div>
+            <h3>Legal</h3>
+            <span>Privacidad</span>
+            <span>Terminos</span>
+          </div>
+        </div>
+        <p className="landing-copyright">(c) 2026 PortaFolioPro. Todos los derechos reservados.</p>
+      </footer>
+
+      <button className="landing-top-button" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Volver arriba">
+        ^
+      </button>
     </div>
   );
 }

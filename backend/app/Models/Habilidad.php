@@ -17,6 +17,7 @@ class Habilidad extends Model
         'categoria',
         'nivel_dominio',
         'visible_publico',
+        'certificado_pdf',
         'creado_en',
         'actualizado_en',
     ];

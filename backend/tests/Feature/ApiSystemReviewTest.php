@@ -217,7 +217,7 @@ class ApiSystemReviewTest extends TestCase
         $this->assertTrue(Schema::hasColumns('perfiles', ['nombres', 'apellidos']));
     }
 
-    public function test_can_create_technical_skill_with_category_level_and_visibility(): void
+    public function test_can_create_technical_skill_with_category_and_level(): void
     {
         [$perfil, $token] = $this->createPerfilConSesion('skills@example.com', str_repeat('c', 80));
 
@@ -227,7 +227,7 @@ class ApiSystemReviewTest extends TestCase
                 'nombre' => 'React, TypeScript',
                 'categoria' => 'Frontend',
                 'nivel_dominio' => 'Avanzado',
-                'visible_publico' => true,
+                'visible_publico' => false,
             ]);
 
         $response->assertCreated()
@@ -235,7 +235,7 @@ class ApiSystemReviewTest extends TestCase
             ->assertJsonPath('habilidad.nombre', 'React, TypeScript')
             ->assertJsonPath('habilidad.categoria', 'Frontend')
             ->assertJsonPath('habilidad.nivel_dominio', 'Avanzado')
-            ->assertJsonPath('habilidad.visible_publico', true);
+            ->assertJsonPath('habilidad.visible_publico', false);
     }
 
     public function test_cannot_create_skill_without_required_fields(): void
@@ -253,20 +253,23 @@ class ApiSystemReviewTest extends TestCase
             ->assertJsonValidationErrors(['nombre', 'categoria', 'nivel_dominio']);
     }
 
-    public function test_cannot_create_soft_skill_without_valid_category(): void
+    public function test_can_create_public_soft_skill_from_category_without_certificate(): void
     {
         [, $token] = $this->createPerfilConSesion('soft-validation@example.com', str_repeat('h', 80));
 
         $response = $this->withHeader('Authorization', "Bearer {$token}")
             ->postJson('/api/habilidades', [
                 'tipo' => 'blanda',
-                'nombre' => 'Escucha activa',
+                'categoria' => 'Comunicacion',
                 'nivel_dominio' => 'Intermedio',
                 'visible_publico' => true,
             ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['categoria']);
+        $response->assertCreated()
+            ->assertJsonPath('habilidad.nombre', 'Comunicacion')
+            ->assertJsonPath('habilidad.categoria', 'Comunicacion')
+            ->assertJsonPath('habilidad.visible_publico', true)
+            ->assertJsonPath('habilidad.certificado_pdf', null);
     }
 
     public function test_can_update_visibility_and_delete_skill(): void
@@ -294,7 +297,6 @@ class ApiSystemReviewTest extends TestCase
         $this->withHeader('Authorization', "Bearer {$token}")
             ->putJson("/api/habilidades/{$habilidad->id}", [
                 'tipo' => 'blanda',
-                'nombre' => 'Liderazgo',
                 'categoria' => 'Liderazgo',
                 'nivel_dominio' => 'Avanzado',
                 'visible_publico' => true,
