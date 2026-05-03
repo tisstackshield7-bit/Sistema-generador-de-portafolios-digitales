@@ -6,6 +6,7 @@ import { getMyProfile, getPublicProfiles } from "../api/profile";
 import { authStore } from "../store/authStore";
 import type { Perfil, PublicProfileCard } from "../types/profile";
 import type { SkillLevel } from "../types/skill";
+import type { ProfileSearchFilters } from "../utils/profileFilters";
 import "./HomePage.css";
 
 function getInitials(name?: string | null) {
@@ -34,6 +35,17 @@ const skillLevelOrder: Record<string, number> = {
 };
 
 const skillLevels: SkillLevel[] = ["Avanzado", "Intermedio", "Basico"];
+
+const initialAdvancedFilters: Pick<
+  ProfileSearchFilters,
+  "role" | "experienceMin" | "experienceMax" | "technologies" | "technologyLevel"
+> = {
+  role: "",
+  experienceMin: "",
+  experienceMax: "",
+  technologies: [],
+  technologyLevel: "",
+};
 
 function getSkillLevelRank(level?: string | null) {
   return skillLevelOrder[normalizeText(level)] ?? 99;
@@ -219,12 +231,17 @@ export default function HomePage() {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [publicProfiles, setPublicProfiles] = useState<PublicProfileCard[]>([]);
   const [profileCategories, setProfileCategories] = useState<string[]>([]);
+  const [publicRoles, setPublicRoles] = useState<string[]>([]);
+  const [publicTechnologies, setPublicTechnologies] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedFeaturedCategory, setSelectedFeaturedCategory] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel | "">("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [openFilter, setOpenFilter] = useState<"category" | "level" | null>(null);
+  const [openAdvancedFilter, setOpenAdvancedFilter] = useState<"role" | "technologyLevel" | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState(initialAdvancedFilters);
   const [showAllFeaturedProfiles, setShowAllFeaturedProfiles] = useState(false);
 
   useEffect(() => {
@@ -238,10 +255,17 @@ export default function HomePage() {
         buscar: searchableQuery,
         categoria: selectedCategory,
         nivel: selectedLevel,
+        rol: advancedFilters.role,
+        experiencia_min: advancedFilters.experienceMin,
+        experiencia_max: advancedFilters.experienceMax,
+        tecnologias: advancedFilters.technologies,
+        nivel_tecnologia: advancedFilters.technologyLevel,
       }, controller.signal)
         .then((data) => {
           setPublicProfiles(data.perfiles || []);
           setProfileCategories(data.categorias || []);
+          setPublicRoles(data.roles || []);
+          setPublicTechnologies(data.tecnologias || []);
         })
         .catch(() => {
           if (!controller.signal.aborted) {
@@ -254,7 +278,7 @@ export default function HomePage() {
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [query, selectedCategory, selectedLevel]);
+  }, [advancedFilters, query, selectedCategory, selectedLevel]);
 
   useEffect(() => {
     if (!isAuth) {
@@ -279,11 +303,20 @@ export default function HomePage() {
     return publicProfiles.filter((profile) => !currentProfileId || profile.id !== currentProfileId);
   }, [isAuth, perfil?.id, publicProfiles]);
 
-  const hasActiveSearch = Boolean(appliedQuery || selectedCategory || selectedLevel);
+  const hasActiveAdvancedFilters = Boolean(
+    advancedFilters.role ||
+      advancedFilters.experienceMin ||
+      advancedFilters.experienceMax ||
+      advancedFilters.technologies.length ||
+      advancedFilters.technologyLevel,
+  );
+  const hasActiveSearch = Boolean(appliedQuery || selectedCategory || selectedLevel || hasActiveAdvancedFilters);
+
+  const roleOptions = publicRoles;
+  const technologyOptions = publicTechnologies;
   const searchResults = useMemo(
     () =>
       filteredProfiles
-        .filter((profile) => getProfileHighlights(profile, selectedCategory || undefined).length > 0)
         .sort((left, right) => compareProfilesBySkillLevel(left, right, selectedCategory || undefined))
         .slice(0, 6),
     [filteredProfiles, selectedCategory],
@@ -316,7 +349,30 @@ export default function HomePage() {
   };
 
   const closeFilterMenu = () => setOpenFilter(null);
+  const closeAdvancedFilterMenu = () => setOpenAdvancedFilter(null);
   const viewPublicProfile = (slug: string) => navigate(`/perfil-publico/${slug}`);
+  const updateAdvancedFilter = <Key extends keyof typeof advancedFilters>(key: Key, value: (typeof advancedFilters)[Key]) => {
+    setAdvancedFilters((current) => ({ ...current, [key]: value }));
+  };
+  const toggleTechnologyFilter = (technology: string) => {
+    setAdvancedFilters((current) => {
+      const exists = current.technologies.includes(technology);
+
+      return {
+        ...current,
+        technologies: exists
+          ? current.technologies.filter((item) => item !== technology)
+          : [...current.technologies, technology],
+      };
+    });
+  };
+  const clearAllFilters = () => {
+    setQuery("");
+    setAppliedQuery("");
+    setSelectedCategory("");
+    setSelectedLevel("");
+    setAdvancedFilters(initialAdvancedFilters);
+  };
 
   return (
     <div className="home-landing-shell">
@@ -447,10 +503,153 @@ export default function HomePage() {
             <button
               type="button"
               className="landing-search-submit"
-              onClick={() => document.getElementById("perfiles")?.scrollIntoView({ behavior: "smooth" })}
+              onClick={() => {
+                setAppliedQuery(query.trim());
+                document.getElementById("perfiles")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
               Buscar
             </button>
+          </div>
+
+          <div className="landing-advanced-filter-shell">
+            <button
+              type="button"
+              className={`landing-advanced-toggle${showAdvancedFilters ? " active" : ""}`}
+              onClick={() => setShowAdvancedFilters((current) => !current)}
+            >
+              Filtros avanzados
+              {hasActiveAdvancedFilters ? <span>{advancedFilters.technologies.length + (advancedFilters.role ? 1 : 0) + (advancedFilters.experienceMin || advancedFilters.experienceMax ? 1 : 0) + (advancedFilters.technologyLevel ? 1 : 0)}</span> : null}
+            </button>
+
+            {showAdvancedFilters ? (
+              <div className="landing-advanced-panel">
+                <div className="landing-advanced-field">
+                  <span>Rol</span>
+                  <div className="landing-filter-menu landing-advanced-menu">
+                    <button
+                      type="button"
+                      onClick={() => setOpenAdvancedFilter(openAdvancedFilter === "role" ? null : "role")}
+                    >
+                      <span>{advancedFilters.role || "Todos los roles"}</span>
+                      <ChevronIcon />
+                    </button>
+                    {openAdvancedFilter === "role" ? (
+                      <div className="landing-filter-options">
+                        <button
+                          type="button"
+                          className={!advancedFilters.role ? "active" : ""}
+                          onClick={() => {
+                            updateAdvancedFilter("role", "");
+                            closeAdvancedFilterMenu();
+                          }}
+                        >
+                          Todos los roles
+                        </button>
+                        {roleOptions.map((role) => (
+                          <button
+                            type="button"
+                            key={role}
+                            className={advancedFilters.role === role ? "active" : ""}
+                            onClick={() => {
+                              updateAdvancedFilter("role", role);
+                              closeAdvancedFilterMenu();
+                            }}
+                          >
+                            {role}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="landing-advanced-range">
+                  <label className="landing-advanced-field">
+                    <span>Experiencia min.</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={advancedFilters.experienceMin}
+                      onChange={(event) => updateAdvancedFilter("experienceMin", event.target.value)}
+                      placeholder="0"
+                    />
+                  </label>
+                  <label className="landing-advanced-field">
+                    <span>Experiencia max.</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={advancedFilters.experienceMax}
+                      onChange={(event) => updateAdvancedFilter("experienceMax", event.target.value)}
+                      placeholder="10"
+                    />
+                  </label>
+                </div>
+
+                <div className="landing-advanced-field">
+                  <span>Nivel por tecnologia</span>
+                  <div className="landing-filter-menu landing-advanced-menu">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenAdvancedFilter(openAdvancedFilter === "technologyLevel" ? null : "technologyLevel")
+                      }
+                    >
+                      <span>{advancedFilters.technologyLevel || "Cualquier nivel"}</span>
+                      <ChevronIcon />
+                    </button>
+                    {openAdvancedFilter === "technologyLevel" ? (
+                      <div className="landing-filter-options">
+                        <button
+                          type="button"
+                          className={!advancedFilters.technologyLevel ? "active" : ""}
+                          onClick={() => {
+                            updateAdvancedFilter("technologyLevel", "");
+                            closeAdvancedFilterMenu();
+                          }}
+                        >
+                          Cualquier nivel
+                        </button>
+                        {skillLevels.map((level) => (
+                          <button
+                            type="button"
+                            key={level}
+                            className={advancedFilters.technologyLevel === level ? "active" : ""}
+                            onClick={() => {
+                              updateAdvancedFilter("technologyLevel", level);
+                              closeAdvancedFilterMenu();
+                            }}
+                          >
+                            {level}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="landing-advanced-tech-group">
+                  <span>Tecnologias</span>
+                  <div className="landing-advanced-tech-list">
+                    {technologyOptions.length ? (
+                      technologyOptions.map((technology) => (
+                        <button
+                          type="button"
+                          key={technology}
+                          className={advancedFilters.technologies.includes(technology) ? "active" : ""}
+                          onClick={() => toggleTechnologyFilter(technology)}
+                        >
+                          {technology}
+                        </button>
+                      ))
+                    ) : (
+                      <p>No hay tecnologias publicadas.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -463,11 +662,7 @@ export default function HomePage() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setQuery("");
-                  setSelectedCategory("");
-                  setSelectedLevel("");
-                }}
+                onClick={clearAllFilters}
               >
                 Limpiar filtros
               </button>
@@ -486,7 +681,7 @@ export default function HomePage() {
               </div>
             ) : (
               <article className="landing-empty-card">
-                <h3>No hay perfiles para esa busqueda</h3>
+                <h3>No se encontraron perfiles</h3>
                 <p>Prueba con otro nombre, tecnologia, area o nivel.</p>
               </article>
             )}
@@ -549,7 +744,7 @@ export default function HomePage() {
               </>
             ) : (
               <article className="landing-empty-card">
-                <h3>No hay perfiles para esa busqueda</h3>
+                <h3>No se encontraron perfiles</h3>
                 <p>Prueba con otro nombre, tecnologia o area profesional.</p>
               </article>
             )}

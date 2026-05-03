@@ -139,11 +139,26 @@ class ProfileController extends Controller
             'buscar' => ['nullable', 'string', 'max:120'],
             'categoria' => ['nullable', 'string', 'max:100'],
             'nivel' => ['nullable', 'string', 'in:Basico,Intermedio,Avanzado'],
+            'rol' => ['nullable', 'string', 'max:150'],
+            'experiencia_min' => ['nullable', 'numeric', 'min:0'],
+            'experiencia_max' => ['nullable', 'numeric', 'min:0'],
+            'tecnologias' => ['nullable', 'array'],
+            'tecnologias.*' => ['string', 'max:150'],
+            'nivel_tecnologia' => ['nullable', 'string', 'in:Basico,Intermedio,Avanzado'],
         ]);
 
         $search = trim($filters['buscar'] ?? '');
         $category = trim($filters['categoria'] ?? '');
         $level = $filters['nivel'] ?? null;
+        $role = trim($filters['rol'] ?? '');
+        $experienceMin = $filters['experiencia_min'] ?? null;
+        $experienceMax = $filters['experiencia_max'] ?? null;
+        $technologies = collect($filters['tecnologias'] ?? [])
+            ->map(fn ($technology) => trim($technology))
+            ->filter()
+            ->unique()
+            ->values();
+        $technologyLevel = $filters['nivel_tecnologia'] ?? null;
 
         $applySkillFilters = function ($query) use ($category, $level) {
             $query->where('visible_publico', true)
@@ -193,6 +208,61 @@ class ProfileController extends Controller
             $perfilesQuery->whereHas('habilidades', $applySkillFilters);
         }
 
+        if ($role !== '') {
+            $perfilesQuery->where(function ($query) use ($role) {
+                $query->where('profesion', 'ilike', "%{$role}%")
+                    ->orWhere('titular_profesional', 'ilike', "%{$role}%")
+                    ->orWhereHas('proyectos', function ($projectQuery) use ($role) {
+                        $projectQuery->where('visible_publico', true)
+                            ->where('rol', 'ilike', "%{$role}%");
+                    });
+            });
+        }
+
+        $technologies->each(function ($technology) use ($perfilesQuery, $technologyLevel) {
+            $perfilesQuery->where(function ($query) use ($technology, $technologyLevel) {
+                $query->whereHas('habilidades', function ($skillQuery) use ($technology, $technologyLevel) {
+                    $skillQuery->where('visible_publico', true)
+                        ->where('tipo', 'tecnica')
+                        ->where('nombre', 'ilike', $technology);
+
+                    if ($technologyLevel) {
+                        $skillQuery->where('nivel_dominio', $technologyLevel);
+                    }
+                });
+
+                if (!$technologyLevel) {
+                    $query->orWhereHas('proyectos', function ($projectQuery) use ($technology) {
+                        $projectQuery->where('visible_publico', true)
+                            ->whereRaw('tecnologias::text ILIKE ?', ['%"' . $technology . '"%']);
+                    });
+                }
+            });
+        });
+
+        if ($experienceMin !== null || $experienceMax !== null) {
+            $experienceSubquery = "
+                SELECT COALESCE(SUM(
+                    GREATEST(
+                        EXTRACT(EPOCH FROM ((COALESCE(fecha_fin, CURRENT_DATE)::timestamp) - fecha_inicio::timestamp)) / 31557600,
+                        0
+                    )
+                ), 0)
+                FROM proyectos
+                WHERE proyectos.perfil_id = perfiles.id
+                    AND proyectos.visible_publico = true
+                    AND proyectos.fecha_inicio IS NOT NULL
+            ";
+
+            if ($experienceMin !== null) {
+                $perfilesQuery->whereRaw("({$experienceSubquery}) >= ?", [$experienceMin]);
+            }
+
+            if ($experienceMax !== null) {
+                $perfilesQuery->whereRaw("({$experienceSubquery}) <= ?", [$experienceMax]);
+            }
+        }
+
         $perfilesQuery->latest('creado_en');
 
         $perfiles = $perfilesQuery
@@ -219,13 +289,59 @@ class ProfileController extends Controller
                 ->orderBy('categoria')
                 ->pluck('categoria')
                 ->values(),
+            'roles' => $this->getPublicRoleOptions(),
+            'tecnologias' => $this->getPublicTechnologyOptions(),
             'niveles' => ['Avanzado', 'Intermedio', 'Basico'],
             'filtros' => [
                 'buscar' => $search,
                 'categoria' => $category,
                 'nivel' => $level,
+                'rol' => $role,
+                'experiencia_min' => $experienceMin,
+                'experiencia_max' => $experienceMax,
+                'tecnologias' => $technologies,
+                'nivel_tecnologia' => $technologyLevel,
             ],
         ]);
+    }
+
+    private function getPublicRoleOptions()
+    {
+        $profileRoles = Perfil::where('es_publico', true)
+            ->get(['profesion', 'titular_profesional'])
+            ->flatMap(fn ($perfil) => [$perfil->profesion, $perfil->titular_profesional]);
+
+        $projectRoles = \App\Models\Proyecto::where('visible_publico', true)
+            ->distinct()
+            ->pluck('rol');
+
+        return $profileRoles
+            ->merge($projectRoles)
+            ->map(fn ($role) => trim((string) $role))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+    }
+
+    private function getPublicTechnologyOptions()
+    {
+        $skillTechnologies = Habilidad::where('visible_publico', true)
+            ->where('tipo', 'tecnica')
+            ->distinct()
+            ->pluck('nombre');
+
+        $projectTechnologies = \App\Models\Proyecto::where('visible_publico', true)
+            ->pluck('tecnologias')
+            ->flatMap(fn ($technologies) => is_array($technologies) ? $technologies : []);
+
+        return $skillTechnologies
+            ->merge($projectTechnologies)
+            ->map(fn ($technology) => trim((string) $technology))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
     }
 
     public function showPublicBySlug(string $slug)

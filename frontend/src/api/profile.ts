@@ -6,6 +6,11 @@ export interface PublicProfileFilters {
   buscar?: string;
   categoria?: string;
   nivel?: SkillLevel | "";
+  rol?: string;
+  experiencia_min?: string;
+  experiencia_max?: string;
+  tecnologias?: string[];
+  nivel_tecnologia?: SkillLevel | "";
 }
 
 export const createBasicProfile = async (payload: BasicProfilePayload) => {
@@ -42,6 +47,11 @@ export const getPublicProfiles = async (filters: PublicProfileFilters = {}, sign
       buscar: filters.buscar || undefined,
       categoria: filters.categoria || undefined,
       nivel: filters.nivel || undefined,
+      rol: filters.rol || undefined,
+      experiencia_min: filters.experiencia_min || undefined,
+      experiencia_max: filters.experiencia_max || undefined,
+      tecnologias: filters.tecnologias?.length ? filters.tecnologias : undefined,
+      nivel_tecnologia: filters.nivel_tecnologia || undefined,
     },
   });
   return data;
