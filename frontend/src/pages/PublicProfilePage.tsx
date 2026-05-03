@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_ORIGIN } from "../api/axios";
 import { getPublicProfileBySlug } from "../api/profile";
+import { authStore } from "../store/authStore";
 import type { Perfil } from "../types/profile";
+import type { Project } from "../types/project";
 import type { Skill } from "../types/skill";
 
 function getInitials(name?: string | null) {
@@ -45,8 +47,54 @@ function getSkillTone(skill: Skill) {
   return skill.tipo === "tecnica" ? "blue" : "violet";
 }
 
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="project-date-icon">
+      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="5" width="16" height="15" rx="2" />
+        <path d="M8 3v4M16 3v4M4 10h16" />
+      </g>
+    </svg>
+  );
+}
+
 function buildCertificateViewerUrl(path: string) {
   return `${API_ORIGIN}/storage/${path}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+}
+
+function buildStorageUrl(path: string) {
+  return `${API_ORIGIN}/storage/${path}`;
+}
+
+function formatProjectMonthYear(value?: string | null) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("es-BO", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+function getProjectDateRange(project: Project) {
+  const startDate = formatProjectMonthYear(project.fecha_inicio);
+  const endDate = formatProjectMonthYear(project.fecha_fin) || "Actualidad";
+
+  return startDate ? `${startDate} - ${endDate}` : endDate;
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={`category-chevron ${expanded ? "expanded" : ""}`}>
+      <path
+        d="m6 9 6 6 6-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 export default function PublicProfilePage() {
@@ -54,11 +102,20 @@ export default function PublicProfilePage() {
   const { slug } = useParams();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [certificateUrl, setCertificateUrl] = useState("");
+  const [evidenceSkill, setEvidenceSkill] = useState<Skill | null>(null);
+  const [expandedSkillGroups, setExpandedSkillGroups] = useState({
+    technical: false,
+    soft: false,
+  });
   const [loading, setLoading] = useState(true);
   const title = perfil?.titular_profesional || perfil?.profesion || "Perfil profesional";
   const technicalSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "tecnica" && skill.visible_publico) || [];
   const softSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "blanda" && skill.visible_publico) || [];
+  const publicProjects = perfil?.proyectos?.filter((project) => project.visible_publico) || [];
   const summaryText = perfil?.biografia || "Perfil publico disponible dentro de la plataforma.";
+  const backToHomePath = authStore.isAuthenticated() ? "/dashboard" : "/";
+  const backToHomeLabel = authStore.isAuthenticated() ? "Volver al dashboard" : "Volver al inicio";
+  const phoneHref = perfil?.telefono ? `tel:${perfil.telefono.replace(/\s+/g, "")}` : "";
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -122,6 +179,21 @@ export default function PublicProfilePage() {
             <div className="public-portfolio-copy">
               <h1>{perfil.nombre_completo}</h1>
               <p className="public-portfolio-role">{title}</p>
+              <p className="public-portfolio-profession">{perfil.profesion}</p>
+              {perfil.correo || perfil.telefono ? (
+                <div className="public-portfolio-contact-row" aria-label="Datos de contacto">
+                  {perfil.correo ? (
+                    <a className="public-portfolio-contact-link" href={`mailto:${perfil.correo}`}>
+                      {perfil.correo}
+                    </a>
+                  ) : null}
+                  {perfil.telefono ? (
+                    <a className="public-portfolio-contact-link" href={phoneHref}>
+                      {perfil.telefono}
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
               <p className="public-portfolio-bio">{summaryText}</p>
 
               <div className="public-portfolio-meta-row">
@@ -133,11 +205,15 @@ export default function PublicProfilePage() {
                   <RibbonIcon />
                   <span>{softSkills.length} habilidades blandas</span>
                 </span>
+                <span className="public-portfolio-meta-pill">
+                  <PortfolioIcon />
+                  <span>{publicProjects.length} proyectos</span>
+                </span>
               </div>
 
               <div className="public-portfolio-tag-row">
-                <button type="button" className="public-portfolio-tag-pill" onClick={() => navigate("/")}>
-                  Volver al inicio
+                <button type="button" className="public-portfolio-tag-pill" onClick={() => navigate(backToHomePath)}>
+                  {backToHomeLabel}
                 </button>
               </div>
             </div>
@@ -158,11 +234,30 @@ export default function PublicProfilePage() {
 
         <section className="public-skills-layout">
           <article className="surface-card public-skills-card">
-            <h3>Habilidades Tecnicas</h3>
-            {technicalSkills.length ? (
+            <button
+              type="button"
+              className="public-skill-group-toggle"
+              onClick={() => setExpandedSkillGroups((prev) => ({ ...prev, technical: !prev.technical }))}
+              aria-expanded={expandedSkillGroups.technical}
+            >
+              <span>
+                <strong>Habilidades Tecnicas</strong>
+              </span>
+              <ChevronIcon expanded={expandedSkillGroups.technical} />
+            </button>
+            {expandedSkillGroups.technical && technicalSkills.length ? (
               <div className="public-skill-chip-list">
                 {technicalSkills.map((skill) => (
-                  skill.certificado_pdf ? (
+                  skill.evidencias?.length ? (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
+                      onClick={() => setEvidenceSkill(skill)}
+                    >
+                      {skill.nombre} - {skill.nivel_dominio}
+                    </button>
+                  ) : skill.certificado_pdf ? (
                     <button
                       key={skill.id}
                       type="button"
@@ -179,16 +274,35 @@ export default function PublicProfilePage() {
                 ))}
               </div>
             ) : (
-              <p className="section-copy">No hay habilidades tecnicas visibles.</p>
+              expandedSkillGroups.technical ? <p className="section-copy">No hay habilidades tecnicas visibles.</p> : null
             )}
           </article>
 
           <article className="surface-card public-skills-card">
-            <h3>Habilidades Blandas</h3>
-            {softSkills.length ? (
+            <button
+              type="button"
+              className="public-skill-group-toggle"
+              onClick={() => setExpandedSkillGroups((prev) => ({ ...prev, soft: !prev.soft }))}
+              aria-expanded={expandedSkillGroups.soft}
+            >
+              <span>
+                <strong>Habilidades Blandas</strong>
+              </span>
+              <ChevronIcon expanded={expandedSkillGroups.soft} />
+            </button>
+            {expandedSkillGroups.soft && softSkills.length ? (
               <div className="public-skill-chip-list">
                 {softSkills.map((skill) => (
-                  skill.certificado_pdf ? (
+                  skill.evidencias?.length ? (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
+                      onClick={() => setEvidenceSkill(skill)}
+                    >
+                      {skill.nombre} - {skill.nivel_dominio}
+                    </button>
+                  ) : skill.certificado_pdf ? (
                     <button
                       key={skill.id}
                       type="button"
@@ -205,10 +319,81 @@ export default function PublicProfilePage() {
                 ))}
               </div>
             ) : (
-              <p className="section-copy">No hay habilidades blandas visibles.</p>
+              expandedSkillGroups.soft ? <p className="section-copy">No hay habilidades blandas visibles.</p> : null
             )}
           </article>
         </section>
+
+        <section className="public-skills-intro">
+          <div className="public-skills-title-mark">
+            <PortfolioIcon />
+          </div>
+          <div className="public-skills-heading">
+            <h2>Proyectos</h2>
+          </div>
+        </section>
+
+        {publicProjects.length ? (
+          <section className="portfolio-project-list">
+            {publicProjects.map((project) => (
+              <article key={project.id} className="surface-card portfolio-project-card">
+                {project.url_imagen ? (
+                  <img src={project.url_imagen} alt={project.titulo} className="portfolio-project-image" />
+                ) : (
+                  <div className="portfolio-project-image project-image-fallback">{project.titulo.slice(0, 2).toUpperCase()}</div>
+                )}
+
+                <div className="portfolio-project-body">
+                  <div className="portfolio-project-head">
+                    <div>
+                      <h3>{project.titulo}</h3>
+                      <p>{project.rol}</p>
+                    </div>
+                    <span className="portfolio-project-date">
+                      <CalendarIcon />
+                      {getProjectDateRange(project)}
+                    </span>
+                  </div>
+
+                  <p className="portfolio-project-description">{project.descripcion}</p>
+
+                  {(project.tecnologias || []).length ? (
+                    <div className="portfolio-project-block">
+                      <span className="portfolio-project-label">Tecnologias:</span>
+                      <div className="portfolio-project-tags">
+                        {project.tecnologias.map((technology) => (
+                          <span key={technology}>{technology}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {project.logros?.length ? (
+                    <div className="portfolio-project-block">
+                      <span className="portfolio-project-label">Logros destacados:</span>
+                      <ul className="project-achievement-list">
+                        {project.logros.map((achievement) => (
+                          <li key={achievement}>{achievement}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {project.enlace_proyecto ? (
+                    <a href={project.enlace_proyecto} target="_blank" rel="noreferrer" className="portfolio-project-link">
+                      Ver proyecto
+                      <span aria-hidden="true">-&gt;</span>
+                    </a>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </section>
+        ) : (
+          <section className="surface-card public-skills-card">
+            <p className="section-copy">No hay proyectos visibles.</p>
+          </section>
+        )}
       </main>
 
       {certificateUrl ? (
@@ -221,6 +406,43 @@ export default function PublicProfilePage() {
               </button>
             </div>
             <iframe src={certificateUrl} title="Certificado de habilidad" className="public-certificate-frame" />
+          </section>
+        </div>
+      ) : null}
+
+      {evidenceSkill ? (
+        <div className="public-certificate-backdrop" role="presentation" onClick={() => setEvidenceSkill(null)}>
+          <section className="public-certificate-modal evidence-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="public-certificate-head">
+              <h2>Evidencias de {evidenceSkill.nombre}</h2>
+              <button type="button" onClick={() => setEvidenceSkill(null)}>
+                Cerrar
+              </button>
+            </div>
+            <div className="public-evidence-list">
+              {(evidenceSkill.evidencias || []).map((evidence) => (
+                <article key={evidence.id} className="public-evidence-card">
+                  <div>
+                    <span className="portfolio-project-label">{evidence.tipo}</span>
+                    <h3>{evidence.titulo}</h3>
+                    {evidence.descripcion ? <p className="section-copy">{evidence.descripcion}</p> : null}
+                    {evidence.emisor ? <p className="meta-text">Emisor: {evidence.emisor}</p> : null}
+                  </div>
+                  <div className="skill-actions">
+                    {evidence.url ? (
+                      <a href={evidence.url} target="_blank" rel="noreferrer" className="btn btn-secondary">
+                        Abrir enlace
+                      </a>
+                    ) : null}
+                    {evidence.archivo ? (
+                      <a href={buildStorageUrl(evidence.archivo)} target="_blank" rel="noreferrer" className="btn btn-secondary">
+                        Abrir archivo
+                      </a>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
         </div>
       ) : null}

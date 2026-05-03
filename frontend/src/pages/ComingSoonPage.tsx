@@ -7,7 +7,7 @@ export default function ComingSoonPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#ffffff",
+        background: "linear-gradient(135deg, #f8fafc, #eef6ff)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -21,7 +21,7 @@ export default function ComingSoonPage() {
           textAlign: "center",
         }}
       >
-        <p style={{ margin: "0 0 12px", color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <p style={{ margin: "0 0 12px", color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 800 }}>
           PortaFolioPro
         </p>
         <h1 style={{ margin: "0 0 16px", fontSize: "44px", color: "#0f172a" }}>P&aacute;gina en proceso</h1>
@@ -32,12 +32,13 @@ export default function ComingSoonPage() {
           onClick={() => navigate("/")}
           style={{
             padding: "14px 24px",
-            borderRadius: "12px",
+            borderRadius: "999px",
             border: "none",
-            background: "#10367D",
+            background: "#1d4ed8",
             color: "#ffffff",
-            fontWeight: 700,
+            fontWeight: 900,
             cursor: "pointer",
+            boxShadow: "0 16px 30px rgba(29, 78, 216, 0.24)",
           }}
         >
           Volver al inicio

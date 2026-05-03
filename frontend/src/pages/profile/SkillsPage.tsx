@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import AlertMessage from "../../components/common/AlertMessage";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
 import { getMyProfile } from "../../api/profile";
 import { createSkill, deleteSkill, getMySkills, updateSkill, updateSkillVisibility } from "../../api/skills";
 import type { Perfil } from "../../types/profile";
-import type { Skill, SkillPayload, SkillType } from "../../types/skill";
+import type { Skill, SkillEvidencePayload, SkillPayload, SkillType } from "../../types/skill";
 
 const FALLBACK_TECHNICAL_CATEGORIES = [
   "Frontend",
@@ -35,9 +36,23 @@ const EMPTY_FORM: SkillPayload = {
   tipo: "tecnica",
   nombre: "",
   categoria: "",
+  categoria_personalizada: "",
   nivel_dominio: "",
   visible_publico: false,
   certificado_pdf: null,
+  evidencias: [],
+};
+
+const CUSTOM_SOFT_CATEGORY = "__custom__";
+
+const EMPTY_EVIDENCE: SkillEvidencePayload = {
+  tipo: "certificado",
+  titulo: "",
+  descripcion: "",
+  url: "",
+  emisor: "",
+  fecha: "",
+  archivo: null,
 };
 
 function EyeIcon({ off = false }: { off?: boolean }) {
@@ -84,6 +99,44 @@ function groupSkillsByCategory(skills: Skill[]) {
   }, {});
 }
 
+function hasEvidenceContent(evidence: SkillEvidencePayload) {
+  return Boolean(
+    evidence.titulo.trim()
+      || evidence.descripcion?.trim()
+      || evidence.url?.trim()
+      || evidence.emisor?.trim()
+      || evidence.fecha
+      || evidence.archivo,
+  );
+}
+
+function getSupportLabel(skill: Skill) {
+  return (skill.evidencias?.length || skill.certificado_pdf) ? "Nivel respaldado" : "Nivel declarado";
+}
+
+function getEvidenceSummary(evidence: SkillEvidencePayload, index: number) {
+  const fallbackTitle = evidence.titulo.trim() || `Evidencia ${index + 1}`;
+  const hasAttachment = evidence.archivo || evidence.url?.trim();
+
+  return {
+    title: fallbackTitle,
+    detail: `${evidence.tipo}${hasAttachment ? " con respaldo" : ""}`,
+  };
+}
+
+type ApiErrorData = {
+  message?: string;
+  errors?: Record<string, string[] | string>;
+};
+
+function getApiErrorData(error: unknown) {
+  if (error instanceof AxiosError) {
+    return error.response?.data as ApiErrorData | undefined;
+  }
+
+  return undefined;
+}
+
 export default function SkillsPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
@@ -97,6 +150,7 @@ export default function SkillsPage() {
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [expandedEvidenceIndex, setExpandedEvidenceIndex] = useState<number | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [technicalCategories, setTechnicalCategories] = useState<string[]>(FALLBACK_TECHNICAL_CATEGORIES);
   const [softCategories, setSoftCategories] = useState<string[]>(FALLBACK_SOFT_CATEGORIES);
@@ -182,21 +236,27 @@ export default function SkillsPage() {
     });
     setErrors({});
     setServerError("");
+    setExpandedEvidenceIndex(null);
     setShowForm(true);
   };
 
   const openEditForm = (skill: Skill) => {
+    const isCustomSoftSkill = skill.tipo === "blanda" && !softCategories.includes(skill.categoria || skill.nombre);
+
     setEditingSkill(skill);
     setForm({
       tipo: skill.tipo,
       nombre: skill.nombre,
-      categoria: skill.categoria || (skill.tipo === "blanda" ? skill.nombre : ""),
+      categoria: isCustomSoftSkill ? CUSTOM_SOFT_CATEGORY : (skill.categoria || (skill.tipo === "blanda" ? skill.nombre : "")),
+      categoria_personalizada: isCustomSoftSkill ? skill.nombre : "",
       nivel_dominio: skill.nivel_dominio,
       visible_publico: skill.visible_publico,
       certificado_pdf: null,
+      evidencias: [],
     });
     setErrors({});
     setServerError("");
+    setExpandedEvidenceIndex(null);
     setShowForm(true);
   };
 
@@ -207,8 +267,11 @@ export default function SkillsPage() {
       ...EMPTY_FORM,
       tipo: activeTab,
       categoria: "",
+      categoria_personalizada: "",
+      evidencias: [],
     });
     setErrors({});
+    setExpandedEvidenceIndex(null);
   };
 
   const validate = () => {
@@ -219,16 +282,28 @@ export default function SkillsPage() {
     }
 
     if (!form.categoria) {
-      nextErrors.categoria = "La categoria es obligatoria.";
+      nextErrors.categoria = form.tipo === "blanda" ? "La habilidad blanda es obligatoria." : "La categoria es obligatoria.";
+    }
+
+    if (form.tipo === "blanda" && form.categoria === CUSTOM_SOFT_CATEGORY && !form.categoria_personalizada?.trim()) {
+      nextErrors.categoria_personalizada = "Escribe la habilidad blanda personalizada.";
     }
 
     if (!form.nivel_dominio) {
       nextErrors.nivel_dominio = "El nivel de dominio es obligatorio.";
     }
 
-    if (form.tipo === "tecnica" && form.visible_publico && !form.certificado_pdf && !editingSkill?.certificado_pdf) {
-      nextErrors.certificado_pdf = "Debes subir un certificado PDF para publicar esta habilidad.";
-    }
+    (form.evidencias || []).forEach((evidence, index) => {
+      if (!hasEvidenceContent(evidence)) return;
+
+      if (!evidence.titulo.trim()) {
+        nextErrors[`evidencias.${index}.titulo`] = "El titulo de la evidencia es obligatorio.";
+      }
+
+      if (!evidence.url?.trim() && !evidence.archivo) {
+        nextErrors[`evidencias.${index}.url`] = "Agrega un enlace o archivo para esta evidencia.";
+      }
+    });
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -245,8 +320,14 @@ export default function SkillsPage() {
     try {
       const payload = {
         ...form,
-        nombre: form.tipo === "tecnica" ? form.nombre.trim() : form.categoria,
+        nombre: form.tipo === "tecnica"
+          ? form.nombre.trim()
+          : form.categoria === CUSTOM_SOFT_CATEGORY
+            ? (form.categoria_personalizada || "").trim()
+            : form.categoria,
         categoria: form.categoria,
+        categoria_personalizada: form.categoria_personalizada?.trim() || "",
+        evidencias: (form.evidencias || []).filter(hasEvidenceContent),
       };
 
       const data = editingSkill
@@ -264,8 +345,9 @@ export default function SkillsPage() {
       });
 
       closeForm();
-    } catch (error: any) {
-      const apiErrors = error?.response?.data?.errors || {};
+    } catch (error: unknown) {
+      const errorData = getApiErrorData(error);
+      const apiErrors = errorData?.errors || {};
       const fieldErrors: Record<string, string> = {};
 
       Object.entries(apiErrors).forEach(([field, value]) => {
@@ -273,7 +355,7 @@ export default function SkillsPage() {
       });
 
       setErrors((prev) => ({ ...prev, ...fieldErrors }));
-      setServerError(error?.response?.data?.message || "No se pudo guardar la habilidad.");
+      setServerError(errorData?.message || "No se pudo guardar la habilidad.");
     } finally {
       setSaving(false);
     }
@@ -286,8 +368,9 @@ export default function SkillsPage() {
 
       setHabilidades((prev) => prev.map((item) => (item.id === updatedSkill.id ? updatedSkill : item)));
       setServerError("");
-    } catch (error: any) {
-      setServerError(error?.response?.data?.message || "No se pudo actualizar la visibilidad.");
+    } catch (error: unknown) {
+      const errorData = getApiErrorData(error);
+      setServerError(errorData?.message || "No se pudo actualizar la visibilidad.");
     }
   };
 
@@ -298,8 +381,9 @@ export default function SkillsPage() {
       await deleteSkill(pendingDelete.id);
       setHabilidades((prev) => prev.filter((item) => item.id !== pendingDelete.id));
       setServerError("");
-    } catch (error: any) {
-      setServerError(error?.response?.data?.message || "No se pudo eliminar la habilidad.");
+    } catch (error: unknown) {
+      const errorData = getApiErrorData(error);
+      setServerError(errorData?.message || "No se pudo eliminar la habilidad.");
     } finally {
       setPendingDelete(null);
     }
@@ -414,8 +498,11 @@ export default function SkillsPage() {
                           <div className="profile-pill-list">
                             <span className="profile-pill neutral">{skill.nivel_dominio}</span>
                             <span className={`profile-pill ${skill.certificado_pdf ? "" : "neutral"}`}>
-                              {skill.certificado_pdf ? "Certificado adjunto" : "Sin certificado"}
+                              {getSupportLabel(skill)}
                             </span>
+                            {skill.evidencias?.length ? (
+                              <span className="profile-pill neutral">{skill.evidencias.length} evidencias</span>
+                            ) : null}
                           </div>
 
                           <div className="skill-actions">
@@ -448,7 +535,7 @@ export default function SkillsPage() {
 
         {showForm ? (
           <div className="skills-modal-backdrop" role="presentation">
-            <section className="surface-card skills-modal" role="dialog" aria-modal="true">
+            <section className="surface-card skills-modal skill-editor-modal" role="dialog" aria-modal="true">
               <div className="skills-modal-head">
                 <div>
                   <p className="section-label">{editingSkill ? "Editar habilidad" : "Nueva habilidad"}</p>
@@ -457,75 +544,269 @@ export default function SkillsPage() {
               </div>
 
               <form className="form-stack" onSubmit={handleSubmit}>
-                {form.tipo === "tecnica" ? (
-                  <div className="form-field">
-                    <label className="form-label">Nombre de la Habilidad *</label>
-                    <input
-                      className={`form-input${errors.nombre ? " error" : ""}`}
-                      value={form.nombre}
-                      placeholder="Ej: React, Python, Docker"
-                      onChange={(event) => setForm((prev) => ({ ...prev, nombre: event.target.value }))}
-                    />
-                    {errors.nombre ? <p className="form-error">{errors.nombre}</p> : null}
+                <section className="skill-form-section">
+                  <div>
+                    <p className="section-label">Datos de la habilidad</p>
+                    <p className="form-help">Define la competencia, su categoria y el nivel que declaras en tu portafolio.</p>
                   </div>
-                ) : null}
 
-                <div className="form-field">
-                  <label className="form-label">Categoria *</label>
-                  <select
-                    className={`form-input${errors.categoria ? " error" : ""}`}
-                    value={form.categoria}
-                    onChange={(event) => setForm((prev) => ({ ...prev, categoria: event.target.value }))}
-                  >
-                    <option value="">Selecciona una categoria</option>
-                    {categoryOptions.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.categoria ? <p className="form-error">{errors.categoria}</p> : null}
-                </div>
+                  <div className="skill-basics-grid">
+                    {form.tipo === "tecnica" ? (
+                      <div className="form-field">
+                        <label className="form-label">Nombre de la Habilidad *</label>
+                        <input
+                          className={`form-input${errors.nombre ? " error" : ""}`}
+                          value={form.nombre}
+                          placeholder="Ej: React, Python, Docker"
+                          onChange={(event) => setForm((prev) => ({ ...prev, nombre: event.target.value }))}
+                        />
+                        {errors.nombre ? <p className="form-error">{errors.nombre}</p> : null}
+                      </div>
+                    ) : null}
 
-                <div className="form-field">
-                  <label className="form-label">Nivel de Dominio *</label>
-                  <select
-                    className={`form-input${errors.nivel_dominio ? " error" : ""}`}
-                    value={form.nivel_dominio}
-                    onChange={(event) => setForm((prev) => ({ ...prev, nivel_dominio: event.target.value as SkillPayload["nivel_dominio"] }))}
-                  >
-                    <option value="">Selecciona un nivel</option>
-                    {levels.map((level) => (
-                      <option key={level} value={level}>
-                        {level}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.nivel_dominio ? <p className="form-error">{errors.nivel_dominio}</p> : null}
-                </div>
+                    <div className="form-field">
+                      <label className="form-label">{form.tipo === "blanda" ? "Habilidad blanda *" : "Categoria *"}</label>
+                      <select
+                        className={`form-input${errors.categoria ? " error" : ""}`}
+                        value={form.categoria}
+                        onChange={(event) => setForm((prev) => ({
+                          ...prev,
+                          categoria: event.target.value,
+                          categoria_personalizada: event.target.value === CUSTOM_SOFT_CATEGORY ? prev.categoria_personalizada : "",
+                        }))}
+                      >
+                        <option value="">{form.tipo === "blanda" ? "Selecciona una habilidad blanda" : "Selecciona una categoria"}</option>
+                        {categoryOptions.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                        {form.tipo === "blanda" ? (
+                          <option value={CUSTOM_SOFT_CATEGORY}>+ Agregar otra habilidad blanda</option>
+                        ) : null}
+                      </select>
+                      {errors.categoria ? <p className="form-error">{errors.categoria}</p> : null}
+                    </div>
 
-                <div className="form-field">
-                  <label className="form-label">
-                    Certificado PDF {form.tipo === "tecnica" ? (form.visible_publico && !editingSkill?.certificado_pdf ? "*" : "") : "(opcional)"}
-                  </label>
-                  <input
-                    className={`form-file${errors.certificado_pdf ? " error" : ""}`}
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0] || null;
-                      setForm((prev) => ({ ...prev, certificado_pdf: file }));
-                    }}
-                  />
-                  <p className="form-help">
-                    {editingSkill?.certificado_pdf
-                      ? "Ya existe un certificado. Sube otro PDF solo si quieres reemplazarlo."
-                      : form.tipo === "blanda"
-                        ? "Puedes subir un PDF si quieres respaldar esta habilidad. Maximo 5 MB."
-                        : "PDF publico que respalda esta habilidad. Maximo 5 MB."}
-                  </p>
-                  {errors.certificado_pdf ? <p className="form-error">{errors.certificado_pdf}</p> : null}
-                </div>
+                    {form.tipo === "blanda" && form.categoria === CUSTOM_SOFT_CATEGORY ? (
+                      <div className="form-field">
+                        <label className="form-label">Nueva habilidad blanda *</label>
+                        <input
+                          className={`form-input${errors.categoria_personalizada ? " error" : ""}`}
+                          value={form.categoria_personalizada}
+                          placeholder="Ej: Resolucion de conflictos"
+                          onChange={(event) => setForm((prev) => ({ ...prev, categoria_personalizada: event.target.value }))}
+                        />
+                        {errors.categoria_personalizada ? <p className="form-error">{errors.categoria_personalizada}</p> : null}
+                      </div>
+                    ) : null}
+
+                    <div className="form-field">
+                      <label className="form-label">Nivel de Dominio *</label>
+                      <select
+                        className={`form-input${errors.nivel_dominio ? " error" : ""}`}
+                        value={form.nivel_dominio}
+                        onChange={(event) => setForm((prev) => ({ ...prev, nivel_dominio: event.target.value as SkillPayload["nivel_dominio"] }))}
+                      >
+                        <option value="">Selecciona un nivel</option>
+                        {levels.map((level) => (
+                          <option key={level} value={level}>
+                            {level}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.nivel_dominio ? <p className="form-error">{errors.nivel_dominio}</p> : null}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="form-field evidence-builder">
+                  <div className="evidence-builder-head">
+                    <div>
+                      <label className="form-label">Evidencias de respaldo</label>
+                      <p className="form-help">Agrega certificados, cursos, videos, proyectos o documentos. La habilidad seguira siendo visible aunque solo tenga nivel declarado.</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-secondary evidence-add-button"
+                      onClick={() => {
+                        const nextIndex = form.evidencias?.length || 0;
+                        setForm((prev) => ({
+                          ...prev,
+                          evidencias: [...(prev.evidencias || []), { ...EMPTY_EVIDENCE }],
+                        }));
+                        setExpandedEvidenceIndex(nextIndex);
+                      }}
+                    >
+                      + Agregar evidencia
+                    </button>
+                  </div>
+
+                  {(form.evidencias || []).length ? (
+                    <div className="evidence-form-list">
+                      {(form.evidencias || []).map((evidence, index) => (
+                        <section key={index} className={`evidence-form-card ${expandedEvidenceIndex === index ? "expanded" : ""}`}>
+                          <button
+                            type="button"
+                            className="evidence-card-toggle"
+                            onClick={() => setExpandedEvidenceIndex((current) => (current === index ? null : index))}
+                            aria-expanded={expandedEvidenceIndex === index}
+                          >
+                            <span>
+                              <strong>{getEvidenceSummary(evidence, index).title}</strong>
+                              <small>{getEvidenceSummary(evidence, index).detail}</small>
+                            </span>
+                            <ChevronIcon expanded={expandedEvidenceIndex === index} />
+                          </button>
+
+                          {expandedEvidenceIndex === index ? (
+                            <div className="evidence-card-fields">
+                              <div className="workspace-form-grid">
+                                <div className="form-field">
+                                  <label className="form-label">Tipo</label>
+                                  <select
+                                    className="form-input"
+                                    value={evidence.tipo}
+                                    onChange={(event) => setForm((prev) => {
+                                      const evidencias = [...(prev.evidencias || [])];
+                                      evidencias[index] = { ...evidencias[index], tipo: event.target.value as SkillEvidencePayload["tipo"] };
+                                      return { ...prev, evidencias };
+                                    })}
+                                  >
+                                    <option value="certificado">Certificado</option>
+                                    <option value="proyecto">Proyecto</option>
+                                    <option value="curso">Curso</option>
+                                    <option value="video">Video</option>
+                                    <option value="documento">Documento</option>
+                                    <option value="experiencia">Experiencia</option>
+                                  </select>
+                                </div>
+
+                                <div className="form-field">
+                                  <label className="form-label">Titulo</label>
+                                  <input
+                                    className={`form-input${errors[`evidencias.${index}.titulo`] ? " error" : ""}`}
+                                    value={evidence.titulo}
+                                    placeholder="Ej: Certificado React Avanzado"
+                                    onChange={(event) => setForm((prev) => {
+                                      const evidencias = [...(prev.evidencias || [])];
+                                      evidencias[index] = { ...evidencias[index], titulo: event.target.value };
+                                      return { ...prev, evidencias };
+                                    })}
+                                  />
+                                  {errors[`evidencias.${index}.titulo`] ? <p className="form-error">{errors[`evidencias.${index}.titulo`]}</p> : null}
+                                </div>
+                              </div>
+
+                              <div className="form-field">
+                                <label className="form-label">Descripcion</label>
+                                <textarea
+                                  className="form-input form-textarea"
+                                  value={evidence.descripcion}
+                                  placeholder="Describe brevemente que respalda esta evidencia."
+                                  onChange={(event) => setForm((prev) => {
+                                    const evidencias = [...(prev.evidencias || [])];
+                                    evidencias[index] = { ...evidencias[index], descripcion: event.target.value };
+                                    return { ...prev, evidencias };
+                                  })}
+                                />
+                              </div>
+
+                              <div className="workspace-form-grid">
+                                <div className="form-field">
+                                  <label className="form-label">URL</label>
+                                  <input
+                                    className={`form-input${errors[`evidencias.${index}.url`] ? " error" : ""}`}
+                                    value={evidence.url}
+                                    placeholder="https://..."
+                                    onChange={(event) => setForm((prev) => {
+                                      const evidencias = [...(prev.evidencias || [])];
+                                      evidencias[index] = { ...evidencias[index], url: event.target.value };
+                                      return { ...prev, evidencias };
+                                    })}
+                                  />
+                                  {errors[`evidencias.${index}.url`] ? <p className="form-error">{errors[`evidencias.${index}.url`]}</p> : null}
+                                </div>
+
+                                <div className="form-field">
+                                  <label className="form-label">Archivo</label>
+                                  <input
+                                    className="form-file"
+                                    type="file"
+                                    accept="application/pdf,image/*,video/mp4,video/quicktime"
+                                    onChange={(event) => {
+                                      const file = event.target.files?.[0] || null;
+                                      setForm((prev) => {
+                                        const evidencias = [...(prev.evidencias || [])];
+                                        evidencias[index] = { ...evidencias[index], archivo: file };
+                                        return { ...prev, evidencias };
+                                      });
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="workspace-form-grid">
+                                <div className="form-field">
+                                  <label className="form-label">Emisor / institucion</label>
+                                  <input
+                                    className="form-input"
+                                    value={evidence.emisor}
+                                    placeholder="Ej: Coursera, AWS, universidad"
+                                    onChange={(event) => setForm((prev) => {
+                                      const evidencias = [...(prev.evidencias || [])];
+                                      evidencias[index] = { ...evidencias[index], emisor: event.target.value };
+                                      return { ...prev, evidencias };
+                                    })}
+                                  />
+                                </div>
+
+                                <div className="form-field">
+                                  <label className="form-label">Fecha</label>
+                                  <input
+                                    className="form-input"
+                                    type="date"
+                                    value={evidence.fecha}
+                                    onChange={(event) => setForm((prev) => {
+                                      const evidencias = [...(prev.evidencias || [])];
+                                      evidencias[index] = { ...evidencias[index], fecha: event.target.value };
+                                      return { ...prev, evidencias };
+                                    })}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="evidence-actions-row">
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary danger-outline"
+                                  onClick={() => {
+                                    setForm((prev) => ({
+                                      ...prev,
+                                      evidencias: (prev.evidencias || []).filter((_, evidenceIndex) => evidenceIndex !== index),
+                                    }));
+                                    setExpandedEvidenceIndex(null);
+                                  }}
+                                >
+                                  Quitar evidencia
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  onClick={() => setExpandedEvidenceIndex(null)}
+                                >
+                                  Listo
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </section>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="form-help">Sin evidencias adicionales. La habilidad se mostrara como nivel declarado.</p>
+                  )}
+                </section>
 
                 <label className="visibility-toggle">
                   <span>

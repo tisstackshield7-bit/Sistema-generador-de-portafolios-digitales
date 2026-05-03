@@ -31,6 +31,9 @@ export default function DashboardPage() {
   const initials = useMemo(() => getInitials(perfil?.nombre_completo), [perfil]);
   const technicalSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "tecnica") || [];
   const softSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "blanda") || [];
+  const publicProjects = perfil?.proyectos?.filter((project) => project.visible_publico) || [];
+  const recentProjects = perfil?.proyectos?.slice(0, 3) || [];
+  const phoneHref = perfil?.telefono ? `tel:${perfil.telefono.replace(/\s+/g, "")}` : "";
 
   return (
     <PrivateWorkspaceLayout active="dashboard" perfil={perfil} title="" subtitle="">
@@ -38,7 +41,7 @@ export default function DashboardPage() {
         <div className="dashboard-hero-copy">
           <p className="section-label dashboard-light-label">Dashboard</p>
           <h1 className="dashboard-title">Bienvenido/a, {perfil?.nombre_completo || "Profesional"}</h1>
-          <p className="dashboard-hero-role">{perfil?.profesion || "Completa tu perfil profesional"}</p>
+          <p className="dashboard-hero-role">{perfil?.titular_profesional || perfil?.profesion || "Completa tu perfil profesional"}</p>
           <div className="dashboard-hero-actions">
             <button
               className="btn btn-secondary dashboard-ghost-button"
@@ -56,13 +59,6 @@ export default function DashboardPage() {
       <section className="dashboard-stat-grid sprint-grid">
         <article className="surface-card dashboard-stat-card">
           <div className="dashboard-stat-head">
-            <h2>Proyectos</h2>
-          </div>
-          <strong>0</strong>
-          <p>Disponible en proximos sprints</p>
-        </article>
-        <article className="surface-card dashboard-stat-card">
-          <div className="dashboard-stat-head">
             <h2>Habilidades</h2>
           </div>
           <strong>{perfil?.habilidades?.length || 0}</strong>
@@ -75,7 +71,14 @@ export default function DashboardPage() {
             <h2>Experiencias</h2>
           </div>
           <strong>0</strong>
-          <p>Disponible en proximos sprints</p>
+          <p>Sin experiencia registrada</p>
+        </article>
+        <article className="surface-card dashboard-stat-card">
+          <div className="dashboard-stat-head">
+            <h2>Proyectos</h2>
+          </div>
+          <strong>{perfil?.proyectos?.length || 0}</strong>
+          <p>{publicProjects.length} visibles en publico</p>
         </article>
       </section>
 
@@ -96,7 +99,28 @@ export default function DashboardPage() {
 
           <div className="dashboard-profile-copy">
             <h3>{perfil?.nombre_completo || "Completa tu perfil"}</h3>
-            <p className="dashboard-profile-role">{perfil?.profesion || "Agrega tu profesion"}</p>
+            <p className="dashboard-profile-role">{perfil?.titular_profesional || "Agrega tu rol o especialidad"}</p>
+            <div className="dashboard-contact-list" aria-label="Datos de contacto">
+              {perfil?.correo ? (
+                <a className="dashboard-contact-item" href={`mailto:${perfil.correo}`}>
+                  <strong>{perfil.correo}</strong>
+                </a>
+              ) : (
+                <span className="dashboard-contact-item muted">
+                  <strong>Correo de la cuenta</strong>
+                </span>
+              )}
+
+              {perfil?.telefono ? (
+                <a className="dashboard-contact-item" href={phoneHref}>
+                  <strong>{perfil.telefono}</strong>
+                </a>
+              ) : (
+                <span className="dashboard-contact-item muted">
+                  <strong>Agrega tu numero</strong>
+                </span>
+              )}
+            </div>
             <p className="section-copy">
               {perfil?.biografia || "Agrega una biografia clara para que tu perfil se vea mas profesional y completo."}
             </p>
@@ -142,6 +166,82 @@ export default function DashboardPage() {
         ) : (
           <div className="dashboard-empty-note">
             Registra habilidades tecnicas y blandas para reforzar tu portafolio profesional.
+          </div>
+        )}
+      </section>
+
+      <section className="surface-card dashboard-panel dashboard-experience-panel">
+        <div className="section-head dashboard-skills-head">
+          <div>
+            <p className="section-label">Experiencia profesional</p>
+            <h2 className="section-title">Trayectoria laboral y participaciones</h2>
+          </div>
+          <button className="btn btn-secondary" onClick={() => navigate("/perfil/experiencia")}>
+            Gestionar
+          </button>
+        </div>
+
+        <div className="dashboard-empty-note">
+          Aun no registraste experiencia. Esta seccion quedara preparada para cargos, instituciones, periodos, logros y evidencias profesionales.
+        </div>
+      </section>
+
+      <section className="surface-card dashboard-panel dashboard-projects-panel">
+        <div className="section-head dashboard-skills-head">
+          <div>
+            <p className="section-label">Proyectos registrados</p>
+            <h2 className="section-title">Tus trabajos mas recientes</h2>
+          </div>
+          <button className="btn btn-secondary" onClick={() => navigate("/perfil/proyectos")}>
+            Gestionar
+          </button>
+        </div>
+
+        {recentProjects.length ? (
+          <div className="dashboard-project-list">
+            {recentProjects.map((project) => (
+              <article key={project.id} className="dashboard-project-card">
+                {project.url_imagen ? (
+                  <img src={project.url_imagen} alt={project.titulo} className="dashboard-project-thumb" />
+                ) : (
+                  <div className="dashboard-project-thumb fallback-thumb">
+                    {project.titulo.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+
+                <div className="dashboard-project-copy">
+                  <div className="dashboard-project-head">
+                    <div>
+                      <h3>{project.titulo}</h3>
+                      <p>{project.rol}</p>
+                    </div>
+                    <span className={`skill-status-tag ${project.visible_publico ? "is-public" : "is-private"}`}>
+                      {project.visible_publico ? "Publico" : "Oculto"}
+                    </span>
+                  </div>
+
+                  <p className="section-copy">{project.descripcion}</p>
+
+                  <div className="dashboard-skill-chip-list">
+                    {(project.tecnologias || []).slice(0, 5).map((technology) => (
+                      <span key={technology} className="dashboard-skill-chip muted">
+                        {technology}
+                      </span>
+                    ))}
+                  </div>
+
+                  {project.enlace_proyecto ? (
+                    <a href={project.enlace_proyecto} target="_blank" rel="noreferrer" className="dashboard-project-link">
+                      Ver evidencia
+                    </a>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="dashboard-empty-note">
+            Registra tus proyectos para que aparezcan en el dashboard y en tu portafolio publico.
           </div>
         )}
       </section>

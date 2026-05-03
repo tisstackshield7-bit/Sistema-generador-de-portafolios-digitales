@@ -8,6 +8,8 @@ import BasicProfileEditPage from "../pages/profile/BasicProfileEditPage";
 import ChangePasswordPage from "../pages/profile/ChangePasswordPage";
 import ProfileViewPage from "../pages/profile/ProfileViewPage";
 import SkillsPage from "../pages/profile/SkillsPage";
+import ProjectsPage from "../pages/profile/ProjectsPage";
+import ExperiencePage from "../pages/profile/ExperiencePage";
 import PrivateRoute from "../components/auth/PrivateRoute";
 import HomePage from "../pages/HomePage";
 import ComingSoonPage from "../pages/ComingSoonPage";
@@ -80,6 +82,22 @@ export const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <SkillsPage />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/perfil/proyectos",
+    element: (
+      <PrivateRoute>
+        <ProjectsPage />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/perfil/experiencia",
+    element: (
+      <PrivateRoute>
+        <ExperiencePage />
       </PrivateRoute>
     ),
   },

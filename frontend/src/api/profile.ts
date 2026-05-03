@@ -13,6 +13,7 @@ export const createBasicProfile = async (payload: BasicProfilePayload) => {
   formData.append("nombres", payload.nombres);
   formData.append("apellidos", payload.apellidos);
   formData.append("profesion", payload.profesion);
+  formData.append("titular_profesional", payload.titular_profesional);
   formData.append("telefono", payload.telefono || "");
   formData.append("biografia", payload.biografia);
 
@@ -57,6 +58,7 @@ export const updateBasicProfile = async (payload: BasicProfilePayload) => {
   formData.append("nombres", payload.nombres);
   formData.append("apellidos", payload.apellidos);
   formData.append("profesion", payload.profesion);
+  formData.append("titular_profesional", payload.titular_profesional);
   formData.append("telefono", payload.telefono || "");
   formData.append("biografia", payload.biografia);
 

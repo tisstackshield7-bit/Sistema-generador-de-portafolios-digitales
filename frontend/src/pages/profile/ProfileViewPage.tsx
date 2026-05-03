@@ -6,6 +6,7 @@ import type { Perfil } from "../../types/profile";
 import { getInitials } from "../../utils/avatar";
 import { logoutUser } from "../../api/auth";
 import { authStore } from "../../store/authStore";
+import type { Project } from "../../types/project";
 
 function splitSkills(perfil: Perfil) {
   const technicalSkills = perfil.habilidades?.filter((skill) => skill.tipo === "tecnica") || [];
@@ -13,6 +14,33 @@ function splitSkills(perfil: Perfil) {
   const publicSkills = perfil.habilidades?.filter((skill) => skill.visible_publico) || [];
 
   return { technicalSkills, softSkills, publicSkills };
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="project-date-icon">
+      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="5" width="16" height="15" rx="2" />
+        <path d="M8 3v4M16 3v4M4 10h16" />
+      </g>
+    </svg>
+  );
+}
+
+function formatProjectMonthYear(value?: string | null) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("es-BO", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+function getProjectDateRange(project: Project) {
+  const startDate = formatProjectMonthYear(project.fecha_inicio);
+  const endDate = formatProjectMonthYear(project.fecha_fin) || "Actualidad";
+
+  return startDate ? `${startDate} - ${endDate}` : endDate;
 }
 
 export default function ProfileViewPage() {
@@ -40,6 +68,7 @@ export default function ProfileViewPage() {
     try {
       await logoutUser();
     } catch {
+      // La sesion local se limpia aunque el token ya no exista en el servidor.
     } finally {
       authStore.clearSession();
       navigate("/");
@@ -59,6 +88,7 @@ export default function ProfileViewPage() {
   const { technicalSkills, softSkills, publicSkills } = splitSkills(perfil);
   const topTechnicalSkills = technicalSkills.slice(0, 6);
   const topSoftSkills = softSkills.slice(0, 6);
+  const projects = perfil.proyectos || [];
 
   return (
     <div className="profile-page-shell app-shell">
@@ -75,8 +105,8 @@ export default function ProfileViewPage() {
                 <div className="profile-identity-content">
                   <p className="section-label cover-label">Mi perfil</p>
                   <h1>{perfil.nombre_completo}</h1>
-                  <p className="cover-role">{perfil.profesion}</p>
-                  <p className="cover-location">Portafolio profesional listo para compartir</p>
+                  <p className="cover-role">{perfil.titular_profesional || perfil.profesion}</p>
+                  <p className="cover-location">{perfil.profesion}{perfil.correo ? ` · ${perfil.correo}` : ""}</p>
                   <div className="profile-highlight-strip">
                     <div className="profile-highlight-card">
                       <span>Total habilidades</span>
@@ -92,7 +122,7 @@ export default function ProfileViewPage() {
                     </div>
                   </div>
                   <div className="profile-cover-actions">
-                    <button className="btn btn-secondary" onClick={() => navigate("/")}>
+                    <button className="btn btn-secondary" onClick={() => navigate("/dashboard")}>
                       Ir al inicio
                     </button>
                     <button className="btn btn-secondary" onClick={() => navigate("/perfil/habilidades")}>
@@ -193,6 +223,83 @@ export default function ProfileViewPage() {
                 <p className="section-copy">Aun no agregaste habilidades a tu portafolio.</p>
               )}
             </div>
+
+            <div className="profile-section">
+              <div className="section-head">
+                <div>
+                  <p className="section-label">Proyectos</p>
+                  <h2>Proyectos registrados</h2>
+                </div>
+                <button className="btn btn-secondary" onClick={() => navigate("/perfil/proyectos")}>
+                  Administrar
+                </button>
+              </div>
+
+              {projects.length ? (
+                <div className="portfolio-project-list">
+                  {projects.map((project) => (
+                    <article key={project.id} className="surface-card portfolio-project-card">
+                      {project.url_imagen ? (
+                        <img src={project.url_imagen} alt={project.titulo} className="portfolio-project-image" />
+                      ) : (
+                        <div className="portfolio-project-image project-image-fallback">{project.titulo.slice(0, 2).toUpperCase()}</div>
+                      )}
+
+                      <div className="portfolio-project-body">
+                        <div className="portfolio-project-head">
+                          <div>
+                            <h3>{project.titulo}</h3>
+                            <p>{project.rol}</p>
+                          </div>
+                          <div className="portfolio-project-meta">
+                            <span className={`skill-status-tag ${project.visible_publico ? "is-public" : "is-private"}`}>
+                              {project.visible_publico ? "Publico" : "Oculto"}
+                            </span>
+                            <span className="portfolio-project-date">
+                              <CalendarIcon />
+                              {getProjectDateRange(project)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="portfolio-project-description">{project.descripcion}</p>
+
+                        {(project.tecnologias || []).length ? (
+                          <div className="portfolio-project-block">
+                            <span className="portfolio-project-label">Tecnologias:</span>
+                            <div className="portfolio-project-tags">
+                              {project.tecnologias.map((technology) => (
+                                <span key={technology}>{technology}</span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {project.logros?.length ? (
+                          <div className="portfolio-project-block">
+                            <span className="portfolio-project-label">Logros destacados:</span>
+                            <ul className="project-achievement-list">
+                              {project.logros.map((achievement) => (
+                                <li key={achievement}>{achievement}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+
+                        {project.enlace_proyecto ? (
+                          <a href={project.enlace_proyecto} target="_blank" rel="noreferrer" className="portfolio-project-link">
+                            Ver proyecto
+                            <span aria-hidden="true">-&gt;</span>
+                          </a>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="section-copy">Aun no agregaste proyectos a tu portafolio.</p>
+              )}
+            </div>
           </section>
         </section>
 
@@ -202,7 +309,15 @@ export default function ProfileViewPage() {
             <div className="profile-side-metrics">
               <div className="profile-side-metric">
                 <span>Rol principal</span>
+                <strong>{perfil.titular_profesional || perfil.profesion}</strong>
+              </div>
+              <div className="profile-side-metric">
+                <span>Profesion</span>
                 <strong>{perfil.profesion}</strong>
+              </div>
+              <div className="profile-side-metric">
+                <span>Correo</span>
+                <strong>{perfil.correo || "Correo de la cuenta"}</strong>
               </div>
               <div className="profile-side-metric">
                 <span>Perfil publico</span>

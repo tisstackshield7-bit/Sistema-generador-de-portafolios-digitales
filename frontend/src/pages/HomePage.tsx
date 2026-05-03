@@ -70,17 +70,30 @@ function compareProfilesBySkillLevel(left: PublicProfileCard, right: PublicProfi
   return left.nombre_completo.localeCompare(right.nombre_completo);
 }
 
-function getProfileCategories(profile: PublicProfileCard) {
-  const categories = (profile.habilidades || [])
-    .filter((skill) => skill.tipo === "tecnica")
-    .map((skill) => skill.categoria?.trim())
-    .filter((category): category is string => Boolean(category));
-
-  return Array.from(new Set(categories));
+function countProfileEvidences(profile: PublicProfileCard) {
+  return (profile.habilidades || []).reduce((total, skill) => total + (skill.evidencias?.length || 0), 0);
 }
 
-function getCategoryPanelId(category: string) {
-  return `category-${normalizeText(category).replace(/[^a-z0-9]+/g, "-")}`;
+function compareFeaturedProfiles(left: PublicProfileCard, right: PublicProfileCard, category?: string) {
+  const evidenceDifference = countProfileEvidences(right) - countProfileEvidences(left);
+
+  if (evidenceDifference !== 0) return evidenceDifference;
+
+  const projectDifference = (right.proyectos?.length || 0) - (left.proyectos?.length || 0);
+
+  if (projectDifference !== 0) return projectDifference;
+
+  const skillDifference = (right.habilidades?.length || 0) - (left.habilidades?.length || 0);
+
+  if (skillDifference !== 0) return skillDifference;
+
+  return compareProfilesBySkillLevel(left, right, category);
+}
+
+function getLandingSkillTone(level: SkillLevel) {
+  if (level === "Avanzado") return "advanced";
+  if (level === "Intermedio") return "intermediate";
+  return "basic";
 }
 
 function SearchIcon() {
@@ -136,6 +149,11 @@ function ProfileCard({
   onViewProfile: (slug: string) => void;
 }) {
   const highlights = getProfileHighlights(profile, category);
+  const phoneHref = profile.telefono ? `tel:${profile.telefono.replace(/\s+/g, "")}` : "";
+  const projectCount = profile.proyectos?.length || 0;
+  const hasDistinctProfessionalRole = Boolean(
+    profile.titular_profesional && normalizeText(profile.titular_profesional) !== normalizeText(profile.profesion),
+  );
 
   return (
     <article className="landing-profile-card">
@@ -152,17 +170,40 @@ function ProfileCard({
         )}
 
         <h3>{profile.nombre_completo}</h3>
-        <p>{profile.titular_profesional || profile.profesion}</p>
+        {profile.profesion ? (
+          <p className="landing-profile-profession">{profile.profesion}</p>
+        ) : null}
+        {hasDistinctProfessionalRole ? (
+          <p className="landing-profile-role">{profile.titular_profesional}</p>
+        ) : null}
+        {profile.correo || profile.telefono ? (
+          <div className="landing-profile-contact-row" aria-label="Datos de contacto">
+            {profile.correo ? (
+              <a className="landing-profile-contact-link" href={`mailto:${profile.correo}`}>
+                {profile.correo}
+              </a>
+            ) : null}
+            {profile.telefono ? (
+              <a className="landing-profile-contact-link" href={phoneHref}>
+                {profile.telefono}
+              </a>
+            ) : null}
+          </div>
+        ) : null}
 
         {highlights.length > 0 && (
           <div className="landing-tag-row">
             {highlights.map((skill) => (
-              <span key={`${profile.id}-${skill.id}`}>
+              <span key={`${profile.id}-${skill.id}`} className={`landing-skill-chip ${getLandingSkillTone(skill.nivel_dominio)}`}>
                 {skill.nombre} - {skill.nivel_dominio}
               </span>
             ))}
           </div>
         )}
+
+        <div className="landing-profile-proof-row">
+          <span>{projectCount} {projectCount === 1 ? "proyecto" : "proyectos"}</span>
+        </div>
 
         <button type="button" onClick={() => onViewProfile(profile.slug)}>
           Ver perfil
@@ -180,11 +221,11 @@ export default function HomePage() {
   const [profileCategories, setProfileCategories] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedFeaturedCategory, setSelectedFeaturedCategory] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel | "">("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [openFilter, setOpenFilter] = useState<"category" | "level" | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-  const [showAllProfileCategories, setShowAllProfileCategories] = useState<string[]>([]);
+  const [showAllFeaturedProfiles, setShowAllFeaturedProfiles] = useState(false);
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -248,36 +289,19 @@ export default function HomePage() {
     [filteredProfiles, selectedCategory],
   );
 
-  const featuredProfileGroups = useMemo(() => {
-    const categories = selectedCategory
-      ? [selectedCategory]
-      : Array.from(new Set(filteredProfiles.flatMap(getProfileCategories))).sort((left, right) => left.localeCompare(right));
+  const featuredProfiles = useMemo(
+    () =>
+      filteredProfiles
+        .filter((profile) => getProfileHighlights(profile, selectedFeaturedCategory || undefined).length > 0)
+        .sort((left, right) => compareFeaturedProfiles(left, right, selectedFeaturedCategory || undefined)),
+    [filteredProfiles, selectedFeaturedCategory],
+  );
 
-    return categories
-      .map((category) => {
-        const profiles = filteredProfiles
-          .filter((profile) => getProfileHighlights(profile, category).length > 0)
-          .sort((left, right) => compareProfilesBySkillLevel(left, right, category));
-
-        return { category, profiles };
-      })
-      .filter((group) => group.profiles.length > 0);
-  }, [filteredProfiles, selectedCategory]);
+  const visibleFeaturedProfiles = showAllFeaturedProfiles ? featuredProfiles : featuredProfiles.slice(0, 6);
 
   useEffect(() => {
-    setExpandedCategories((current) => {
-      const availableCategories = featuredProfileGroups.map((group) => group.category);
-      return current.filter((category) => availableCategories.includes(category));
-    });
-  }, [featuredProfileGroups]);
-
-  useEffect(() => {
-    setShowAllProfileCategories((current) => {
-      const availableCategories = featuredProfileGroups.map((group) => group.category);
-
-      return current.filter((category) => availableCategories.includes(category));
-    });
-  }, [featuredProfileGroups]);
+    setShowAllFeaturedProfiles(false);
+  }, [selectedFeaturedCategory, selectedLevel, appliedQuery]);
 
   const handleLogout = async () => {
     try {
@@ -289,22 +313,6 @@ export default function HomePage() {
       setPerfil(null);
       navigate("/");
     }
-  };
-
-  const toggleCategory = (category: string) => {
-    setExpandedCategories((current) => {
-      const isExpanded = current.includes(category);
-
-      setShowAllProfileCategories((visibleCategories) => visibleCategories.filter((item) => item !== category));
-
-      return isExpanded ? current.filter((item) => item !== category) : [...current, category];
-    });
-  };
-
-  const toggleAllProfiles = (category: string) => {
-    setShowAllProfileCategories((current) =>
-      current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
-    );
   };
 
   const closeFilterMenu = () => setOpenFilter(null);
@@ -488,76 +496,57 @@ export default function HomePage() {
         <section id="perfiles" className={`landing-container landing-featured-section ${isAuth ? "landing-featured-section-auth" : ""}`}>
           <div className="landing-section-head">
             <div>
-              <h2>Perfiles destacados</h2>
-              <p>Profesionales con portafolios actualizados.</p>
+              <h2>Profesionales destacados</h2>
+              <p>Perfiles con habilidades y proyectos publicados.</p>
             </div>
           </div>
 
-          <div className="landing-category-stack">
-            {featuredProfileGroups.length ? (
-              featuredProfileGroups.map((group) => {
-                const isExpanded = expandedCategories.includes(group.category);
-                const isShowingAllProfiles = showAllProfileCategories.includes(group.category);
-                const categoryPanelId = getCategoryPanelId(group.category);
-                const visibleProfiles = isShowingAllProfiles ? group.profiles : group.profiles.slice(0, 3);
+          <div className="landing-category-tabs" aria-label="Categorias profesionales">
+            <button
+              type="button"
+              className={!selectedFeaturedCategory ? "active" : ""}
+              onClick={() => setSelectedFeaturedCategory("")}
+            >
+              Todos
+            </button>
+            {profileCategories.map((category) => (
+              <button
+                type="button"
+                key={category}
+                className={selectedFeaturedCategory === category ? "active" : ""}
+                onClick={() => setSelectedFeaturedCategory(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
 
-                return (
-                  <section key={group.category} className={`landing-category-group ${isExpanded ? "is-expanded" : ""}`}>
-                    <div className="landing-category-head">
-                      <h3>{group.category}</h3>
-                      <div className="landing-category-actions">
-                        {isExpanded ? (
-                          <button
-                            type="button"
-                            className="landing-show-all-profiles"
-                            onClick={() => toggleAllProfiles(group.category)}
-                            disabled={group.profiles.length <= 3}
-                          >
-                            {group.profiles.length <= 3 ? "Ver mas" : isShowingAllProfiles ? "Ver solo 3" : `Ver mas (${group.profiles.length - 3})`}
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="landing-category-toggle"
-                          onClick={() => toggleCategory(group.category)}
-                          aria-expanded={isExpanded}
-                          aria-controls={categoryPanelId}
-                        >
-                          <span className="sr-only">{isExpanded ? "Ocultar categoria" : "Mostrar categoria"}</span>
-                          <svg
-                            className={`landing-category-chevron ${isExpanded ? "is-expanded" : ""}`}
-                            viewBox="0 0 20 20"
-                            aria-hidden="true"
-                            focusable="false"
-                          >
-                            <path
-                              d="M5.5 7.5L10 12l4.5-4.5"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
+          <div className="landing-featured-directory">
+            {visibleFeaturedProfiles.length ? (
+              <>
+                <div className="landing-profile-grid">
+                  {visibleFeaturedProfiles.map((profile) => (
+                    <ProfileCard
+                      key={`featured-${profile.id}`}
+                      profile={profile}
+                      category={selectedFeaturedCategory || undefined}
+                      onViewProfile={viewPublicProfile}
+                    />
+                  ))}
+                </div>
 
-                    <div id={categoryPanelId} className="landing-category-body" hidden={!isExpanded}>
-                      <div className="landing-profile-grid">
-                        {visibleProfiles.map((profile) => (
-                          <ProfileCard
-                            key={`${group.category}-${profile.id}`}
-                            profile={profile}
-                            category={group.category}
-                            onViewProfile={viewPublicProfile}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </section>
-                );
-              })
+                {featuredProfiles.length > 6 ? (
+                  <div className="landing-directory-actions">
+                    <button
+                      type="button"
+                      className="landing-show-all-profiles"
+                      onClick={() => setShowAllFeaturedProfiles((current) => !current)}
+                    >
+                      {showAllFeaturedProfiles ? "Ver menos perfiles" : `Ver mas perfiles (${featuredProfiles.length - 6})`}
+                    </button>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <article className="landing-empty-card">
                 <h3>No hay perfiles para esa busqueda</h3>

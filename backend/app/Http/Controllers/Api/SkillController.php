@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Skill\StoreSkillRequest;
 use App\Http\Requests\Skill\UpdateSkillRequest;
 use App\Http\Requests\Skill\UpdateSkillVisibilityRequest;
+use App\Models\EvidenciaHabilidad;
 use App\Models\Habilidad;
 use App\Models\Perfil;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class SkillController extends Controller
     {
         $perfil = $this->resolveProfile($request);
 
-        $habilidades = Habilidad::where('perfil_id', $perfil->id)
+        $habilidades = Habilidad::with('evidencias')
+            ->where('perfil_id', $perfil->id)
             ->orderBy('tipo')
             ->orderByDesc('creado_en')
             ->get();
@@ -51,6 +53,17 @@ class SkillController extends Controller
             'actualizado_en' => now(),
         ]);
 
+        if ($rutaCertificado) {
+            $this->createEvidence($habilidad, [
+                'tipo' => 'certificado',
+                'titulo' => 'Certificado de habilidad',
+                'descripcion' => 'Certificado PDF adjunto al registrar la habilidad.',
+            ], $rutaCertificado);
+        }
+
+        $this->storeEvidenceList($request, $habilidad);
+        $habilidad->load('evidencias');
+
         return response()->json([
             'message' => 'Habilidad creada correctamente.',
             'habilidad' => $habilidad,
@@ -73,19 +86,17 @@ class SkillController extends Controller
             }
 
             $habilidad->certificado_pdf = $request->file('certificado_pdf')->store('certificados', 'public');
+            $this->createEvidence($habilidad, [
+                'tipo' => 'certificado',
+                'titulo' => 'Certificado de habilidad',
+                'descripcion' => 'Certificado PDF adjunto a la habilidad.',
+            ], $habilidad->certificado_pdf);
         }
 
-        if ($habilidad->tipo === 'tecnica' && $habilidad->visible_publico && !$habilidad->certificado_pdf) {
-            return response()->json([
-                'message' => 'Debes subir un certificado PDF para publicar esta habilidad.',
-                'errors' => [
-                    'certificado_pdf' => ['Debes subir un certificado PDF para publicar esta habilidad.'],
-                ],
-            ], 422);
-        }
-
+        $this->storeEvidenceList($request, $habilidad);
         $habilidad->actualizado_en = now();
         $habilidad->save();
+        $habilidad->load('evidencias');
 
         return response()->json([
             'message' => 'Habilidad actualizada correctamente.',
@@ -97,18 +108,10 @@ class SkillController extends Controller
     {
         $habilidad = $this->resolveOwnedSkill($request, $habilidadId);
 
-        if ($habilidad->tipo === 'tecnica' && $request->boolean('visible_publico') && !$habilidad->certificado_pdf) {
-            return response()->json([
-                'message' => 'Debes subir un certificado PDF para publicar esta habilidad.',
-                'errors' => [
-                    'certificado_pdf' => ['Debes subir un certificado PDF para publicar esta habilidad.'],
-                ],
-            ], 422);
-        }
-
         $habilidad->visible_publico = $request->boolean('visible_publico');
         $habilidad->actualizado_en = now();
         $habilidad->save();
+        $habilidad->load('evidencias');
 
         return response()->json([
             'message' => 'Visibilidad actualizada correctamente.',
@@ -123,6 +126,10 @@ class SkillController extends Controller
         if ($habilidad->certificado_pdf) {
             Storage::disk('public')->delete($habilidad->certificado_pdf);
         }
+
+        $habilidad->evidencias()->whereNotNull('archivo')->get()->each(function (EvidenciaHabilidad $evidencia) {
+            Storage::disk('public')->delete($evidencia->archivo);
+        });
 
         $habilidad->delete();
 
@@ -142,6 +149,46 @@ class SkillController extends Controller
     {
         $perfil = $this->resolveProfile($request);
 
-        return Habilidad::where('perfil_id', $perfil->id)->findOrFail($habilidadId);
+        return Habilidad::with('evidencias')->where('perfil_id', $perfil->id)->findOrFail($habilidadId);
+    }
+
+    private function storeEvidenceList(Request $request, Habilidad $habilidad): void
+    {
+        foreach ($request->input('evidencias', []) as $index => $evidenciaData) {
+            $archivo = null;
+
+            if ($request->hasFile("evidencia_archivos.{$index}")) {
+                $archivo = $request->file("evidencia_archivos.{$index}")->store('evidencias-habilidades', 'public');
+            }
+
+            $this->createEvidence($habilidad, $evidenciaData, $archivo);
+        }
+    }
+
+    private function createEvidence(Habilidad $habilidad, array $data, ?string $archivo = null): void
+    {
+        $url = filled($data['url'] ?? null) ? trim((string) $data['url']) : null;
+
+        $exists = EvidenciaHabilidad::where('habilidad_id', $habilidad->id)
+            ->when($archivo, fn ($query) => $query->where('archivo', $archivo))
+            ->when(!$archivo && $url, fn ($query) => $query->where('url', $url))
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        EvidenciaHabilidad::create([
+            'habilidad_id' => $habilidad->id,
+            'tipo' => $data['tipo'] ?? 'documento',
+            'titulo' => trim((string) ($data['titulo'] ?? 'Evidencia de habilidad')),
+            'descripcion' => filled($data['descripcion'] ?? null) ? trim((string) $data['descripcion']) : null,
+            'archivo' => $archivo,
+            'url' => $url,
+            'emisor' => filled($data['emisor'] ?? null) ? trim((string) $data['emisor']) : null,
+            'fecha' => $data['fecha'] ?? null,
+            'creado_en' => now(),
+            'actualizado_en' => now(),
+        ]);
     }
 }

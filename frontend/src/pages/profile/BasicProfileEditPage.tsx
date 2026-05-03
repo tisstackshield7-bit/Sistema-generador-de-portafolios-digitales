@@ -1,9 +1,9 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AxiosError } from "axios";
 import FormInput from "../../components/common/FormInput";
 import FormTextarea from "../../components/common/FormTextarea";
 import AlertMessage from "../../components/common/AlertMessage";
-import BioCounter from "../../components/profile/BioCounter";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
 import { API_ORIGIN } from "../../api/axios";
@@ -16,6 +16,18 @@ import {
 } from "../../utils/validations";
 import { getMyProfile, updateBasicProfile } from "../../api/profile";
 import type { Perfil } from "../../types/profile";
+
+type ApiErrorData = {
+  message?: string;
+};
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AxiosError) {
+    return (error.response?.data as ApiErrorData | undefined)?.message || fallback;
+  }
+
+  return fallback;
+}
 
 function splitLegacyFullName(fullName: string) {
   const parts = fullName.split(" ").filter(Boolean);
@@ -41,6 +53,7 @@ export default function BasicProfileEditPage() {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [profesion, setProfesion] = useState("");
+  const [titularProfesional, setTitularProfesional] = useState("");
   const [telefono, setTelefono] = useState("");
   const [biografia, setBiografia] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
@@ -53,6 +66,7 @@ export default function BasicProfileEditPage() {
     nombres?: string;
     apellidos?: string;
     profesion?: string;
+    titular_profesional?: string;
     telefono?: string;
     biografia?: string;
   }>({});
@@ -74,6 +88,7 @@ export default function BasicProfileEditPage() {
         }
 
         setProfesion(perfil?.profesion || "");
+        setTitularProfesional(perfil?.titular_profesional || "");
         setTelefono(perfil?.telefono || "");
         setBiografia(perfil?.biografia || "");
         setExistingPhoto(perfil?.foto_perfil || null);
@@ -94,6 +109,7 @@ const preview = useMemo(() => {
   const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
   const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
   const [profesionError, setProfesionError] = useState("");
+  const [titularProfesionalError, setTitularProfesionalError] = useState("");
 
   const handlePhotoChange = (file: File | null) => {
     const error = validateProfilePhoto(file);
@@ -129,6 +145,17 @@ const preview = useMemo(() => {
       profesion: fieldError,
     }));
   };
+
+  const handleTitularProfesionalChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    const fieldError = value !== cleaned ? onlyLettersMessage : "";
+    setTitularProfesional(cleaned);
+    setTitularProfesionalError(fieldError);
+    setErrors((prev) => ({
+      ...prev,
+      titular_profesional: fieldError,
+    }));
+  };
   const handleBiografiaChange = (value: string) => {
     const nextValue = value.slice(0, 500);
     setBiografia(nextValue);
@@ -145,6 +172,7 @@ const preview = useMemo(() => {
       nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
       apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
       profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
+      titular_profesional: validateRequired(titularProfesional, "El rol o especialidad profesional es obligatorio.") || titularProfesionalError,
       telefono: validateBoliviaPhone(telefono),
       biografia: validateBiography(biografia),
     };
@@ -160,15 +188,16 @@ const preview = useMemo(() => {
         nombres,
         apellidos,
         profesion,
+        titular_profesional: titularProfesional,
         telefono,
         biografia,
         foto_perfil: foto,
       });
 
       setMessage("Informacion actualizada correctamente.");
-      setTimeout(() => navigate("/"), 900);
-    } catch (err: any) {
-      setServerError(err?.response?.data?.message || "No se pudo actualizar el perfil.");
+      setTimeout(() => navigate("/dashboard"), 900);
+    } catch (err: unknown) {
+      setServerError(getApiErrorMessage(err, "No se pudo actualizar el perfil."));
     }
   };
 
@@ -177,14 +206,7 @@ const preview = useMemo(() => {
       active="profile"
       perfil={perfilData}
       title="Perfil"
-      subtitle="Gestiona tu informacion personal y profesional con el alcance de Sprint 1."
-      actions={(
-        <>
-          <button type="button" className="btn btn-secondary" onClick={() => navigate("/perfil/cambiar-contrasena")}>
-            Cambiar contrasena
-          </button>
-        </>
-      )}
+      subtitle="Actualiza tu informacion publica, datos de contacto y presentacion profesional."
     >
       <section className="surface-card workspace-section-card">
         <div className="workspace-section-head">
@@ -221,13 +243,25 @@ const preview = useMemo(() => {
           </div>
 
           <FormInput
-            label="Profesion o titulo"
+            label="Profesion"
             value={profesion}
             onChange={handleProfesionChange}
             error={errors.profesion}
             pattern={lettersPattern}
             title={onlyLettersMessage}
             inputMode="text"
+            placeholder="Ej. Ingenieria Informatica"
+          />
+
+          <FormInput
+            label="Rol o especialidad profesional"
+            value={titularProfesional}
+            onChange={handleTitularProfesionalChange}
+            error={errors.titular_profesional}
+            pattern={lettersPattern}
+            title={onlyLettersMessage}
+            inputMode="text"
+            placeholder="Ej. Ingeniero DevOps"
           />
 
           <FormInput
@@ -248,7 +282,16 @@ const preview = useMemo(() => {
             placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
           />
 
-          <BioCounter count={biografia.length} />
+          <section className="account-security-box">
+            <div>
+              <p className="section-label">Seguridad de la cuenta</p>
+              <h3>Cambiar contrasena</h3>
+              <p>Actualiza tu contrasena de acceso para mantener protegida tu cuenta.</p>
+            </div>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate("/perfil/cambiar-contrasena")}>
+              Cambiar contrasena
+            </button>
+          </section>
 
           <div className="form-actions-row">
             <button type="button" className="btn btn-secondary" onClick={() => navigate("/")}>

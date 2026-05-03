@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.jpeg";
 import { logoutUser } from "../../api/auth";
+import { API_ORIGIN } from "../../api/axios";
 import { authStore } from "../../store/authStore";
 import type { Perfil } from "../../types/profile";
 
@@ -60,6 +61,7 @@ export default function PrivateWorkspaceLayout({ active, perfil, title, subtitle
     try {
       await logoutUser();
     } catch {
+      // La sesion local se limpia aunque el token ya no exista en el servidor.
     } finally {
       authStore.clearSession();
       navigate("/");
@@ -67,10 +69,10 @@ export default function PrivateWorkspaceLayout({ active, perfil, title, subtitle
   };
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", to: "/", icon: "dashboard" as const },
-    { id: "projects", label: "Proyectos", to: "/en-proceso", icon: "projects" as const },
+    { id: "dashboard", label: "Inicio", to: "/dashboard", icon: "dashboard" as const },
+    { id: "projects", label: "Proyectos", to: "/perfil/proyectos", icon: "projects" as const },
     { id: "skills", label: "Habilidades", to: "/perfil/habilidades", icon: "skills" as const },
-    { id: "experience", label: "Experiencia", to: "/en-proceso", icon: "experience" as const },
+    { id: "experience", label: "Experiencia", to: "/perfil/experiencia", icon: "experience" as const },
     { id: "profile", label: "Perfil", to: "/perfil/editar", icon: "profile" as const },
   ];
 
@@ -86,10 +88,18 @@ export default function PrivateWorkspaceLayout({ active, perfil, title, subtitle
           </Link>
 
           <div className="workspace-user">
-            <div className="workspace-avatar">{getInitials(perfil?.nombre_completo)}</div>
+            {perfil?.foto_perfil ? (
+              <img
+                src={`${API_ORIGIN}/storage/${perfil.foto_perfil}`}
+                alt={perfil.nombre_completo || "Foto de perfil"}
+                className="workspace-avatar"
+              />
+            ) : (
+              <div className="workspace-avatar">{getInitials(perfil?.nombre_completo)}</div>
+            )}
             <div className="workspace-user-meta">
               <strong>{perfil?.nombre_completo || "Mi cuenta"}</strong>
-              <span>{perfil?.profesion || "Perfil profesional"}</span>
+              <span>{perfil?.titular_profesional || perfil?.profesion || "Perfil profesional"}</span>
             </div>
           </div>
         </div>

@@ -30,13 +30,35 @@ class Perfil extends Model
         'eliminado_en',
     ];
 
+    protected $hidden = [
+        'usuario',
+    ];
+
+    protected $appends = [
+        'correo',
+    ];
+
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
     }
 
+    public function getCorreoAttribute(): ?string
+    {
+        if ($this->relationLoaded('usuario')) {
+            return $this->usuario?->correo;
+        }
+
+        return null;
+    }
+
     public function habilidades()
     {
         return $this->hasMany(Habilidad::class, 'perfil_id');
+    }
+
+    public function proyectos()
+    {
+        return $this->hasMany(Proyecto::class, 'perfil_id');
     }
 }

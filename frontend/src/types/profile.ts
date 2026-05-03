@@ -1,9 +1,11 @@
 import type { Skill } from "./skill";
+import type { Project } from "./project";
 
 export interface BasicProfilePayload {
   nombres: string;
   apellidos: string;
   profesion: string;
+  titular_profesional: string;
   telefono?: string;
   biografia: string;
   foto_perfil?: File | null;
@@ -17,11 +19,13 @@ export interface Perfil {
   nombre_completo: string;
   profesion: string;
   titular_profesional?: string | null;
+  correo?: string | null;
   biografia: string;
   telefono?: string | null;
   foto_perfil?: string | null;
   slug: string;
   habilidades?: Skill[];
+  proyectos?: Project[];
 }
 
 export interface PublicProfileCard {
@@ -29,9 +33,11 @@ export interface PublicProfileCard {
   nombre_completo: string;
   profesion: string;
   titular_profesional?: string | null;
+  correo?: string | null;
   biografia: string;
   telefono?: string | null;
   foto_perfil?: string | null;
   slug: string;
   habilidades?: Skill[];
+  proyectos?: Project[];
 }

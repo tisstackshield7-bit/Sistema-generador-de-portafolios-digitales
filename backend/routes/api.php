@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PasswordRecoveryController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\SkillController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,4 +32,10 @@ Route::middleware('auth.custom')->group(function () {
     Route::put('/habilidades/{habilidad}', [SkillController::class, 'update']);
     Route::patch('/habilidades/{habilidad}/visibilidad', [SkillController::class, 'updateVisibility']);
     Route::delete('/habilidades/{habilidad}', [SkillController::class, 'destroy']);
+
+    Route::get('/proyectos', [ProjectController::class, 'index']);
+    Route::post('/proyectos', [ProjectController::class, 'store']);
+    Route::put('/proyectos/{proyecto}', [ProjectController::class, 'update']);
+    Route::patch('/proyectos/{proyecto}/visibilidad', [ProjectController::class, 'updateVisibility']);
+    Route::delete('/proyectos/{proyecto}', [ProjectController::class, 'destroy']);
 });

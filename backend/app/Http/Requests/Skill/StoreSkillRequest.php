@@ -4,6 +4,7 @@ namespace App\Http\Requests\Skill;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreSkillRequest extends FormRequest
 {
@@ -31,6 +32,8 @@ class StoreSkillRequest extends FormRequest
 
     public const LEVELS = ['Basico', 'Intermedio', 'Avanzado'];
 
+    public const EVIDENCE_TYPES = ['certificado', 'proyecto', 'curso', 'video', 'documento', 'experiencia'];
+
     public function authorize(): bool
     {
         return true;
@@ -38,20 +41,36 @@ class StoreSkillRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $evidencias = $this->input('evidencias', []);
+
+        if ($this->filled('evidencias_json')) {
+            $decoded = json_decode((string) $this->input('evidencias_json'), true);
+            $evidencias = is_array($decoded) ? $decoded : [];
+        }
+
+        $category = $this->filled('categoria') ? $this->input('categoria') : null;
+        $customCategory = $this->filled('categoria_personalizada')
+            ? trim((string) $this->input('categoria_personalizada'))
+            : null;
+
+        if ($this->input('tipo') === 'blanda' && $category === '__custom__') {
+            $category = $customCategory;
+        }
+
         $this->merge([
-            'categoria' => $this->filled('categoria') ? $this->input('categoria') : null,
+            'categoria' => $category,
+            'categoria_personalizada' => $customCategory,
             'visible_publico' => $this->boolean('visible_publico'),
+            'evidencias' => $evidencias,
         ]);
     }
 
     public function rules(): array
     {
         $skillType = $this->input('tipo');
-        $allowedCategories = match ($skillType) {
-            'tecnica' => self::TECHNICAL_CATEGORIES,
-            'blanda' => self::SOFT_CATEGORIES,
-            default => [],
-        };
+        $categoryRules = $skillType === 'tecnica'
+            ? ['required', 'string', 'max:100', Rule::in(self::TECHNICAL_CATEGORIES)]
+            : ['required', 'string', 'max:100'];
         $nameRules = $skillType === 'blanda'
             ? ['nullable', 'string', 'max:150']
             : ['required', 'string', 'max:150'];
@@ -59,11 +78,38 @@ class StoreSkillRequest extends FormRequest
         return [
             'tipo' => ['required', Rule::in(['tecnica', 'blanda'])],
             'nombre' => $nameRules,
-            'categoria' => ['required', 'string', 'max:100', Rule::in($allowedCategories)],
+            'categoria' => $categoryRules,
+            'categoria_personalizada' => ['nullable', 'string', 'max:100'],
             'nivel_dominio' => ['required', Rule::in(self::LEVELS)],
             'visible_publico' => ['nullable', 'boolean'],
-            'certificado_pdf' => [Rule::requiredIf($skillType === 'tecnica' && $this->boolean('visible_publico')), 'file', 'mimes:pdf', 'max:5120'],
+            'certificado_pdf' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
+            'evidencias' => ['nullable', 'array'],
+            'evidencias.*.tipo' => ['required_with:evidencias', Rule::in(self::EVIDENCE_TYPES)],
+            'evidencias.*.titulo' => ['required_with:evidencias', 'string', 'max:180'],
+            'evidencias.*.descripcion' => ['nullable', 'string', 'max:1000'],
+            'evidencias.*.url' => ['nullable', 'url', 'max:255'],
+            'evidencias.*.emisor' => ['nullable', 'string', 'max:180'],
+            'evidencias.*.fecha' => ['nullable', 'date'],
+            'evidencia_archivos' => ['nullable', 'array'],
+            'evidencia_archivos.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,mp4,mov', 'max:10240'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            foreach ($this->input('evidencias', []) as $index => $evidencia) {
+                $hasUrl = filled($evidencia['url'] ?? null);
+                $hasFile = $this->hasFile("evidencia_archivos.{$index}");
+
+                if (!$hasUrl && !$hasFile) {
+                    $validator->errors()->add(
+                        "evidencias.{$index}.url",
+                        'Agrega un enlace o archivo para respaldar esta evidencia.'
+                    );
+                }
+            }
+        });
     }
 
     public function messages(): array
@@ -80,6 +126,12 @@ class StoreSkillRequest extends FormRequest
             'certificado_pdf.file' => 'El certificado debe ser un archivo PDF valido.',
             'certificado_pdf.mimes' => 'El certificado debe estar en formato PDF.',
             'certificado_pdf.max' => 'El certificado no puede superar los 5 MB.',
+            'evidencias.*.tipo.required_with' => 'El tipo de evidencia es obligatorio.',
+            'evidencias.*.tipo.in' => 'El tipo de evidencia no es valido.',
+            'evidencias.*.titulo.required_with' => 'El titulo de la evidencia es obligatorio.',
+            'evidencias.*.url.url' => 'Ingresa un enlace valido para la evidencia.',
+            'evidencia_archivos.*.mimes' => 'La evidencia debe ser PDF, imagen o video.',
+            'evidencia_archivos.*.max' => 'La evidencia no puede superar los 10 MB.',
         ];
     }
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import FormInput from "../../components/common/FormInput";
 import FormTextarea from "../../components/common/FormTextarea";
@@ -15,7 +16,19 @@ import {
 import { createBasicProfile } from "../../api/profile";
 import "./BasicProfileCreatePage.css";
 
-type FieldName = "nombres" | "apellidos" | "profesion" | "telefono" | "biografia";
+type FieldName = "nombres" | "apellidos" | "profesion" | "titular_profesional" | "telefono" | "biografia";
+
+type ApiErrorData = {
+  message?: string;
+};
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AxiosError) {
+    return (error.response?.data as ApiErrorData | undefined)?.message || fallback;
+  }
+
+  return fallback;
+}
 
 export default function BasicProfileCreatePage() {
   const navigate = useNavigate();
@@ -23,6 +36,7 @@ export default function BasicProfileCreatePage() {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [profesion, setProfesion] = useState("");
+  const [titularProfesional, setTitularProfesional] = useState("");
   const [telefono, setTelefono] = useState("");
   const [biografia, setBiografia] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
@@ -32,6 +46,7 @@ export default function BasicProfileCreatePage() {
     nombres: "",
     apellidos: "",
     profesion: "",
+    titular_profesional: "",
     telefono: "",
     biografia: "",
   });
@@ -40,6 +55,7 @@ export default function BasicProfileCreatePage() {
     nombres: false,
     apellidos: false,
     profesion: false,
+    titular_profesional: false,
     telefono: false,
     biografia: false,
   });
@@ -60,6 +76,8 @@ export default function BasicProfileCreatePage() {
         return validateRequired(value, "Los apellidos son obligatorios.");
       case "profesion":
         return validateRequired(value, "La profesion es obligatoria.");
+      case "titular_profesional":
+        return validateRequired(value, "El rol o especialidad profesional es obligatorio.");
       case "telefono":
         return validateBoliviaPhone(value);
       case "biografia":
@@ -125,6 +143,19 @@ export default function BasicProfileCreatePage() {
     setErrors((prev) => ({ ...prev, profesion: customError }));
   };
 
+  const handleTitularProfesionalChange = (value: string) => {
+    const cleaned = sanitizeLettersAndSpaces(value);
+    const customError = value !== cleaned ? onlyLettersMessage : "";
+    setTitularProfesional(cleaned);
+
+    if (touched.titular_profesional) {
+      setFieldError("titular_profesional", cleaned, customError);
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, titular_profesional: customError }));
+  };
+
   const handleTelefonoChange = (value: string) => {
     const digitsOnly = sanitizeDigits(value);
     setTelefono(digitsOnly);
@@ -161,6 +192,7 @@ export default function BasicProfileCreatePage() {
       nombres: true,
       apellidos: true,
       profesion: true,
+      titular_profesional: true,
       telefono: true,
       biografia: true,
     };
@@ -168,6 +200,7 @@ export default function BasicProfileCreatePage() {
       nombres: validateField("nombres", nombres, errors.nombres),
       apellidos: validateField("apellidos", apellidos, errors.apellidos),
       profesion: validateField("profesion", profesion, errors.profesion),
+      titular_profesional: validateField("titular_profesional", titularProfesional, errors.titular_profesional),
       telefono: validateField("telefono", telefono),
       biografia: validateField("biografia", biografia),
     };
@@ -185,14 +218,15 @@ export default function BasicProfileCreatePage() {
         nombres,
         apellidos,
         profesion,
+        titular_profesional: titularProfesional,
         telefono,
         biografia,
         foto_perfil: foto,
       });
 
       navigate("/");
-    } catch (err: any) {
-      setServerError(err?.response?.data?.message || "No se pudo guardar el perfil.");
+    } catch (err: unknown) {
+      setServerError(getApiErrorMessage(err, "No se pudo guardar el perfil."));
     }
   };
 
@@ -261,7 +295,7 @@ export default function BasicProfileCreatePage() {
             />
 
             <FormInput
-              label="Profesion o titulo"
+              label="Profesion"
               value={profesion}
               onChange={handleProfesionChange}
               onBlur={() => {
@@ -272,7 +306,22 @@ export default function BasicProfileCreatePage() {
               pattern={lettersPattern}
               title={onlyLettersMessage}
               inputMode="text"
-              placeholder="Ej. Ingeniero de sistemas"
+              placeholder="Ej. Ingenieria Informatica"
+            />
+
+            <FormInput
+              label="Rol o especialidad profesional"
+              value={titularProfesional}
+              onChange={handleTitularProfesionalChange}
+              onBlur={() => {
+                markFieldAsTouched("titular_profesional");
+                setFieldError("titular_profesional", titularProfesional, errors.titular_profesional);
+              }}
+              error={errors.titular_profesional}
+              pattern={lettersPattern}
+              title={onlyLettersMessage}
+              inputMode="text"
+              placeholder="Ej. Ingeniero DevOps"
             />
 
             <FormInput

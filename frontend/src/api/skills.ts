@@ -11,12 +11,34 @@ function buildSkillFormData(payload: SkillPayload, method?: "PUT") {
   formData.append("tipo", payload.tipo);
   formData.append("nombre", payload.nombre);
   formData.append("categoria", payload.categoria);
+  formData.append("categoria_personalizada", payload.categoria_personalizada || "");
   formData.append("nivel_dominio", payload.nivel_dominio);
   formData.append("visible_publico", payload.visible_publico ? "1" : "0");
 
   if (payload.certificado_pdf) {
     formData.append("certificado_pdf", payload.certificado_pdf);
   }
+
+  const evidencias = payload.evidencias || [];
+  formData.append(
+    "evidencias_json",
+    JSON.stringify(
+      evidencias.map((evidencia) => ({
+        tipo: evidencia.tipo,
+        titulo: evidencia.titulo,
+        descripcion: evidencia.descripcion || "",
+        url: evidencia.url || "",
+        emisor: evidencia.emisor || "",
+        fecha: evidencia.fecha || "",
+      })),
+    ),
+  );
+
+  evidencias.forEach((evidencia, index) => {
+    if (evidencia.archivo) {
+      formData.append(`evidencia_archivos[${index}]`, evidencia.archivo);
+    }
+  });
 
   return formData;
 }

@@ -38,7 +38,7 @@ class ProfileController extends Controller
             'usuario_id' => $usuario->id,
             'nombre_completo' => $nombreCompleto,
             'profesion' => $request->profesion,
-            'titular_profesional' => $request->profesion,
+            'titular_profesional' => $request->titular_profesional,
             'telefono' => $request->telefono,
             'biografia' => $request->biografia,
             'foto_perfil' => $rutaFoto,
@@ -53,7 +53,7 @@ class ProfileController extends Controller
             $perfilData['apellidos'] = $request->apellidos;
         }
 
-        $perfil = Perfil::create($perfilData);
+        $perfil = Perfil::create($perfilData)->load('usuario:id,correo');
 
         return response()->json([
             'message' => 'Información básica guardada correctamente.',
@@ -65,9 +65,16 @@ class ProfileController extends Controller
     {
         $usuario = $request->attributes->get('auth_usuario');
 
-        $perfil = Perfil::with(['habilidades' => function ($query) {
-            $query->orderBy('tipo')->orderByDesc('creado_en');
-        }])->where('usuario_id', $usuario->id)->first();
+        $perfil = Perfil::with([
+            'usuario:id,correo',
+            'habilidades' => function ($query) {
+                $query->orderBy('tipo')->orderByDesc('creado_en');
+            },
+            'habilidades.evidencias',
+            'proyectos' => function ($query) {
+                $query->orderByDesc('fecha_inicio')->orderByDesc('creado_en');
+            },
+        ])->where('usuario_id', $usuario->id)->first();
 
         return response()->json([
             'perfil' => $perfil,
@@ -89,7 +96,7 @@ class ProfileController extends Controller
 
         $perfil->nombre_completo = $nombreCompleto;
         $perfil->profesion = $request->profesion;
-        $perfil->titular_profesional = $request->profesion;
+        $perfil->titular_profesional = $request->titular_profesional;
         $perfil->telefono = $request->telefono;
         $perfil->biografia = $request->biografia;
 
@@ -99,6 +106,7 @@ class ProfileController extends Controller
 
         $perfil->actualizado_en = now();
         $perfil->save();
+        $perfil->load('usuario:id,correo');
 
         return response()->json([
             'message' => 'Información actualizada correctamente.',
@@ -150,10 +158,19 @@ class ProfileController extends Controller
             }
         };
 
-        $perfilesQuery = Perfil::with(['habilidades' => function ($query) use ($applySkillFilters) {
-            $applySkillFilters($query);
-            $query->orderBy('tipo')->orderByDesc('creado_en');
-        }])->where('es_publico', true);
+        $perfilesQuery = Perfil::with([
+            'usuario:id,correo',
+            'habilidades' => function ($query) use ($applySkillFilters) {
+                $applySkillFilters($query);
+                $query->orderBy('tipo')->orderByDesc('creado_en');
+            },
+            'habilidades.evidencias',
+            'proyectos' => function ($query) {
+                $query->where('visible_publico', true)
+                    ->orderByDesc('fecha_inicio')
+                    ->orderByDesc('creado_en');
+            },
+        ])->where('es_publico', true);
 
         if ($search !== '') {
             $perfilesQuery->where(function ($query) use ($search) {
@@ -182,9 +199,11 @@ class ProfileController extends Controller
             ->limit(20)
             ->get([
                 'id',
+                'usuario_id',
                 'nombre_completo',
                 'profesion',
                 'titular_profesional',
+                'telefono',
                 'biografia',
                 'foto_perfil',
                 'slug',
@@ -211,11 +230,20 @@ class ProfileController extends Controller
 
     public function showPublicBySlug(string $slug)
     {
-        $perfil = Perfil::with(['habilidades' => function ($query) {
-            $query->where('visible_publico', true)
-                ->orderBy('tipo')
-                ->orderByDesc('creado_en');
-        }])->where('es_publico', true)
+        $perfil = Perfil::with([
+            'usuario:id,correo',
+            'habilidades' => function ($query) {
+                $query->where('visible_publico', true)
+                    ->orderBy('tipo')
+                    ->orderByDesc('creado_en');
+            },
+            'habilidades.evidencias',
+            'proyectos' => function ($query) {
+                $query->where('visible_publico', true)
+                    ->orderByDesc('fecha_inicio')
+                    ->orderByDesc('creado_en');
+            },
+        ])->where('es_publico', true)
             ->where('slug', $slug)
             ->first();
 
