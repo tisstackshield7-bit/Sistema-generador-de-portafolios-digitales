@@ -101,6 +101,7 @@ export default function PublicProfilePage() {
   const navigate = useNavigate();
   const { slug } = useParams();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<number, true>>({});
   const [certificateUrl, setCertificateUrl] = useState("");
   const [evidenceSkill, setEvidenceSkill] = useState<Skill | null>(null);
   const [expandedSkillGroups, setExpandedSkillGroups] = useState({
@@ -337,8 +338,13 @@ export default function PublicProfilePage() {
           <section className="portfolio-project-list">
             {publicProjects.map((project) => (
               <article key={project.id} className="surface-card portfolio-project-card">
-                {project.url_imagen ? (
-                  <img src={project.url_imagen} alt={project.titulo} className="portfolio-project-image" />
+                {project.url_imagen && !imageErrors[project.id] ? (
+                  <img
+                    src={project.url_imagen}
+                    alt={project.titulo}
+                    className="portfolio-project-image"
+                    onError={() => setImageErrors((prev) => ({ ...prev, [project.id]: true }))}
+                  />
                 ) : (
                   <div className="portfolio-project-image project-image-fallback">{project.titulo.slice(0, 2).toUpperCase()}</div>
                 )}

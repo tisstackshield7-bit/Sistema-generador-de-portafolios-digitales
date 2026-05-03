@@ -65,6 +65,11 @@ export default function RegisterPage() {
       </form>
 
       <div className="auth-links-row">
+        <span className="meta-text">Quieres volver?</span>
+        <Link to="/">Volver al inicio</Link>
+      </div>
+
+      <div className="auth-links-row">
         <span className="meta-text">Ya tienes una cuenta?</span>
         <Link to="/login">Iniciar sesion</Link>
       </div>

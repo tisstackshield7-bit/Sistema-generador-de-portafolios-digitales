@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import logo from "../../assets/logo.jpeg";
 import { logoutUser } from "../../api/auth";
 import { API_ORIGIN } from "../../api/axios";
 import { authStore } from "../../store/authStore";
@@ -81,10 +80,10 @@ export default function PrivateWorkspaceLayout({ active, perfil, title, subtitle
       <header className="workspace-topbar">
         <div className="page-section workspace-topbar-inner">
           <Link to="/" className="workspace-brand">
-            <span className="workspace-brand-mark">
-              <img src={logo} alt="Portfolio Pro" className="brand-logo" />
+            <span className="workspace-brand-mark">P</span>
+            <span>
+              Porta<span>FolioPro</span>
             </span>
-            <span>Portfolio Pro</span>
           </Link>
 
           <div className="workspace-user">

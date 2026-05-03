@@ -70,10 +70,15 @@ function getApiErrorData(error: unknown) {
   return undefined;
 }
 
+function getProjectFallback(project: Project) {
+  return project.titulo.trim().slice(0, 2).toUpperCase() || "PR";
+}
+
 export default function ProjectsPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [proyectos, setProyectos] = useState<Project[]>([]);
+  const [imageErrors, setImageErrors] = useState<Record<number, true>>({});
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
@@ -296,9 +301,16 @@ export default function ProjectsPage() {
             <div className="projects-card-grid">
               {proyectos.map((project) => (
                 <article key={project.id} className="project-card">
-                  {project.url_imagen ? (
-                    <img src={project.url_imagen} alt={project.titulo} className="project-card-image" />
-                  ) : null}
+                  {project.url_imagen && !imageErrors[project.id] ? (
+                    <img
+                      src={project.url_imagen}
+                      alt={project.titulo}
+                      className="project-card-image"
+                      onError={() => setImageErrors((prev) => ({ ...prev, [project.id]: true }))}
+                    />
+                  ) : (
+                    <div className="project-card-image project-image-fallback">{getProjectFallback(project)}</div>
+                  )}
 
                   <div className="skill-card-head">
                     <div>
