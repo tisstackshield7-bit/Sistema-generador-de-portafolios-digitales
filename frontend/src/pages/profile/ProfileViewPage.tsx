@@ -7,6 +7,7 @@ import { getInitials } from "../../utils/avatar";
 import { logoutUser } from "../../api/auth";
 import { authStore } from "../../store/authStore";
 import type { Project } from "../../types/project";
+import { resolveProjectImageSrc } from "../../utils/projectImages";
 
 function splitSkills(perfil: Perfil) {
   const technicalSkills = perfil.habilidades?.filter((skill) => skill.tipo === "tecnica") || [];
@@ -240,9 +241,9 @@ export default function ProfileViewPage() {
                 <div className="portfolio-project-list">
                   {projects.map((project) => (
                     <article key={project.id} className="surface-card portfolio-project-card">
-                      {project.url_imagen && !imageErrors[project.id] ? (
+                      {resolveProjectImageSrc(project.url_imagen) && !imageErrors[project.id] ? (
                         <img
-                          src={project.url_imagen}
+                          src={resolveProjectImageSrc(project.url_imagen) || ""}
                           alt={project.titulo}
                           className="portfolio-project-image"
                           onError={() => setImageErrors((prev) => ({ ...prev, [project.id]: true }))}

@@ -56,6 +56,10 @@ export const validateProfilePhoto = (file?: File | null) => {
   return "";
 };
 
+export const validateProjectImage = (file?: File | null) => {
+  return validateProfilePhoto(file);
+};
+
 export const sanitizeLettersAndSpaces = (value: string) => {
   return value.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g, "");
 };

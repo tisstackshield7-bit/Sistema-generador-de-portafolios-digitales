@@ -7,6 +7,8 @@ import { getMyProfile } from "../../api/profile";
 import { createProject, deleteProject, getMyProjects, updateProject, updateProjectVisibility } from "../../api/projects";
 import type { Perfil } from "../../types/profile";
 import type { Project, ProjectPayload } from "../../types/project";
+import { resolveProjectImageSrc, isAbsoluteImageUrl } from "../../utils/projectImages";
+import { validateProjectImage } from "../../utils/validations";
 
 const EMPTY_FORM: ProjectPayload = {
   titulo: "",
@@ -83,10 +85,14 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
   const [form, setForm] = useState<ProjectPayload>(EMPTY_FORM);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [existingImage, setExistingImage] = useState<string | null>(null);
+  const [imageDirty, setImageDirty] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -111,6 +117,18 @@ export default function ProjectsPage() {
     loadData();
   }, [navigate]);
 
+  useEffect(() => {
+    if (!imageFile) {
+      setFilePreview(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(imageFile);
+    setFilePreview(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [imageFile]);
+
   const publicCount = useMemo(() => proyectos.filter((project) => project.visible_publico).length, [proyectos]);
   const technologyCount = useMemo(
     () => new Set(proyectos.flatMap((project) => project.tecnologias || [])).size,
@@ -120,6 +138,9 @@ export default function ProjectsPage() {
   const openCreateForm = () => {
     setEditingProject(null);
     setForm(EMPTY_FORM);
+    setImageFile(null);
+    setExistingImage(null);
+    setImageDirty(false);
     setErrors({});
     setServerError("");
     setShowForm(true);
@@ -136,9 +157,12 @@ export default function ProjectsPage() {
       tecnologias: (project.tecnologias || []).join(", "),
       logros: (project.logros || []).join("\n"),
       enlace_proyecto: project.enlace_proyecto || "",
-      url_imagen: project.url_imagen || "",
+      url_imagen: isAbsoluteImageUrl(project.url_imagen) ? project.url_imagen || "" : "",
       visible_publico: project.visible_publico,
     });
+    setImageFile(null);
+    setExistingImage(project.url_imagen || null);
+    setImageDirty(false);
     setErrors({});
     setServerError("");
     setShowForm(true);
@@ -148,7 +172,54 @@ export default function ProjectsPage() {
     setShowForm(false);
     setEditingProject(null);
     setForm(EMPTY_FORM);
+    setImageFile(null);
+    setExistingImage(null);
+    setImageDirty(false);
     setErrors({});
+  };
+
+  const handleImageUrlChange = (value: string) => {
+    if (value.trim() && imageFile) {
+      setImageFile(null);
+    }
+
+    setImageDirty(true);
+    setForm((prev) => ({ ...prev, url_imagen: value }));
+
+    if (errors.url_imagen || errors.imagen_archivo) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.url_imagen;
+        delete next.imagen_archivo;
+        return next;
+      });
+    }
+  };
+
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+
+    setImageDirty(true);
+    setImageFile(file);
+    setForm((prev) => ({ ...prev, url_imagen: "" }));
+    setExistingImage(null);
+
+    if (errors.url_imagen || errors.imagen_archivo) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.url_imagen;
+        delete next.imagen_archivo;
+        return next;
+      });
+    }
+  };
+
+  const clearProjectImage = () => {
+    setImageDirty(true);
+    setImageFile(null);
+    setExistingImage(null);
+    setForm((prev) => ({ ...prev, url_imagen: "" }));
   };
 
   const validate = () => {
@@ -167,7 +238,10 @@ export default function ProjectsPage() {
     if (form.enlace_proyecto?.trim() && !urlPattern.test(form.enlace_proyecto.trim())) {
       nextErrors.enlace_proyecto = "Ingrese un enlace valido";
     }
-    if (form.url_imagen?.trim() && !urlPattern.test(form.url_imagen.trim())) {
+    if (imageFile) {
+      const imageError = validateProjectImage(imageFile);
+      if (imageError) nextErrors.imagen_archivo = imageError;
+    } else if (form.url_imagen?.trim() && !urlPattern.test((form.url_imagen || "").trim())) {
       nextErrors.url_imagen = "Ingrese una URL de imagen valida.";
     }
 
@@ -184,7 +258,7 @@ export default function ProjectsPage() {
     setSaving(true);
 
     try {
-      const payload = {
+      const payload: ProjectPayload = {
         ...form,
         titulo: form.titulo.trim(),
         rol: form.rol.trim(),
@@ -192,13 +266,23 @@ export default function ProjectsPage() {
         tecnologias: normalizeTechnologies(form.tecnologias).join(", "),
         logros: normalizeAchievements(form.logros).join("\n"),
         enlace_proyecto: form.enlace_proyecto?.trim() || "",
-        url_imagen: form.url_imagen?.trim() || "",
+        imagen_archivo: imageFile,
+        visible_publico: form.visible_publico,
       };
+
+      if (!editingProject || imageDirty || (form.url_imagen || "").trim()) {
+        payload.url_imagen = form.url_imagen?.trim() || "";
+      }
 
       const data = editingProject
         ? await updateProject(editingProject.id, payload)
         : await createProject(payload);
       const updatedProject = data.proyecto as Project;
+      setImageErrors((prev) => {
+        const next = { ...prev };
+        delete next[updatedProject.id];
+        return next;
+      });
 
       setProyectos((prev) => {
         if (editingProject) {
@@ -263,6 +347,8 @@ export default function ProjectsPage() {
     );
   }
 
+  const imagePreview = filePreview || (form.url_imagen || "").trim() || resolveProjectImageSrc(existingImage);
+
   return (
     <PrivateWorkspaceLayout active="projects" perfil={perfil} title="Proyectos" subtitle="">
       <div className="projects-page">
@@ -301,9 +387,9 @@ export default function ProjectsPage() {
             <div className="projects-card-grid">
               {proyectos.map((project) => (
                 <article key={project.id} className="project-card">
-                  {project.url_imagen && !imageErrors[project.id] ? (
+                  {resolveProjectImageSrc(project.url_imagen) && !imageErrors[project.id] ? (
                     <img
-                      src={project.url_imagen}
+                      src={resolveProjectImageSrc(project.url_imagen) || ""}
                       alt={project.titulo}
                       className="project-card-image"
                       onError={() => setImageErrors((prev) => ({ ...prev, [project.id]: true }))}
@@ -470,10 +556,31 @@ export default function ProjectsPage() {
                       className={`form-input${errors.url_imagen ? " error" : ""}`}
                       value={form.url_imagen}
                       placeholder="https://sitio.com/imagen.png"
-                      onChange={(event) => setForm((prev) => ({ ...prev, url_imagen: event.target.value }))}
+                      onChange={(event) => handleImageUrlChange(event.target.value)}
                     />
                     {errors.url_imagen ? <p className="form-error">{errors.url_imagen}</p> : null}
                   </div>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">Subir imagen</label>
+                  {imagePreview ? <img src={imagePreview} alt="Vista previa del proyecto" className="project-form-image-preview" /> : null}
+                  <input
+                    className={`form-file${errors.imagen_archivo ? " error" : ""}`}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    onChange={handleImageFileChange}
+                  />
+                  <p className="form-help">Puedes usar una URL externa o subir un archivo JPG, PNG o WEBP de hasta 5 MB.</p>
+                  {existingImage && !(form.url_imagen || "").trim() && !imageFile ? (
+                    <p className="form-help">La imagen actual se mantendra si no la reemplazas.</p>
+                  ) : null}
+                  {imagePreview ? (
+                    <button type="button" className="btn btn-secondary project-image-clear-button" onClick={clearProjectImage}>
+                      Quitar imagen
+                    </button>
+                  ) : null}
+                  {errors.imagen_archivo ? <p className="form-error">{errors.imagen_archivo}</p> : null}
                 </div>
 
                 <div className="form-field">

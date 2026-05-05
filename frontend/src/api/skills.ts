@@ -24,12 +24,14 @@ function buildSkillFormData(payload: SkillPayload, method?: "PUT") {
     "evidencias_json",
     JSON.stringify(
       evidencias.map((evidencia) => ({
+        id: evidencia.id,
         tipo: evidencia.tipo,
         titulo: evidencia.titulo,
         descripcion: evidencia.descripcion || "",
         url: evidencia.url || "",
         emisor: evidencia.emisor || "",
         fecha: evidencia.fecha || "",
+        archivo_actual: evidencia.archivo_actual || "",
       })),
     ),
   );

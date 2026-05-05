@@ -1716,6 +1716,20 @@ img {
   overflow: auto;
 }
 
+.project-form-image-preview {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid rgba(219, 227, 238, 0.9);
+  background: #eef2f7;
+}
+
+.project-image-clear-button {
+  align-self: flex-start;
+}
+
 .evidence-builder {
   padding: 18px;
   border: 1px solid rgba(219, 227, 238, 0.9);

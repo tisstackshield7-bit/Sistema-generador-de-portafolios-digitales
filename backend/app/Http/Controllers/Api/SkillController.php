@@ -93,7 +93,7 @@ class SkillController extends Controller
             ], $habilidad->certificado_pdf);
         }
 
-        $this->storeEvidenceList($request, $habilidad);
+        $this->syncEvidenceList($request, $habilidad);
         $habilidad->actualizado_en = now();
         $habilidad->save();
         $habilidad->load('evidencias');
@@ -165,7 +165,59 @@ class SkillController extends Controller
         }
     }
 
-    private function createEvidence(Habilidad $habilidad, array $data, ?string $archivo = null): void
+    private function syncEvidenceList(Request $request, Habilidad $habilidad): void
+    {
+        $currentEvidence = $habilidad->evidencias->keyBy('id');
+        $keptEvidenceIds = [];
+
+        foreach ($request->input('evidencias', []) as $index => $evidenciaData) {
+            $evidenceId = isset($evidenciaData['id']) ? (int) $evidenciaData['id'] : null;
+            $evidencia = $evidenceId ? $currentEvidence->get($evidenceId) : null;
+            $archivo = $evidencia?->archivo;
+
+            if ($request->hasFile("evidencia_archivos.{$index}")) {
+                if ($archivo) {
+                    Storage::disk('public')->delete($archivo);
+                }
+
+                $archivo = $request->file("evidencia_archivos.{$index}")->store('evidencias-habilidades', 'public');
+            }
+
+            if ($evidencia) {
+                $evidencia->fill([
+                    'tipo' => $evidenciaData['tipo'] ?? 'documento',
+                    'titulo' => trim((string) ($evidenciaData['titulo'] ?? 'Evidencia de habilidad')),
+                    'descripcion' => filled($evidenciaData['descripcion'] ?? null) ? trim((string) $evidenciaData['descripcion']) : null,
+                    'archivo' => $archivo,
+                    'url' => filled($evidenciaData['url'] ?? null) ? trim((string) $evidenciaData['url']) : null,
+                    'emisor' => filled($evidenciaData['emisor'] ?? null) ? trim((string) $evidenciaData['emisor']) : null,
+                    'fecha' => $evidenciaData['fecha'] ?? null,
+                    'actualizado_en' => now(),
+                ]);
+                $evidencia->save();
+                $keptEvidenceIds[] = $evidencia->id;
+                continue;
+            }
+
+            $newEvidence = $this->createEvidence($habilidad, $evidenciaData, $archivo);
+
+            if ($newEvidence) {
+                $keptEvidenceIds[] = $newEvidence->id;
+            }
+        }
+
+        $habilidad->evidencias
+            ->whereNotIn('id', $keptEvidenceIds)
+            ->each(function (EvidenciaHabilidad $evidencia) {
+                if ($evidencia->archivo) {
+                    Storage::disk('public')->delete($evidencia->archivo);
+                }
+
+                $evidencia->delete();
+            });
+    }
+
+    private function createEvidence(Habilidad $habilidad, array $data, ?string $archivo = null): ?EvidenciaHabilidad
     {
         $url = filled($data['url'] ?? null) ? trim((string) $data['url']) : null;
 
@@ -175,10 +227,10 @@ class SkillController extends Controller
             ->exists();
 
         if ($exists) {
-            return;
+            return null;
         }
 
-        EvidenciaHabilidad::create([
+        return EvidenciaHabilidad::create([
             'habilidad_id' => $habilidad->id,
             'tipo' => $data['tipo'] ?? 'documento',
             'titulo' => trim((string) ($data['titulo'] ?? 'Evidencia de habilidad')),

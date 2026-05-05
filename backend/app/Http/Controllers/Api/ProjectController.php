@@ -9,6 +9,7 @@ use App\Http\Requests\Project\UpdateProjectVisibilityRequest;
 use App\Models\Perfil;
 use App\Models\Proyecto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProjectController extends Controller
 {
@@ -29,10 +30,17 @@ class ProjectController extends Controller
     public function store(StoreProjectRequest $request)
     {
         $perfil = $this->resolveProfile($request);
+        $payload = $request->validated();
+
+        unset($payload['imagen_archivo']);
+
+        if ($request->hasFile('imagen_archivo')) {
+            $payload['url_imagen'] = $request->file('imagen_archivo')->store('proyectos', 'public');
+        }
 
         $proyecto = Proyecto::create([
             'perfil_id' => $perfil->id,
-            ...$request->validated(),
+            ...$payload,
             'creado_en' => now(),
             'actualizado_en' => now(),
         ]);
@@ -46,8 +54,18 @@ class ProjectController extends Controller
     public function update(UpdateProjectRequest $request, int $proyectoId)
     {
         $proyecto = $this->resolveOwnedProject($request, $proyectoId);
+        $payload = $request->validated();
 
-        $proyecto->fill($request->validated());
+        unset($payload['imagen_archivo']);
+
+        if ($request->hasFile('imagen_archivo')) {
+            $this->deleteProjectImageIfStoredLocally($proyecto->url_imagen);
+            $payload['url_imagen'] = $request->file('imagen_archivo')->store('proyectos', 'public');
+        } elseif (array_key_exists('url_imagen', $payload) && $payload['url_imagen'] !== $proyecto->url_imagen) {
+            $this->deleteProjectImageIfStoredLocally($proyecto->url_imagen);
+        }
+
+        $proyecto->fill($payload);
         $proyecto->actualizado_en = now();
         $proyecto->save();
 
@@ -74,6 +92,7 @@ class ProjectController extends Controller
     public function destroy(Request $request, int $proyectoId)
     {
         $proyecto = $this->resolveOwnedProject($request, $proyectoId);
+        $this->deleteProjectImageIfStoredLocally($proyecto->url_imagen);
         $proyecto->delete();
 
         return response()->json([
@@ -93,5 +112,14 @@ class ProjectController extends Controller
         $perfil = $this->resolveProfile($request);
 
         return Proyecto::where('perfil_id', $perfil->id)->findOrFail($proyectoId);
+    }
+
+    private function deleteProjectImageIfStoredLocally(?string $path): void
+    {
+        if (!$path || filter_var($path, FILTER_VALIDATE_URL)) {
+            return;
+        }
+
+        Storage::disk('public')->delete($path);
     }
 }

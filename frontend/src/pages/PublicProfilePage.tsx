@@ -6,6 +6,7 @@ import { authStore } from "../store/authStore";
 import type { Perfil } from "../types/profile";
 import type { Project } from "../types/project";
 import type { Skill } from "../types/skill";
+import { resolveProjectImageSrc } from "../utils/projectImages";
 
 function getInitials(name?: string | null) {
   if (!name) return "PF";
@@ -338,9 +339,9 @@ export default function PublicProfilePage() {
           <section className="portfolio-project-list">
             {publicProjects.map((project) => (
               <article key={project.id} className="surface-card portfolio-project-card">
-                {project.url_imagen && !imageErrors[project.id] ? (
+                {resolveProjectImageSrc(project.url_imagen) && !imageErrors[project.id] ? (
                   <img
-                    src={project.url_imagen}
+                    src={resolveProjectImageSrc(project.url_imagen) || ""}
                     alt={project.titulo}
                     className="portfolio-project-image"
                     onError={() => setImageErrors((prev) => ({ ...prev, [project.id]: true }))}

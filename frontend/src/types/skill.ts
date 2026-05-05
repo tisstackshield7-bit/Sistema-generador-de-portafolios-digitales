@@ -16,6 +16,7 @@ export interface SkillEvidence {
 }
 
 export interface SkillEvidencePayload {
+  id?: number;
   tipo: SkillEvidenceType;
   titulo: string;
   descripcion?: string;
@@ -23,6 +24,7 @@ export interface SkillEvidencePayload {
   emisor?: string;
   fecha?: string;
   archivo?: File | null;
+  archivo_actual?: string | null;
 }
 
 export interface Skill {

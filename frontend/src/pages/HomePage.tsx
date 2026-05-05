@@ -297,11 +297,7 @@ export default function HomePage() {
     [perfil, user],
   );
 
-  const filteredProfiles = useMemo(() => {
-    const currentProfileId = isAuth ? perfil?.id : null;
-
-    return publicProfiles.filter((profile) => !currentProfileId || profile.id !== currentProfileId);
-  }, [isAuth, perfil?.id, publicProfiles]);
+  const filteredProfiles = useMemo(() => publicProfiles, [publicProfiles]);
 
   const hasActiveAdvancedFilters = Boolean(
     advancedFilters.role ||

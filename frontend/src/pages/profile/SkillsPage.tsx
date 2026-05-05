@@ -43,8 +43,6 @@ const EMPTY_FORM: SkillPayload = {
   evidencias: [],
 };
 
-const CUSTOM_SOFT_CATEGORY = "__custom__";
-
 const EMPTY_EVIDENCE: SkillEvidencePayload = {
   tipo: "certificado",
   titulo: "",
@@ -53,6 +51,7 @@ const EMPTY_EVIDENCE: SkillEvidencePayload = {
   emisor: "",
   fecha: "",
   archivo: null,
+  archivo_actual: null,
 };
 
 function EyeIcon({ off = false }: { off?: boolean }) {
@@ -106,7 +105,8 @@ function hasEvidenceContent(evidence: SkillEvidencePayload) {
       || evidence.url?.trim()
       || evidence.emisor?.trim()
       || evidence.fecha
-      || evidence.archivo,
+      || evidence.archivo
+      || evidence.archivo_actual,
   );
 }
 
@@ -116,12 +116,16 @@ function getSupportLabel(skill: Skill) {
 
 function getEvidenceSummary(evidence: SkillEvidencePayload, index: number) {
   const fallbackTitle = evidence.titulo.trim() || `Evidencia ${index + 1}`;
-  const hasAttachment = evidence.archivo || evidence.url?.trim();
+  const hasAttachment = evidence.archivo || evidence.archivo_actual || evidence.url?.trim();
 
   return {
     title: fallbackTitle,
     detail: `${evidence.tipo}${hasAttachment ? " con respaldo" : ""}`,
   };
+}
+
+function getSoftSkillCertificate(evidencias: SkillEvidencePayload[] = []) {
+  return evidencias[0] || { ...EMPTY_EVIDENCE, tipo: "certificado" as const };
 }
 
 type ApiErrorData = {
@@ -233,6 +237,7 @@ export default function SkillsPage() {
       ...EMPTY_FORM,
       tipo,
       categoria: "",
+      evidencias: tipo === "blanda" ? [{ ...EMPTY_EVIDENCE, tipo: "certificado" }] : [],
     });
     setErrors({});
     setServerError("");
@@ -241,22 +246,37 @@ export default function SkillsPage() {
   };
 
   const openEditForm = (skill: Skill) => {
-    const isCustomSoftSkill = skill.tipo === "blanda" && !softCategories.includes(skill.categoria || skill.nombre);
+    const isKnownSoftSkill = skill.tipo === "blanda" && softCategories.includes(skill.categoria || skill.nombre);
+    const skillEvidence = skill.tipo === "blanda"
+      ? (skill.evidencias?.slice(0, 1) || [])
+      : (skill.evidencias || []);
 
     setEditingSkill(skill);
     setForm({
       tipo: skill.tipo,
       nombre: skill.nombre,
-      categoria: isCustomSoftSkill ? CUSTOM_SOFT_CATEGORY : (skill.categoria || (skill.tipo === "blanda" ? skill.nombre : "")),
-      categoria_personalizada: isCustomSoftSkill ? skill.nombre : "",
+      categoria: skill.tipo === "blanda"
+        ? (isKnownSoftSkill ? (skill.categoria || skill.nombre) : "__custom__")
+        : (skill.categoria || ""),
+      categoria_personalizada: skill.tipo === "blanda" && !isKnownSoftSkill ? (skill.categoria || skill.nombre) : "",
       nivel_dominio: skill.nivel_dominio,
       visible_publico: skill.visible_publico,
       certificado_pdf: null,
-      evidencias: [],
+      evidencias: skillEvidence.map((evidence) => ({
+        id: evidence.id,
+        tipo: evidence.tipo,
+        titulo: evidence.titulo || "",
+        descripcion: evidence.descripcion || "",
+        url: evidence.url || "",
+        emisor: evidence.emisor || "",
+        fecha: evidence.fecha || "",
+        archivo: null,
+        archivo_actual: evidence.archivo || null,
+      })),
     });
     setErrors({});
     setServerError("");
-    setExpandedEvidenceIndex(null);
+    setExpandedEvidenceIndex((skill.evidencias || []).length ? 0 : null);
     setShowForm(true);
   };
 
@@ -285,7 +305,7 @@ export default function SkillsPage() {
       nextErrors.categoria = form.tipo === "blanda" ? "La habilidad blanda es obligatoria." : "La categoria es obligatoria.";
     }
 
-    if (form.tipo === "blanda" && form.categoria === CUSTOM_SOFT_CATEGORY && !form.categoria_personalizada?.trim()) {
+    if (form.tipo === "blanda" && form.categoria === "__custom__" && !form.categoria_personalizada?.trim()) {
       nextErrors.categoria_personalizada = "Escribe la habilidad blanda personalizada.";
     }
 
@@ -293,7 +313,15 @@ export default function SkillsPage() {
       nextErrors.nivel_dominio = "El nivel de dominio es obligatorio.";
     }
 
-    (form.evidencias || []).forEach((evidence, index) => {
+    if (form.tipo === "blanda") {
+      const evidence = getSoftSkillCertificate(form.evidencias || []);
+
+      if (evidence.archivo && evidence.archivo.type !== "application/pdf") {
+        nextErrors["evidencias.0.archivo"] = "Solo se permite subir certificados PDF.";
+      }
+    }
+
+    (form.tipo === "tecnica" ? (form.evidencias || []) : []).forEach((evidence, index) => {
       if (!hasEvidenceContent(evidence)) return;
 
       if (!evidence.titulo.trim()) {
@@ -318,16 +346,32 @@ export default function SkillsPage() {
     setSaving(true);
 
     try {
-      const payload = {
+      const normalizedSoftEvidence = getSoftSkillCertificate(form.evidencias || []);
+      const softSkillName = form.categoria === "__custom__"
+        ? (form.categoria_personalizada || "").trim()
+        : form.categoria.trim();
+      const payload: SkillPayload = {
         ...form,
         nombre: form.tipo === "tecnica"
           ? form.nombre.trim()
-          : form.categoria === CUSTOM_SOFT_CATEGORY
-            ? (form.categoria_personalizada || "").trim()
-            : form.categoria,
-        categoria: form.categoria,
-        categoria_personalizada: form.categoria_personalizada?.trim() || "",
-        evidencias: (form.evidencias || []).filter(hasEvidenceContent),
+          : softSkillName,
+        categoria: form.tipo === "blanda" ? softSkillName : form.categoria,
+        categoria_personalizada: form.tipo === "blanda" && form.categoria === "__custom__"
+          ? (form.categoria_personalizada || "").trim()
+          : "",
+        evidencias: form.tipo === "blanda"
+          ? ((normalizedSoftEvidence.archivo || normalizedSoftEvidence.archivo_actual)
+            ? [{
+              ...normalizedSoftEvidence,
+              tipo: "certificado" as const,
+              titulo: normalizedSoftEvidence.titulo.trim() || `Certificado de ${softSkillName}`,
+              descripcion: "",
+              url: "",
+              emisor: "",
+              fecha: "",
+            }]
+            : [])
+          : (form.evidencias || []).filter(hasEvidenceContent),
       };
 
       const data = editingSkill
@@ -547,7 +591,11 @@ export default function SkillsPage() {
                 <section className="skill-form-section">
                   <div>
                     <p className="section-label">Datos de la habilidad</p>
-                    <p className="form-help">Define la competencia, su categoria y el nivel que declaras en tu portafolio.</p>
+                    <p className="form-help">
+                      {form.tipo === "tecnica"
+                        ? "Define la competencia, su categoria y el nivel que declaras en tu portafolio."
+                        : "Registra la habilidad blanda y el nivel que declaras en tu portafolio."}
+                    </p>
                   </div>
 
                   <div className="skill-basics-grid">
@@ -562,33 +610,31 @@ export default function SkillsPage() {
                         />
                         {errors.nombre ? <p className="form-error">{errors.nombre}</p> : null}
                       </div>
-                    ) : null}
+                    ) : (
+                      <div className="form-field">
+                        <label className="form-label">Habilidad blanda *</label>
+                        <select
+                          className={`form-input${errors.categoria ? " error" : ""}`}
+                          value={form.categoria}
+                          onChange={(event) => setForm((prev) => ({
+                            ...prev,
+                            categoria: event.target.value,
+                            categoria_personalizada: event.target.value === "__custom__" ? prev.categoria_personalizada : "",
+                          }))}
+                        >
+                          <option value="">Selecciona una habilidad blanda</option>
+                          {softCategories.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                          <option value="__custom__">+ Agregar otra habilidad blanda</option>
+                        </select>
+                        {errors.categoria ? <p className="form-error">{errors.categoria}</p> : null}
+                      </div>
+                    )}
 
-                    <div className="form-field">
-                      <label className="form-label">{form.tipo === "blanda" ? "Habilidad blanda *" : "Categoria *"}</label>
-                      <select
-                        className={`form-input${errors.categoria ? " error" : ""}`}
-                        value={form.categoria}
-                        onChange={(event) => setForm((prev) => ({
-                          ...prev,
-                          categoria: event.target.value,
-                          categoria_personalizada: event.target.value === CUSTOM_SOFT_CATEGORY ? prev.categoria_personalizada : "",
-                        }))}
-                      >
-                        <option value="">{form.tipo === "blanda" ? "Selecciona una habilidad blanda" : "Selecciona una categoria"}</option>
-                        {categoryOptions.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                        {form.tipo === "blanda" ? (
-                          <option value={CUSTOM_SOFT_CATEGORY}>+ Agregar otra habilidad blanda</option>
-                        ) : null}
-                      </select>
-                      {errors.categoria ? <p className="form-error">{errors.categoria}</p> : null}
-                    </div>
-
-                    {form.tipo === "blanda" && form.categoria === CUSTOM_SOFT_CATEGORY ? (
+                    {form.tipo === "blanda" && form.categoria === "__custom__" ? (
                       <div className="form-field">
                         <label className="form-label">Nueva habilidad blanda *</label>
                         <input
@@ -598,6 +644,29 @@ export default function SkillsPage() {
                           onChange={(event) => setForm((prev) => ({ ...prev, categoria_personalizada: event.target.value }))}
                         />
                         {errors.categoria_personalizada ? <p className="form-error">{errors.categoria_personalizada}</p> : null}
+                      </div>
+                    ) : null}
+
+                    {form.tipo === "tecnica" ? (
+                      <div className="form-field">
+                        <label className="form-label">Categoria *</label>
+                        <select
+                          className={`form-input${errors.categoria ? " error" : ""}`}
+                          value={form.categoria}
+                          onChange={(event) => setForm((prev) => ({
+                            ...prev,
+                            categoria: event.target.value,
+                            categoria_personalizada: "",
+                          }))}
+                        >
+                          <option value="">Selecciona una categoria</option>
+                          {categoryOptions.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.categoria ? <p className="form-error">{errors.categoria}</p> : null}
                       </div>
                     ) : null}
 
@@ -624,25 +693,77 @@ export default function SkillsPage() {
                   <div className="evidence-builder-head">
                     <div>
                       <label className="form-label">Evidencias de respaldo</label>
-                      <p className="form-help">Agrega certificados, cursos, videos, proyectos o documentos. La habilidad seguira siendo visible aunque solo tenga nivel declarado.</p>
+                      <p className="form-help">
+                        {form.tipo === "tecnica"
+                          ? "Agrega certificados, cursos, videos, proyectos o documentos. La habilidad seguira siendo visible aunque solo tenga nivel declarado."
+                          : "Para habilidad blanda solo se permite subir un certificado PDF opcional."}
+                      </p>
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-secondary evidence-add-button"
-                      onClick={() => {
-                        const nextIndex = form.evidencias?.length || 0;
-                        setForm((prev) => ({
-                          ...prev,
-                          evidencias: [...(prev.evidencias || []), { ...EMPTY_EVIDENCE }],
-                        }));
-                        setExpandedEvidenceIndex(nextIndex);
-                      }}
-                    >
-                      + Agregar evidencia
-                    </button>
+                    {form.tipo === "tecnica" ? (
+                      <button
+                        type="button"
+                        className="btn btn-secondary evidence-add-button"
+                        onClick={() => {
+                          const nextIndex = form.evidencias?.length || 0;
+                          setForm((prev) => ({
+                            ...prev,
+                            evidencias: [...(prev.evidencias || []), { ...EMPTY_EVIDENCE }],
+                          }));
+                          setExpandedEvidenceIndex(nextIndex);
+                        }}
+                      >
+                        + Agregar evidencia
+                      </button>
+                    ) : null}
                   </div>
 
-                  {(form.evidencias || []).length ? (
+                  {form.tipo === "blanda" ? (
+                    <div className="evidence-form-card expanded">
+                      <div className="evidence-card-fields">
+                        <div className="form-field">
+                          <label className="form-label">Certificado PDF</label>
+                          <input
+                            className={`form-file${errors["evidencias.0.archivo"] ? " error" : ""}`}
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] || null;
+                              setForm((prev) => ({
+                                ...prev,
+                                evidencias: [{
+                                  ...getSoftSkillCertificate(prev.evidencias || []),
+                                  tipo: "certificado",
+                                  archivo: file,
+                                  archivo_actual: file ? null : getSoftSkillCertificate(prev.evidencias || []).archivo_actual,
+                                }],
+                              }));
+                            }}
+                          />
+                          {errors["evidencias.0.archivo"] ? <p className="form-error">{errors["evidencias.0.archivo"]}</p> : null}
+                          {getSoftSkillCertificate(form.evidencias || []).archivo_actual && !getSoftSkillCertificate(form.evidencias || []).archivo ? (
+                            <p className="form-help">Certificado actual cargado. Selecciona otro PDF solo si deseas reemplazarlo.</p>
+                          ) : null}
+                        </div>
+
+                        {(getSoftSkillCertificate(form.evidencias || []).archivo || getSoftSkillCertificate(form.evidencias || []).archivo_actual) ? (
+                          <div className="evidence-actions-row">
+                            <button
+                              type="button"
+                              className="btn btn-secondary danger-outline"
+                              onClick={() => {
+                                setForm((prev) => ({
+                                  ...prev,
+                                  evidencias: [{ ...EMPTY_EVIDENCE, tipo: "certificado" }],
+                                }));
+                              }}
+                            >
+                              Quitar certificado
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (form.evidencias || []).length ? (
                     <div className="evidence-form-list">
                       {(form.evidencias || []).map((evidence, index) => (
                         <section key={index} className={`evidence-form-card ${expandedEvidenceIndex === index ? "expanded" : ""}`}>
@@ -738,11 +859,18 @@ export default function SkillsPage() {
                                       const file = event.target.files?.[0] || null;
                                       setForm((prev) => {
                                         const evidencias = [...(prev.evidencias || [])];
-                                        evidencias[index] = { ...evidencias[index], archivo: file };
+                                        evidencias[index] = {
+                                          ...evidencias[index],
+                                          archivo: file,
+                                          archivo_actual: file ? null : evidencias[index].archivo_actual,
+                                        };
                                         return { ...prev, evidencias };
                                       });
                                     }}
                                   />
+                                  {evidence.archivo_actual && !evidence.archivo ? (
+                                    <p className="form-help">Archivo actual cargado. Selecciona otro solo si deseas reemplazarlo.</p>
+                                  ) : null}
                                 </div>
                               </div>
 

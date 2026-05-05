@@ -4,6 +4,7 @@ import { API_ORIGIN } from "../api/axios";
 import { getMyProfile } from "../api/profile";
 import PrivateWorkspaceLayout from "../components/dashboard/PrivateWorkspaceLayout";
 import type { Perfil } from "../types/profile";
+import { resolveProjectImageSrc } from "../utils/projectImages";
 import "./HomePage.css";
 
 function getInitials(name?: string | null) {
@@ -48,9 +49,6 @@ export default function DashboardPage() {
               onClick={() => navigate(perfil?.slug ? `/perfil-publico/${perfil.slug}` : "/perfil/editar")}
             >
               Ver portafolio publico
-            </button>
-            <button className="btn btn-secondary dashboard-ghost-button" onClick={() => navigate("/perfil/editar")}>
-              Editar perfil
             </button>
           </div>
         </div>
@@ -201,8 +199,8 @@ export default function DashboardPage() {
           <div className="dashboard-project-list">
             {recentProjects.map((project) => (
               <article key={project.id} className="dashboard-project-card">
-                {project.url_imagen ? (
-                  <img src={project.url_imagen} alt={project.titulo} className="dashboard-project-thumb" />
+                {resolveProjectImageSrc(project.url_imagen) ? (
+                  <img src={resolveProjectImageSrc(project.url_imagen) || ""} alt={project.titulo} className="dashboard-project-thumb" />
                 ) : (
                   <div className="dashboard-project-thumb fallback-thumb">
                     {project.titulo.slice(0, 2).toUpperCase()}

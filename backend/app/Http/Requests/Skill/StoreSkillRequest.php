@@ -90,6 +90,8 @@ class StoreSkillRequest extends FormRequest
             'evidencias.*.url' => ['nullable', 'url', 'max:255'],
             'evidencias.*.emisor' => ['nullable', 'string', 'max:180'],
             'evidencias.*.fecha' => ['nullable', 'date'],
+            'evidencias.*.id' => ['nullable', 'integer'],
+            'evidencias.*.archivo_actual' => ['nullable', 'string', 'max:255'],
             'evidencia_archivos' => ['nullable', 'array'],
             'evidencia_archivos.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,mp4,mov', 'max:10240'],
         ];
@@ -101,8 +103,9 @@ class StoreSkillRequest extends FormRequest
             foreach ($this->input('evidencias', []) as $index => $evidencia) {
                 $hasUrl = filled($evidencia['url'] ?? null);
                 $hasFile = $this->hasFile("evidencia_archivos.{$index}");
+                $hasCurrentFile = filled($evidencia['archivo_actual'] ?? null);
 
-                if (!$hasUrl && !$hasFile) {
+                if (!$hasUrl && !$hasFile && !$hasCurrentFile) {
                     $validator->errors()->add(
                         "evidencias.{$index}.url",
                         'Agrega un enlace o archivo para respaldar esta evidencia.'

@@ -35,16 +35,21 @@ class StoreProjectRequest extends FormRequest
                 ->all();
         }
 
-        $this->merge([
+        $payload = [
             'titulo' => trim((string) $this->input('titulo')),
             'rol' => trim((string) $this->input('rol')),
             'descripcion' => trim((string) $this->input('descripcion')),
             'tecnologias' => $technologies,
             'logros' => $achievements,
             'enlace_proyecto' => $this->filled('enlace_proyecto') ? trim((string) $this->input('enlace_proyecto')) : null,
-            'url_imagen' => $this->filled('url_imagen') ? trim((string) $this->input('url_imagen')) : null,
             'visible_publico' => $this->boolean('visible_publico'),
-        ]);
+        ];
+
+        if ($this->has('url_imagen')) {
+            $payload['url_imagen'] = $this->filled('url_imagen') ? trim((string) $this->input('url_imagen')) : null;
+        }
+
+        $this->merge($payload);
     }
 
     public function rules(): array
@@ -61,6 +66,7 @@ class StoreProjectRequest extends FormRequest
             'logros.*' => ['required', 'string', 'max:180'],
             'enlace_proyecto' => ['nullable', 'url', 'max:255'],
             'url_imagen' => ['nullable', 'url', 'max:255'],
+            'imagen_archivo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'visible_publico' => ['nullable', 'boolean'],
         ];
     }
@@ -77,6 +83,9 @@ class StoreProjectRequest extends FormRequest
             'tecnologias.min' => 'Debes agregar al menos una tecnologia.',
             'enlace_proyecto.url' => 'Ingrese un enlace valido',
             'url_imagen.url' => 'Ingrese una URL de imagen valida.',
+            'imagen_archivo.image' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.',
+            'imagen_archivo.mimes' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.',
+            'imagen_archivo.max' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.',
         ];
     }
 }

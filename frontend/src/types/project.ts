@@ -25,5 +25,6 @@ export interface ProjectPayload {
   logros?: string;
   enlace_proyecto?: string;
   url_imagen?: string;
+  imagen_archivo?: File | null;
   visible_publico: boolean;
 }
