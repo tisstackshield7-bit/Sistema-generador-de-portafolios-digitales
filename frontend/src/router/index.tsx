@@ -11,10 +11,14 @@ import SkillsPage from "../pages/profile/SkillsPage";
 import ProjectsPage from "../pages/profile/ProjectsPage";
 import ExperiencePage from "../pages/profile/ExperiencePage";
 import PrivateRoute from "../components/auth/PrivateRoute";
+import AdminRoute from "../components/auth/AdminRoute";
 import HomePage from "../pages/HomePage";
 import ComingSoonPage from "../pages/ComingSoonPage";
 import PublicProfilePage from "../pages/PublicProfilePage";
 import DashboardPage from "../pages/DashboardPage";
+import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
+import AdminUsersPage from "../pages/admin/AdminUsersPage";
+import AdminReportsPage from "../pages/admin/AdminReportsPage";
 
 export const router = createBrowserRouter([
   {
@@ -51,6 +55,30 @@ export const router = createBrowserRouter([
       <PrivateRoute>
         <DashboardPage />
       </PrivateRoute>
+    ),
+  },
+  {
+    path: "/admin/dashboard",
+    element: (
+      <AdminRoute>
+        <AdminDashboardPage />
+      </AdminRoute>
+    ),
+  },
+  {
+    path: "/admin/usuarios",
+    element: (
+      <AdminRoute>
+        <AdminUsersPage />
+      </AdminRoute>
+    ),
+  },
+  {
+    path: "/admin/reportes",
+    element: (
+      <AdminRoute>
+        <AdminReportsPage />
+      </AdminRoute>
     ),
   },
   {

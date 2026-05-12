@@ -28,6 +28,7 @@ class Usuario extends Model implements AuthenticatableContract, CanResetPassword
         'nombre',
         'correo',
         'contrasena',
+        'rol',
         'debe_cambiar_contrasena',
         'contrasena_temporal_expira_en',
         'recuperacion_solicitada_en',
@@ -44,6 +45,11 @@ class Usuario extends Model implements AuthenticatableContract, CanResetPassword
     public function perfil()
     {
         return $this->hasOne(Perfil::class, 'usuario_id');
+    }
+
+    public function registrosActividad()
+    {
+        return $this->hasMany(RegistroActividad::class, 'usuario_id');
     }
 
     public function getAuthPassword()

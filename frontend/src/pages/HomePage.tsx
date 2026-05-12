@@ -6,6 +6,7 @@ import { getMyProfile, getPublicProfiles } from "../api/profile";
 import { authStore } from "../store/authStore";
 import type { Perfil, PublicProfileCard } from "../types/profile";
 import type { SkillLevel } from "../types/skill";
+import { getAuthenticatedHomePath } from "../utils/authRedirect";
 import type { ProfileSearchFilters } from "../utils/profileFilters";
 import { richTextToPlainText } from "../utils/richText";
 import "./HomePage.css";
@@ -443,6 +444,7 @@ export default function HomePage() {
   }, [isAuth]);
 
   const user = authStore.getUser();
+  const dashboardPath = getAuthenticatedHomePath(user);
   const welcomeName = useMemo(
     () => perfil?.nombres || perfil?.nombre_completo?.split(" ")[0] || user?.correo?.split("@")[0] || "Profesional",
     [perfil, user],
@@ -540,7 +542,7 @@ export default function HomePage() {
           <div className="landing-actions">
             {isAuth ? (
               <>
-                <Link to="/dashboard" className="landing-login-link">
+                <Link to={dashboardPath} className="landing-login-link">
                   Dashboard
                 </Link>
                 <button className="landing-primary-button" type="button" onClick={handleLogout}>
@@ -922,12 +924,12 @@ export default function HomePage() {
             <h3>Producto</h3>
             <a href="#explorar">Explorar</a>
             <a href="#perfiles">Perfiles</a>
-            <Link to={isAuth ? "/dashboard" : "/register"}>{isAuth ? "Dashboard" : "Registrarse"}</Link>
+            <Link to={isAuth ? dashboardPath : "/register"}>{isAuth ? "Dashboard" : "Registrarse"}</Link>
           </div>
           <div>
             <h3>Cuenta</h3>
             <Link to="/login">Iniciar sesion</Link>
-            <Link to="/perfil/editar">Mi perfil</Link>
+            <Link to={isAuth ? dashboardPath : "/perfil/editar"}>{isAuth ? "Mi panel" : "Mi perfil"}</Link>
           </div>
           <div>
             <h3>Legal</h3>

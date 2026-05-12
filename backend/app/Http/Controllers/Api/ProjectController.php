@@ -8,6 +8,7 @@ use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Http\Requests\Project\UpdateProjectVisibilityRequest;
 use App\Models\Perfil;
 use App\Models\Proyecto;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -45,6 +46,18 @@ class ProjectController extends Controller
             'actualizado_en' => now(),
         ]);
 
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'proyectos',
+            'proyecto_creado',
+            'Registro de proyecto: ' . $proyecto->titulo,
+            [
+                'entidad_tipo' => 'proyecto',
+                'entidad_id' => $proyecto->id,
+            ]
+        );
+
         return response()->json([
             'message' => 'Proyecto creado correctamente.',
             'proyecto' => $proyecto,
@@ -69,6 +82,18 @@ class ProjectController extends Controller
         $proyecto->actualizado_en = now();
         $proyecto->save();
 
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'proyectos',
+            'proyecto_actualizado',
+            'Actualizacion de proyecto: ' . $proyecto->titulo,
+            [
+                'entidad_tipo' => 'proyecto',
+                'entidad_id' => $proyecto->id,
+            ]
+        );
+
         return response()->json([
             'message' => 'Proyecto actualizado correctamente.',
             'proyecto' => $proyecto,
@@ -83,6 +108,19 @@ class ProjectController extends Controller
         $proyecto->actualizado_en = now();
         $proyecto->save();
 
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'proyectos',
+            'proyecto_visibilidad',
+            'Cambio de visibilidad en proyecto: ' . $proyecto->titulo,
+            [
+                'entidad_tipo' => 'proyecto',
+                'entidad_id' => $proyecto->id,
+                'meta' => ['visible_publico' => $proyecto->visible_publico],
+            ]
+        );
+
         return response()->json([
             'message' => 'Visibilidad actualizada correctamente.',
             'proyecto' => $proyecto,
@@ -92,8 +130,17 @@ class ProjectController extends Controller
     public function destroy(Request $request, int $proyectoId)
     {
         $proyecto = $this->resolveOwnedProject($request, $proyectoId);
+        $titulo = $proyecto->titulo;
         $this->deleteProjectImageIfStoredLocally($proyecto->url_imagen);
         $proyecto->delete();
+
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'proyectos',
+            'proyecto_eliminado',
+            'Eliminacion de proyecto: ' . $titulo
+        );
 
         return response()->json([
             'message' => 'Proyecto eliminado correctamente.',

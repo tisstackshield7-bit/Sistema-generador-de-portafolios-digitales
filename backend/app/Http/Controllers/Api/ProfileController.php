@@ -7,6 +7,7 @@ use App\Http\Requests\Profile\StoreBasicProfileRequest;
 use App\Http\Requests\Profile\UpdateBasicProfileRequest;
 use App\Models\Habilidad;
 use App\Models\Perfil;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -68,6 +69,18 @@ class ProfileController extends Controller
 
         $perfil = Perfil::create($perfilData)->load('usuario:id,correo');
 
+        ActivityLogger::log(
+            $request,
+            $usuario,
+            'perfil',
+            'perfil_creado',
+            'Registro de perfil profesional.',
+            [
+                'entidad_tipo' => 'perfil',
+                'entidad_id' => $perfil->id,
+            ]
+        );
+
         return response()->json([
             'message' => 'Información básica guardada correctamente.',
             'perfil' => $perfil,
@@ -128,6 +141,18 @@ class ProfileController extends Controller
         $perfil->actualizado_en = now();
         $perfil->save();
         $perfil->load('usuario:id,correo');
+
+        ActivityLogger::log(
+            $request,
+            $usuario,
+            'perfil',
+            'perfil_actualizado',
+            'Actualizacion de informacion basica del perfil.',
+            [
+                'entidad_tipo' => 'perfil',
+                'entidad_id' => $perfil->id,
+            ]
+        );
 
         return response()->json([
             'message' => 'Información actualizada correctamente.',

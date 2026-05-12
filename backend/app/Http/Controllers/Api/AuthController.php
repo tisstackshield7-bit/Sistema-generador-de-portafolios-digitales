@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Sesion;
 use App\Models\Usuario;
+use App\Support\ActivityLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +22,7 @@ class AuthController extends Controller
             'nombre' => null,
             'correo' => $request->correo,
             'contrasena' => Hash::make($request->contrasena),
+            'rol' => 'usuario',
             'estado' => 'activo',
             'creado_en' => now(),
             'actualizado_en' => now(),
@@ -35,7 +37,9 @@ class AuthController extends Controller
             'token' => $sesion->token,
             'usuario' => [
                 'id' => $usuario->id,
+                'nombre' => $usuario->nombre,
                 'correo' => $usuario->correo,
+                'rol' => $usuario->rol,
                 'estado' => $usuario->estado,
             ],
         ], 201);
@@ -51,6 +55,12 @@ class AuthController extends Controller
             ], 422);
         }
 
+        if ($usuario->estado !== 'activo') {
+            return response()->json([
+                'message' => 'La cuenta se encuentra bloqueada. Contacte al administrador.',
+            ], 403);
+        }
+
         if ($usuario->debe_cambiar_contrasena && $usuario->contrasena_temporal_expira_en && Carbon::parse($usuario->contrasena_temporal_expira_en)->isPast()) {
             return response()->json([
                 'message' => 'La contrasena temporal expiro. Solicita una nueva recuperacion.',
@@ -64,9 +74,19 @@ class AuthController extends Controller
 
         if ($requiereCambio) {
             $redirectTo = '/perfil/cambiar-contrasena';
-        } elseif (!$usuario->perfil) {
+        } elseif ($usuario->rol === 'admin') {
+            $redirectTo = '/admin/dashboard';
+        } elseif ($usuario->rol !== 'admin' && !$usuario->perfil) {
             $redirectTo = '/perfil/crear';
         }
+
+        ActivityLogger::log(
+            $request,
+            $usuario,
+            'autenticacion',
+            'inicio_sesion',
+            $usuario->rol === 'admin' ? 'Inicio de sesion como administrador.' : 'Inicio de sesion exitoso.'
+        );
 
         return response()->json([
             'message' => 'Inicio de sesion exitoso.',
@@ -75,7 +95,9 @@ class AuthController extends Controller
             'redirect_to' => $redirectTo,
             'usuario' => [
                 'id' => $usuario->id,
+                'nombre' => $usuario->nombre,
                 'correo' => $usuario->correo,
+                'rol' => $usuario->rol,
                 'estado' => $usuario->estado,
                 'debe_cambiar_contrasena' => $requiereCambio,
             ],
@@ -113,11 +135,21 @@ class AuthController extends Controller
 
         $this->invalidateUserSessions($usuario->id, $sesionActual?->id);
 
+        ActivityLogger::log(
+            $request,
+            $usuario,
+            'autenticacion',
+            'cambio_contrasena',
+            'Cambio de contrasena realizado correctamente.'
+        );
+
         return response()->json([
             'message' => 'Contrasena actualizada correctamente.',
             'usuario' => [
                 'id' => $usuario->id,
+                'nombre' => $usuario->nombre,
                 'correo' => $usuario->correo,
+                'rol' => $usuario->rol,
                 'estado' => $usuario->estado,
                 'debe_cambiar_contrasena' => false,
             ],
@@ -127,6 +159,15 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $sesion = $request->attributes->get('auth_sesion');
+        $usuario = $request->attributes->get('auth_usuario');
+
+        ActivityLogger::log(
+            $request,
+            $usuario,
+            'autenticacion',
+            'cierre_sesion',
+            'Cierre de sesion realizado.'
+        );
 
         if ($sesion) {
             $sesion->delete();

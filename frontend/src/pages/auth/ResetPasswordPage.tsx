@@ -85,9 +85,9 @@ export default function ResetPasswordPage() {
       <AlertMessage message={message || serverError} />
 
       <form onSubmit={handleSubmit} className="form-stack">
-        <FormInput label="Nueva contrasena" type="password" value={contrasena} onChange={setContrasena} />
+        <FormInput label="Nueva contrasena" type="password" value={contrasena} onChange={setContrasena} togglePassword />
 
-        <FormInput label="Confirmar contrasena" type="password" value={confirmacion} onChange={setConfirmacion} />
+        <FormInput label="Confirmar contrasena" type="password" value={confirmacion} onChange={setConfirmacion} togglePassword />
 
         <button type="submit" className="btn btn-primary btn-block">
           Guardar contrasena

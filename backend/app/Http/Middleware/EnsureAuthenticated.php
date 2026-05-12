@@ -45,6 +45,14 @@ class EnsureAuthenticated
             ], 401);
         }
 
+        if ($usuario->estado !== 'activo') {
+            $sesion->delete();
+
+            return response()->json([
+                'message' => 'Su cuenta no tiene acceso habilitado actualmente.',
+            ], 403);
+        }
+
         $request->attributes->set('auth_usuario', $usuario);
         $request->attributes->set('auth_sesion', $sesion);
 

@@ -7,6 +7,7 @@ import { authStore } from "../store/authStore";
 import type { Perfil } from "../types/profile";
 import type { Project } from "../types/project";
 import type { Skill } from "../types/skill";
+import { getAuthenticatedHomePath } from "../utils/authRedirect";
 import { resolveProjectImageSrc } from "../utils/projectImages";
 
 function getInitials(name?: string | null) {
@@ -151,7 +152,7 @@ export default function PublicProfilePage() {
     ...(perfil?.visibilidad || {}),
   };
   const summaryText = perfil?.biografia || "Perfil publico disponible dentro de la plataforma.";
-  const backToHomePath = authStore.isAuthenticated() ? "/dashboard" : "/";
+  const backToHomePath = authStore.isAuthenticated() ? getAuthenticatedHomePath(authStore.getUser()) : "/";
   const backToHomeLabel = authStore.isAuthenticated() ? "Volver al dashboard" : "Volver al inicio";
   const phoneHref = perfil?.telefono ? `tel:${perfil.telefono.replace(/\s+/g, "")}` : "";
 

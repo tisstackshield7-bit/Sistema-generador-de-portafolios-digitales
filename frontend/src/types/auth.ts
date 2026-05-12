@@ -10,7 +10,9 @@ export interface LoginPayload {
 
 export interface UsuarioAuth {
   id: number;
+  nombre?: string | null;
   correo: string;
+  rol: string;
   estado: string;
   debe_cambiar_contrasena?: boolean;
 }

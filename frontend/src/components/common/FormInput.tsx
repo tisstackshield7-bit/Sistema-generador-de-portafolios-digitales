@@ -40,7 +40,7 @@ export default function FormInput({
     <div className="form-field">
       <label className="form-label">{label}</label>
 
-      <div style={{ position: "relative" }}>
+      <div className="form-input-shell">
         <input
           className={`form-input${error ? " error" : ""}${type === "password" && togglePassword ? " has-toggle" : ""}`}
           type={finalType}
@@ -58,21 +58,7 @@ export default function FormInput({
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
-            style={{
-              position: "absolute",
-              right: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 2,
-              color: "#64748b",
-            }}
+            className="form-input-toggle"
           >
             {!showPassword ? (
               <svg

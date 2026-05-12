@@ -8,6 +8,7 @@ use App\Http\Requests\Experience\UpdateExperienceRequest;
 use App\Http\Requests\Experience\UpdateExperienceVisibilityRequest;
 use App\Models\Experiencia;
 use App\Models\Perfil;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 
 class ExperienceController extends Controller
@@ -37,6 +38,18 @@ class ExperienceController extends Controller
             'actualizado_en' => now(),
         ]);
 
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'experiencia',
+            'experiencia_creada',
+            'Registro de experiencia: ' . $experiencia->titulo,
+            [
+                'entidad_tipo' => 'experiencia',
+                'entidad_id' => $experiencia->id,
+            ]
+        );
+
         return response()->json([
             'message' => 'Experiencia creada correctamente.',
             'experiencia' => $experiencia,
@@ -50,6 +63,18 @@ class ExperienceController extends Controller
         $experiencia->fill($request->validated());
         $experiencia->actualizado_en = now();
         $experiencia->save();
+
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'experiencia',
+            'experiencia_actualizada',
+            'Actualizacion de experiencia: ' . $experiencia->titulo,
+            [
+                'entidad_tipo' => 'experiencia',
+                'entidad_id' => $experiencia->id,
+            ]
+        );
 
         return response()->json([
             'message' => 'Experiencia actualizada correctamente.',
@@ -65,6 +90,19 @@ class ExperienceController extends Controller
         $experiencia->actualizado_en = now();
         $experiencia->save();
 
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'experiencia',
+            'experiencia_visibilidad',
+            'Cambio de visibilidad en experiencia: ' . $experiencia->titulo,
+            [
+                'entidad_tipo' => 'experiencia',
+                'entidad_id' => $experiencia->id,
+                'meta' => ['visible_publico' => $experiencia->visible_publico],
+            ]
+        );
+
         return response()->json([
             'message' => 'Visibilidad actualizada correctamente.',
             'experiencia' => $experiencia,
@@ -74,7 +112,16 @@ class ExperienceController extends Controller
     public function destroy(Request $request, int $experienciaId)
     {
         $experiencia = $this->resolveOwnedExperience($request, $experienciaId);
+        $titulo = $experiencia->titulo;
         $experiencia->delete();
+
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'experiencia',
+            'experiencia_eliminada',
+            'Eliminacion de experiencia: ' . $titulo
+        );
 
         return response()->json([
             'message' => 'Experiencia eliminada correctamente.',

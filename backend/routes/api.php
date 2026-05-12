@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PasswordRecoveryController;
 use App\Http\Controllers\Api\ExperienceController;
@@ -45,4 +46,12 @@ Route::middleware('auth.custom')->group(function () {
     Route::put('/experiencias/{experiencia}', [ExperienceController::class, 'update']);
     Route::patch('/experiencias/{experiencia}/visibilidad', [ExperienceController::class, 'updateVisibility']);
     Route::delete('/experiencias/{experiencia}', [ExperienceController::class, 'destroy']);
+});
+
+Route::middleware(['auth.custom', 'admin.custom'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('/usuarios', [AdminController::class, 'users']);
+    Route::patch('/usuarios/{usuario}/estado', [AdminController::class, 'updateUserStatus']);
+    Route::get('/reportes', [AdminController::class, 'reports']);
+    Route::get('/reportes/exportar', [AdminController::class, 'exportReports']);
 });

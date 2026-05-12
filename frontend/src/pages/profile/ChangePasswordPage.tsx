@@ -8,6 +8,7 @@ import { getMyProfile } from "../../api/profile";
 import { changePassword } from "../../api/password";
 import { authStore } from "../../store/authStore";
 import type { Perfil } from "../../types/profile";
+import { getAuthenticatedHomePath } from "../../utils/authRedirect";
 import { validatePassword, validateRequired } from "../../utils/validations";
 
 export default function ChangePasswordPage() {
@@ -66,7 +67,7 @@ export default function ChangePasswordPage() {
       setContrasenaActual("");
       setContrasenaNueva("");
       setConfirmacion("");
-      setTimeout(() => navigate("/"), 900);
+      setTimeout(() => navigate(getAuthenticatedHomePath(authStore.getUser())), 900);
     } catch (error: any) {
       const apiErrors = error?.response?.data?.errors || {};
       const fieldErrors: Record<string, string> = {};
@@ -84,7 +85,7 @@ export default function ChangePasswordPage() {
 
   const handleCancel = async () => {
     if (!requiereCambioObligatorio) {
-      navigate("/");
+      navigate(getAuthenticatedHomePath(currentUser));
       return;
     }
 

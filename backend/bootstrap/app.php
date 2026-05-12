@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'auth.custom' => \App\Http\Middleware\EnsureAuthenticated::class,
+            'admin.custom' => \App\Http\Middleware\EnsureAdminRole::class,
         ]);
 
         // CORS para peticiones del frontend en Vite (localhost:5173)

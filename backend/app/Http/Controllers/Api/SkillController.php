@@ -9,6 +9,7 @@ use App\Http\Requests\Skill\UpdateSkillVisibilityRequest;
 use App\Models\EvidenciaHabilidad;
 use App\Models\Habilidad;
 use App\Models\Perfil;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -64,6 +65,18 @@ class SkillController extends Controller
         $this->storeEvidenceList($request, $habilidad);
         $habilidad->load('evidencias');
 
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'habilidades',
+            'habilidad_creada',
+            'Registro de habilidad: ' . $habilidad->nombre,
+            [
+                'entidad_tipo' => 'habilidad',
+                'entidad_id' => $habilidad->id,
+            ]
+        );
+
         return response()->json([
             'message' => 'Habilidad creada correctamente.',
             'habilidad' => $habilidad,
@@ -98,6 +111,18 @@ class SkillController extends Controller
         $habilidad->save();
         $habilidad->load('evidencias');
 
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'habilidades',
+            'habilidad_actualizada',
+            'Actualizacion de habilidad: ' . $habilidad->nombre,
+            [
+                'entidad_tipo' => 'habilidad',
+                'entidad_id' => $habilidad->id,
+            ]
+        );
+
         return response()->json([
             'message' => 'Habilidad actualizada correctamente.',
             'habilidad' => $habilidad,
@@ -113,6 +138,19 @@ class SkillController extends Controller
         $habilidad->save();
         $habilidad->load('evidencias');
 
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'habilidades',
+            'habilidad_visibilidad',
+            'Cambio de visibilidad en habilidad: ' . $habilidad->nombre,
+            [
+                'entidad_tipo' => 'habilidad',
+                'entidad_id' => $habilidad->id,
+                'meta' => ['visible_publico' => $habilidad->visible_publico],
+            ]
+        );
+
         return response()->json([
             'message' => 'Visibilidad actualizada correctamente.',
             'habilidad' => $habilidad,
@@ -122,6 +160,7 @@ class SkillController extends Controller
     public function destroy(Request $request, int $habilidadId)
     {
         $habilidad = $this->resolveOwnedSkill($request, $habilidadId);
+        $nombre = $habilidad->nombre;
 
         if ($habilidad->certificado_pdf) {
             Storage::disk('public')->delete($habilidad->certificado_pdf);
@@ -132,6 +171,14 @@ class SkillController extends Controller
         });
 
         $habilidad->delete();
+
+        ActivityLogger::log(
+            $request,
+            $request->attributes->get('auth_usuario'),
+            'habilidades',
+            'habilidad_eliminada',
+            'Eliminacion de habilidad: ' . $nombre
+        );
 
         return response()->json([
             'message' => 'Habilidad eliminada correctamente.',

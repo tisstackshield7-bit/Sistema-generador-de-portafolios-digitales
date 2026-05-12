@@ -9,7 +9,7 @@ type Props = {
 
 const REDIRECT_MESSAGE = "Debe iniciar sesion para acceder a esta seccion.";
 
-export default function PrivateRoute({ children }: Props) {
+export default function AdminRoute({ children }: Props) {
   const location = useLocation();
   const user = authStore.getUser();
 
@@ -32,7 +32,7 @@ export default function PrivateRoute({ children }: Props) {
     return <Navigate to="/perfil/cambiar-contrasena" replace />;
   }
 
-  if (user?.rol === "admin") {
+  if (user?.rol !== "admin") {
     return <Navigate to={getAuthenticatedHomePath(user)} replace />;
   }
 
