@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { getMyProfile } from "../../api/profile";
 import { API_ORIGIN } from "../../api/axios";
+import RichTextContent from "../../components/common/RichTextContent";
 import type { Perfil } from "../../types/profile";
 import { getInitials } from "../../utils/avatar";
 import { logoutUser } from "../../api/auth";
@@ -151,7 +152,11 @@ export default function ProfileViewPage() {
                 </div>
               </div>
               <div className="profile-editorial-block">
-                <p className="profile-lead-copy">{perfil.biografia || "Agrega un resumen para reforzar tu perfil profesional."}</p>
+                <RichTextContent
+                  value={perfil.biografia}
+                  className="profile-lead-copy"
+                  fallback="Agrega un resumen para reforzar tu perfil profesional."
+                />
               </div>
             </div>
 
@@ -178,7 +183,7 @@ export default function ProfileViewPage() {
                     {topTechnicalSkills.length ? (
                       <div className="skills-stack">
                         {topTechnicalSkills.map((skill) => (
-                          <div key={skill.id} className="skill-detail-card">
+                          <div key={skill.id} id={`habilidad-${skill.id}`} className="skill-detail-card">
                             <div className="skill-detail-main">
                               <strong>{skill.nombre}</strong>
                               <span>{skill.categoria || "Tecnologia"} · {skill.nivel_dominio}</span>
@@ -205,7 +210,7 @@ export default function ProfileViewPage() {
                     {topSoftSkills.length ? (
                       <div className="skills-stack">
                         {topSoftSkills.map((skill) => (
-                          <div key={skill.id} className="skill-detail-card">
+                          <div key={skill.id} id={`habilidad-${skill.id}`} className="skill-detail-card">
                             <div className="skill-detail-main">
                               <strong>{skill.nombre}</strong>
                               <span>{skill.categoria || "Habilidad blanda"} · {skill.nivel_dominio}</span>
@@ -269,7 +274,7 @@ export default function ProfileViewPage() {
                           </div>
                         </div>
 
-                        <p className="portfolio-project-description">{project.descripcion}</p>
+                        <RichTextContent value={project.descripcion} className="portfolio-project-description" />
 
                         {(project.tecnologias || []).length ? (
                           <div className="portfolio-project-block">

@@ -2,12 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import AlertMessage from "../../components/common/AlertMessage";
+import RichTextContent from "../../components/common/RichTextContent";
+import RichTextEditor from "../../components/common/RichTextEditor";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
 import { getMyProfile } from "../../api/profile";
 import { createProject, deleteProject, getMyProjects, updateProject, updateProjectVisibility } from "../../api/projects";
+import { getMySkills } from "../../api/skills";
 import type { Perfil } from "../../types/profile";
 import type { Project, ProjectPayload } from "../../types/project";
+import type { Skill } from "../../types/skill";
 import { resolveProjectImageSrc, isAbsoluteImageUrl } from "../../utils/projectImages";
+import { isRichTextEmpty, limitRichText } from "../../utils/richText";
 import { validateProjectImage } from "../../utils/validations";
 
 const EMPTY_FORM: ProjectPayload = {
@@ -80,6 +85,7 @@ export default function ProjectsPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [proyectos, setProyectos] = useState<Project[]>([]);
+  const [habilidades, setHabilidades] = useState<Skill[]>([]);
   const [imageErrors, setImageErrors] = useState<Record<number, true>>({});
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -104,9 +110,10 @@ export default function ProjectsPage() {
           return;
         }
 
-        const projectData = await getMyProjects();
+        const [projectData, skillData] = await Promise.all([getMyProjects(), getMySkills()]);
         setPerfil(profileData.perfil);
         setProyectos(projectData.proyectos || []);
+        setHabilidades(skillData.habilidades || []);
       } catch {
         setServerError("No se pudieron cargar los proyectos.");
       } finally {
@@ -133,6 +140,13 @@ export default function ProjectsPage() {
   const technologyCount = useMemo(
     () => new Set(proyectos.flatMap((project) => project.tecnologias || [])).size,
     [proyectos],
+  );
+  const skillLinkSuggestions = useMemo(
+    () => habilidades.map((skill) => ({
+      label: skill.nombre,
+      href: `#habilidad-${skill.id}`,
+    })),
+    [habilidades],
   );
 
   const openCreateForm = () => {
@@ -229,7 +243,7 @@ export default function ProjectsPage() {
 
     if (!form.titulo.trim()) nextErrors.titulo = "El titulo del proyecto es obligatorio.";
     if (!form.rol.trim()) nextErrors.rol = "Tu rol en el proyecto es obligatorio.";
-    if (!form.descripcion.trim()) nextErrors.descripcion = "La descripcion del proyecto es obligatoria.";
+    if (isRichTextEmpty(form.descripcion)) nextErrors.descripcion = "La descripcion del proyecto es obligatoria.";
     if (!form.fecha_inicio) nextErrors.fecha_inicio = "La fecha de inicio es obligatoria.";
     if (!technologies.length) nextErrors.tecnologias = "Debes agregar al menos una tecnologia.";
     if (form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
@@ -262,7 +276,7 @@ export default function ProjectsPage() {
         ...form,
         titulo: form.titulo.trim(),
         rol: form.rol.trim(),
-        descripcion: form.descripcion.trim(),
+        descripcion: limitRichText(form.descripcion, 1800),
         tecnologias: normalizeTechnologies(form.tecnologias).join(", "),
         logros: normalizeAchievements(form.logros).join("\n"),
         enlace_proyecto: form.enlace_proyecto?.trim() || "",
@@ -409,7 +423,7 @@ export default function ProjectsPage() {
                   </div>
 
                   <p className="project-role">{project.rol}</p>
-                  <p className="section-copy">{project.descripcion}</p>
+                  <RichTextContent value={project.descripcion} className="section-copy" />
 
                   <div className="profile-pill-list">
                     {(project.tecnologias || []).map((technology) => (
@@ -491,16 +505,14 @@ export default function ProjectsPage() {
                   </div>
                 </div>
 
-                <div className="form-field">
-                  <label className="form-label">Descripcion *</label>
-                  <textarea
-                    className={`form-input form-textarea${errors.descripcion ? " error" : ""}`}
-                    value={form.descripcion}
-                    placeholder="Describe objetivos, alcance y tu aporte principal."
-                    onChange={(event) => setForm((prev) => ({ ...prev, descripcion: event.target.value }))}
-                  />
-                  {errors.descripcion ? <p className="form-error">{errors.descripcion}</p> : null}
-                </div>
+                <RichTextEditor
+                  label="Descripcion *"
+                  value={form.descripcion}
+                  placeholder="Describe objetivos, alcance y tu aporte principal."
+                  onChange={(value) => setForm((prev) => ({ ...prev, descripcion: limitRichText(value, 1800) }))}
+                  error={errors.descripcion}
+                  linkSuggestions={skillLinkSuggestions}
+                />
 
                 <div className="workspace-form-grid">
                   <div className="form-field">

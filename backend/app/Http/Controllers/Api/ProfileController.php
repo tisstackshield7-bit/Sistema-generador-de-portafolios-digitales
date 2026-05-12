@@ -13,6 +13,17 @@ use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
+    private const DEFAULT_VISIBILITY = [
+        'mostrar_correo' => true,
+        'mostrar_telefono' => false,
+        'mostrar_redes' => true,
+        'mostrar_biografia' => true,
+        'mostrar_habilidades' => true,
+        'mostrar_proyectos' => true,
+        'mostrar_experiencia' => true,
+        'mostrar_evidencias' => true,
+    ];
+
     public function storeBasic(StoreBasicProfileRequest $request)
     {
         $usuario = $request->attributes->get('auth_usuario');
@@ -40,8 +51,10 @@ class ProfileController extends Controller
             'profesion' => $request->profesion,
             'titular_profesional' => $request->titular_profesional,
             'telefono' => $request->telefono,
+            'ubicacion' => $request->ubicacion,
             'biografia' => $request->biografia,
             'foto_perfil' => $rutaFoto,
+            'visibilidad' => self::DEFAULT_VISIBILITY,
             'es_publico' => true,
             'slug' => $slug,
             'creado_en' => now(),
@@ -74,6 +87,9 @@ class ProfileController extends Controller
             'proyectos' => function ($query) {
                 $query->orderByDesc('fecha_inicio')->orderByDesc('creado_en');
             },
+            'experiencias' => function ($query) {
+                $query->orderByDesc('fecha_inicio')->orderByDesc('creado_en');
+            },
         ])->where('usuario_id', $usuario->id)->first();
 
         return response()->json([
@@ -98,7 +114,12 @@ class ProfileController extends Controller
         $perfil->profesion = $request->profesion;
         $perfil->titular_profesional = $request->titular_profesional;
         $perfil->telefono = $request->telefono;
+        $perfil->ubicacion = $request->ubicacion;
         $perfil->biografia = $request->biografia;
+        $perfil->linkedin_url = $request->linkedin_url;
+        $perfil->github_url = $request->github_url;
+        $perfil->sitio_web_url = $request->sitio_web_url;
+        $perfil->visibilidad = array_merge(self::DEFAULT_VISIBILITY, $request->input('visibilidad', []));
 
         if ($request->hasFile('foto_perfil')) {
             $perfil->foto_perfil = $request->file('foto_perfil')->store('perfiles', 'public');
@@ -181,6 +202,11 @@ class ProfileController extends Controller
             },
             'habilidades.evidencias',
             'proyectos' => function ($query) {
+                $query->where('visible_publico', true)
+                    ->orderByDesc('fecha_inicio')
+                    ->orderByDesc('creado_en');
+            },
+            'experiencias' => function ($query) {
                 $query->where('visible_publico', true)
                     ->orderByDesc('fecha_inicio')
                     ->orderByDesc('creado_en');
@@ -274,6 +300,11 @@ class ProfileController extends Controller
                 'profesion',
                 'titular_profesional',
                 'telefono',
+                'ubicacion',
+                'linkedin_url',
+                'github_url',
+                'sitio_web_url',
+                'visibilidad',
                 'biografia',
                 'foto_perfil',
                 'slug',
@@ -355,6 +386,11 @@ class ProfileController extends Controller
             },
             'habilidades.evidencias',
             'proyectos' => function ($query) {
+                $query->where('visible_publico', true)
+                    ->orderByDesc('fecha_inicio')
+                    ->orderByDesc('creado_en');
+            },
+            'experiencias' => function ($query) {
                 $query->where('visible_publico', true)
                     ->orderByDesc('fecha_inicio')
                     ->orderByDesc('creado_en');

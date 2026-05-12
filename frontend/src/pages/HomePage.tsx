@@ -7,6 +7,7 @@ import { authStore } from "../store/authStore";
 import type { Perfil, PublicProfileCard } from "../types/profile";
 import type { SkillLevel } from "../types/skill";
 import type { ProfileSearchFilters } from "../utils/profileFilters";
+import { richTextToPlainText } from "../utils/richText";
 import "./HomePage.css";
 
 function getInitials(name?: string | null) {
@@ -36,6 +37,17 @@ const skillLevelOrder: Record<string, number> = {
 
 const skillLevels: SkillLevel[] = ["Avanzado", "Intermedio", "Basico"];
 
+const defaultProfileVisibility = {
+  mostrar_correo: true,
+  mostrar_telefono: false,
+  mostrar_redes: true,
+  mostrar_biografia: true,
+  mostrar_habilidades: true,
+  mostrar_proyectos: true,
+  mostrar_experiencia: true,
+  mostrar_evidencias: true,
+};
+
 const initialAdvancedFilters: Pick<
   ProfileSearchFilters,
   "role" | "experienceMin" | "experienceMax" | "technologies" | "technologyLevel"
@@ -51,7 +63,18 @@ function getSkillLevelRank(level?: string | null) {
   return skillLevelOrder[normalizeText(level)] ?? 99;
 }
 
+function getProfileVisibility(profile: PublicProfileCard) {
+  return {
+    ...defaultProfileVisibility,
+    ...(profile.visibilidad || {}),
+  };
+}
+
 function getProfileHighlights(profile: PublicProfileCard, category?: string) {
+  if (!getProfileVisibility(profile).mostrar_habilidades) {
+    return [];
+  }
+
   const normalizedCategory = normalizeText(category);
 
   return (profile.habilidades || [])
@@ -83,7 +106,84 @@ function compareProfilesBySkillLevel(left: PublicProfileCard, right: PublicProfi
 }
 
 function countProfileEvidences(profile: PublicProfileCard) {
+  if (!getProfileVisibility(profile).mostrar_evidencias) {
+    return 0;
+  }
+
   return (profile.habilidades || []).reduce((total, skill) => total + (skill.evidencias?.length || 0), 0);
+}
+
+function getProfileExperienceYears(profile: PublicProfileCard) {
+  const visibility = getProfileVisibility(profile);
+  const sourceItems = visibility.mostrar_experiencia
+    ? (profile.experiencias || []).filter((experience) => experience.tipo === "laboral")
+    : [];
+  const fallbackItems = visibility.mostrar_proyectos ? (profile.proyectos || []) : [];
+  const ranges = (sourceItems.length ? sourceItems : fallbackItems)
+    .map((item) => {
+      const start = item.fecha_inicio ? new Date(item.fecha_inicio) : null;
+      const isCurrent = "actualidad" in item ? item.actualidad : false;
+      const end = isCurrent ? new Date() : (item.fecha_fin ? new Date(item.fecha_fin) : new Date());
+
+      if (!start || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+        return 0;
+      }
+
+      return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    })
+    .filter((years) => years > 0);
+
+  if (!ranges.length) return 0;
+
+  return Math.max(1, Math.round(ranges.reduce((total, years) => total + years, 0)));
+}
+
+function formatExperienceLabel(years: number) {
+  if (!years) return "Sin registro";
+  return `${years} ${years === 1 ? "ano" : "anos"}`;
+}
+
+function getProfileCompleteness(profile: PublicProfileCard) {
+  const visibility = getProfileVisibility(profile);
+  const biography = richTextToPlainText(profile.biografia || "").replace(/\s+/g, " ").trim();
+  const score = [
+    Boolean(profile.foto_perfil),
+    Boolean(profile.profesion),
+    Boolean(profile.titular_profesional),
+    visibility.mostrar_biografia && biography.length >= 40,
+    visibility.mostrar_habilidades && Boolean(profile.habilidades?.length),
+    visibility.mostrar_proyectos && Boolean(profile.proyectos?.length),
+    countProfileEvidences(profile) > 0,
+  ].filter(Boolean).length;
+
+  if (score >= 6) return { label: "Perfil completo", tone: "complete" };
+  if (score >= 4) return { label: "Con avances", tone: "progress" };
+  return { label: "En construccion", tone: "draft" };
+}
+
+function getProfileSummary(profile: PublicProfileCard) {
+  const visibility = getProfileVisibility(profile);
+  const biography = visibility.mostrar_biografia
+    ? richTextToPlainText(profile.biografia || "").replace(/\s+/g, " ").trim()
+    : "";
+  const projectCount = visibility.mostrar_proyectos ? (profile.proyectos?.length || 0) : 0;
+  const skillCount = visibility.mostrar_habilidades ? (profile.habilidades?.length || 0) : 0;
+  const evidenceCount = countProfileEvidences(profile);
+  const experienceYears = getProfileExperienceYears(profile);
+  const role = profile.titular_profesional || profile.profesion || "Perfil profesional";
+  const profession = profile.titular_profesional && profile.profesion
+    ? ` en ${profile.profesion}`
+    : "";
+
+  if (biography && biography.length <= 130) {
+    return biography;
+  }
+
+  if (projectCount || skillCount || evidenceCount) {
+    return `${role}${profession}. ${skillCount} habilidades, ${projectCount} proyectos y ${formatExperienceLabel(experienceYears)} de experiencia registrada.`;
+  }
+
+  return `${role}${profession}. Perfil profesional en proceso de actualización.`;
 }
 
 function compareFeaturedProfiles(left: PublicProfileCard, right: PublicProfileCard, category?: string) {
@@ -151,6 +251,40 @@ function CloseIcon() {
   );
 }
 
+function LandingSocialIcon({ type }: { type: "linkedin" | "github" | "web" }) {
+  if (type === "github") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 3.5a8.5 8.5 0 0 0-2.7 16.6c.4.1.6-.2.6-.4v-1.5c-2.3.5-2.8-1-2.8-1-.4-.9-.9-1.2-.9-1.2-.8-.5.1-.5.1-.5.8.1 1.3.9 1.3.9.8 1.3 2 1 2.4.8.1-.6.3-1 .5-1.2-1.8-.2-3.7-.9-3.7-4a3.1 3.1 0 0 1 .8-2.2 2.9 2.9 0 0 1 .1-2.1s.7-.2 2.3.8a8 8 0 0 1 4.2 0c1.6-1 2.3-.8 2.3-.8.4.9.1 1.8.1 2.1.5.6.8 1.3.8 2.2 0 3.1-1.9 3.8-3.7 4 .3.3.6.8.6 1.6v2.3c0 .3.2.5.6.4A8.5 8.5 0 0 0 12 3.5Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  if (type === "web") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="8" />
+          <path d="M4 12h16M12 4c2 2.2 3 4.8 3 8s-1 5.8-3 8M12 4c-2 2.2-3 4.8-3 8s1 5.8 3 8" />
+        </g>
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g fill="currentColor">
+        <path d="M6.7 9.2H3.9v9h2.8v-9Z" />
+        <path d="M5.3 5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z" />
+        <path d="M10.8 9.2H8.1v9h2.7v-4.7c0-1.2.6-2 1.7-2s1.5.8 1.5 2v4.7h2.8V13c0-2.7-1.4-4-3.3-4-1.5 0-2.2.8-2.6 1.4h-.1V9.2Z" />
+      </g>
+    </svg>
+  );
+}
+
 function ProfileCard({
   profile,
   category,
@@ -161,65 +295,82 @@ function ProfileCard({
   onViewProfile: (slug: string) => void;
 }) {
   const highlights = getProfileHighlights(profile, category);
-  const phoneHref = profile.telefono ? `tel:${profile.telefono.replace(/\s+/g, "")}` : "";
-  const projectCount = profile.proyectos?.length || 0;
-  const hasDistinctProfessionalRole = Boolean(
-    profile.titular_profesional && normalizeText(profile.titular_profesional) !== normalizeText(profile.profesion),
-  );
+  const visibility = getProfileVisibility(profile);
+  const projectCount = visibility.mostrar_proyectos ? (profile.proyectos?.length || 0) : 0;
+  const skillCount = visibility.mostrar_habilidades ? (profile.habilidades?.length || 0) : 0;
+  const experienceYears = getProfileExperienceYears(profile);
+  const summary = getProfileSummary(profile);
+  const completeness = getProfileCompleteness(profile);
+  const socialLinks = visibility.mostrar_redes
+    ? [
+        profile.linkedin_url ? { type: "linkedin" as const, label: "LinkedIn", url: profile.linkedin_url } : null,
+        profile.github_url ? { type: "github" as const, label: "GitHub", url: profile.github_url } : null,
+        profile.sitio_web_url ? { type: "web" as const, label: "Sitio Web", url: profile.sitio_web_url } : null,
+      ].filter(Boolean) as { type: "linkedin" | "github" | "web"; label: string; url: string }[]
+    : [];
 
   return (
     <article className="landing-profile-card">
-      <div className="landing-profile-cover" />
       <div className="landing-profile-body">
-        {profile.foto_perfil ? (
-          <img
-            src={`${API_ORIGIN}/storage/${profile.foto_perfil}`}
-            alt={profile.nombre_completo}
-            className="landing-profile-avatar"
-          />
-        ) : (
-          <div className="landing-profile-avatar landing-profile-fallback">{getInitials(profile.nombre_completo)}</div>
-        )}
+        <div className="landing-profile-identity-block">
+          {profile.foto_perfil ? (
+            <img
+              src={`${API_ORIGIN}/storage/${profile.foto_perfil}`}
+              alt={profile.nombre_completo}
+              className="landing-profile-avatar"
+            />
+          ) : (
+            <div className="landing-profile-avatar landing-profile-fallback">{getInitials(profile.nombre_completo)}</div>
+          )}
 
-        <h3>{profile.nombre_completo}</h3>
-        {profile.profesion ? (
-          <p className="landing-profile-profession">{profile.profesion}</p>
-        ) : null}
-        {hasDistinctProfessionalRole ? (
-          <p className="landing-profile-role">{profile.titular_profesional}</p>
-        ) : null}
-        {profile.correo || profile.telefono ? (
-          <div className="landing-profile-contact-row" aria-label="Datos de contacto">
-            {profile.correo ? (
-              <a className="landing-profile-contact-link" href={`mailto:${profile.correo}`}>
-                {profile.correo}
-              </a>
-            ) : null}
-            {profile.telefono ? (
-              <a className="landing-profile-contact-link" href={phoneHref}>
-                {profile.telefono}
-              </a>
-            ) : null}
+          <div className="landing-profile-main-copy">
+            <div className="landing-profile-title-row">
+              <h3>{profile.nombre_completo}</h3>
+              <span className={`landing-profile-status ${completeness.tone}`}>{completeness.label}</span>
+            </div>
+            <p className="landing-profile-profession">
+              {[profile.titular_profesional, profile.profesion]
+                .filter(Boolean)
+                .filter((value, index, list) => index === 0 || normalizeText(value) !== normalizeText(list[0]))
+                .join(" · ") || "Perfil profesional"}
+            </p>
+            {profile.ubicacion ? <p className="landing-profile-location">{profile.ubicacion}</p> : null}
+            <p className="landing-profile-summary">{summary}</p>
           </div>
-        ) : null}
-
-        {highlights.length > 0 && (
-          <div className="landing-tag-row">
-            {highlights.map((skill) => (
-              <span key={`${profile.id}-${skill.id}`} className={`landing-skill-chip ${getLandingSkillTone(skill.nivel_dominio)}`}>
-                {skill.nombre} - {skill.nivel_dominio}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="landing-profile-proof-row">
-          <span>{projectCount} {projectCount === 1 ? "proyecto" : "proyectos"}</span>
         </div>
 
-        <button type="button" onClick={() => onViewProfile(profile.slug)}>
-          Ver perfil
-        </button>
+        <div className="landing-profile-evidence-strip" aria-label="Indicadores del perfil">
+          <span><strong>{projectCount}</strong> proyectos</span>
+          <span><strong>{skillCount}</strong> habilidades</span>
+          <span><strong>{experienceYears || "-"}</strong> experiencia</span>
+        </div>
+
+        <div className="landing-profile-footer">
+          {highlights.length > 0 ? (
+            <div className="landing-tag-row">
+              {highlights.map((skill) => (
+                <span key={`${profile.id}-${skill.id}`} className={`landing-skill-chip ${getLandingSkillTone(skill.nivel_dominio)}`}>
+                  {skill.nombre} · {skill.nivel_dominio}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="landing-profile-muted">Sin habilidades destacadas visibles.</p>
+          )}
+          {socialLinks.length ? (
+            <div className="landing-profile-social-row" aria-label="Enlaces profesionales">
+              {socialLinks.map((link) => (
+                <a key={`${profile.id}-${link.type}`} href={link.url} target="_blank" rel="noreferrer" title={link.label}>
+                  <LandingSocialIcon type={link.type} />
+                  <span>{link.label}</span>
+                </a>
+              ))}
+            </div>
+          ) : null}
+          <button type="button" onClick={() => onViewProfile(profile.slug)}>
+            Ver portafolio
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -687,9 +838,10 @@ export default function HomePage() {
         <section id="perfiles" className={`landing-container landing-featured-section ${isAuth ? "landing-featured-section-auth" : ""}`}>
           <div className="landing-section-head">
             <div>
-              <h2>Profesionales destacados</h2>
-              <p>Perfiles con habilidades y proyectos publicados.</p>
+              <h2>Talento disponible</h2>
+              <p>Perfiles ordenados por experiencia, proyectos publicados y habilidades visibles.</p>
             </div>
+            <span className="landing-featured-count">{featuredProfiles.length} perfiles</span>
           </div>
 
           <div className="landing-category-tabs" aria-label="Categorias profesionales">

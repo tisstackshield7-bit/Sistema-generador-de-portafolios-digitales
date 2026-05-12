@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Project;
 
+use App\Support\RichTextSanitizer;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProjectRequest extends FormRequest
@@ -38,7 +39,7 @@ class StoreProjectRequest extends FormRequest
         $payload = [
             'titulo' => trim((string) $this->input('titulo')),
             'rol' => trim((string) $this->input('rol')),
-            'descripcion' => trim((string) $this->input('descripcion')),
+            'descripcion' => RichTextSanitizer::clean($this->input('descripcion')),
             'tecnologias' => $technologies,
             'logros' => $achievements,
             'enlace_proyecto' => $this->filled('enlace_proyecto') ? trim((string) $this->input('enlace_proyecto')) : null,
@@ -57,7 +58,7 @@ class StoreProjectRequest extends FormRequest
         return [
             'titulo' => ['required', 'string', 'max:180'],
             'rol' => ['required', 'string', 'max:150'],
-            'descripcion' => ['required', 'string', 'max:2000'],
+            'descripcion' => ['required', 'string', 'max:5000'],
             'fecha_inicio' => ['required', 'date'],
             'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
             'tecnologias' => ['required', 'array', 'min:1'],

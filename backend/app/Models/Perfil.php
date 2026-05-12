@@ -19,10 +19,15 @@ class Perfil extends Model
         'titular_profesional',
         'biografia',
         'telefono',
+        'ubicacion',
         'pais',
         'ciudad',
         'foto_perfil',
         'archivo_cv',
+        'linkedin_url',
+        'github_url',
+        'sitio_web_url',
+        'visibilidad',
         'es_publico',
         'slug',
         'creado_en',
@@ -36,6 +41,11 @@ class Perfil extends Model
 
     protected $appends = [
         'correo',
+    ];
+
+    protected $casts = [
+        'visibilidad' => 'array',
+        'es_publico' => 'boolean',
     ];
 
     public function usuario()
@@ -60,5 +70,10 @@ class Perfil extends Model
     public function proyectos()
     {
         return $this->hasMany(Proyecto::class, 'perfil_id');
+    }
+
+    public function experiencias()
+    {
+        return $this->hasMany(Experiencia::class, 'perfil_id');
     }
 }

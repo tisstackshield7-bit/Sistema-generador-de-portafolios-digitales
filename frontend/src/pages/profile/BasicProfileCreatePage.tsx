@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import FormInput from "../../components/common/FormInput";
-import FormTextarea from "../../components/common/FormTextarea";
+import RichTextEditor from "../../components/common/RichTextEditor";
 import AlertMessage from "../../components/common/AlertMessage";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import {
@@ -14,9 +14,10 @@ import {
   validateRequired,
 } from "../../utils/validations";
 import { createBasicProfile } from "../../api/profile";
+import { limitRichText } from "../../utils/richText";
 import "./BasicProfileCreatePage.css";
 
-type FieldName = "nombres" | "apellidos" | "profesion" | "titular_profesional" | "telefono" | "biografia";
+type FieldName = "nombres" | "apellidos" | "profesion" | "titular_profesional" | "telefono" | "ubicacion" | "biografia";
 
 type ApiErrorData = {
   message?: string;
@@ -38,6 +39,7 @@ export default function BasicProfileCreatePage() {
   const [profesion, setProfesion] = useState("");
   const [titularProfesional, setTitularProfesional] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
   const [biografia, setBiografia] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
   const [photoError, setPhotoError] = useState("");
@@ -48,6 +50,7 @@ export default function BasicProfileCreatePage() {
     profesion: "",
     titular_profesional: "",
     telefono: "",
+    ubicacion: "",
     biografia: "",
   });
   const [touched, setTouched] = useState<Record<FieldName | "foto", boolean>>({
@@ -57,6 +60,7 @@ export default function BasicProfileCreatePage() {
     profesion: false,
     titular_profesional: false,
     telefono: false,
+    ubicacion: false,
     biografia: false,
   });
 
@@ -80,6 +84,8 @@ export default function BasicProfileCreatePage() {
         return validateRequired(value, "El rol o especialidad profesional es obligatorio.");
       case "telefono":
         return validateBoliviaPhone(value);
+      case "ubicacion":
+        return value.trim().length > 180 ? "La ubicacion no puede superar 180 caracteres." : "";
       case "biografia":
         return validateBiography(value);
       default:
@@ -166,7 +172,7 @@ export default function BasicProfileCreatePage() {
   };
 
   const handleBiografiaChange = (value: string) => {
-    const nextValue = value.slice(0, 500);
+    const nextValue = limitRichText(value, 1200);
     setBiografia(nextValue);
 
     if (touched.biografia) {
@@ -176,7 +182,7 @@ export default function BasicProfileCreatePage() {
 
     setErrors((prev) => ({
       ...prev,
-      biografia: nextValue.length === 500 ? "La biografia no puede superar los 500 caracteres." : "",
+      biografia: validateBiography(nextValue),
     }));
   };
 
@@ -194,6 +200,7 @@ export default function BasicProfileCreatePage() {
       profesion: true,
       titular_profesional: true,
       telefono: true,
+      ubicacion: true,
       biografia: true,
     };
     const nextErrors = {
@@ -202,6 +209,7 @@ export default function BasicProfileCreatePage() {
       profesion: validateField("profesion", profesion, errors.profesion),
       titular_profesional: validateField("titular_profesional", titularProfesional, errors.titular_profesional),
       telefono: validateField("telefono", telefono),
+      ubicacion: validateField("ubicacion", ubicacion),
       biografia: validateField("biografia", biografia),
     };
     const nextPhotoError = foto ? validateProfilePhoto(foto) : requiredPhotoMessage;
@@ -220,6 +228,7 @@ export default function BasicProfileCreatePage() {
         profesion,
         titular_profesional: titularProfesional,
         telefono,
+        ubicacion,
         biografia,
         foto_perfil: foto,
       });
@@ -337,7 +346,20 @@ export default function BasicProfileCreatePage() {
               placeholder="Ej. 71234567 o 59171234567"
             />
 
-            <FormTextarea
+            <FormInput
+              label="Ubicacion"
+              value={ubicacion}
+              onChange={setUbicacion}
+              onBlur={() => {
+                markFieldAsTouched("ubicacion");
+                setFieldError("ubicacion", ubicacion);
+              }}
+              error={errors.ubicacion}
+              inputMode="text"
+              placeholder="Ej: Cercado, Cochabamba"
+            />
+
+            <RichTextEditor
               label="Resumen profesional"
               value={biografia}
               onChange={handleBiografiaChange}
@@ -346,7 +368,6 @@ export default function BasicProfileCreatePage() {
                 setFieldError("biografia", biografia);
               }}
               error={errors.biografia}
-              maxLength={500}
               placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
             />
 

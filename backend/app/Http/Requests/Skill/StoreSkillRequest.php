@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Skill;
 
+use App\Support\RichTextSanitizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -48,6 +49,17 @@ class StoreSkillRequest extends FormRequest
             $evidencias = is_array($decoded) ? $decoded : [];
         }
 
+        $evidencias = collect($evidencias)
+            ->map(function ($evidencia) {
+                if (is_array($evidencia) && array_key_exists('descripcion', $evidencia)) {
+                    $evidencia['descripcion'] = RichTextSanitizer::clean($evidencia['descripcion']);
+                }
+
+                return $evidencia;
+            })
+            ->values()
+            ->all();
+
         $category = $this->filled('categoria') ? $this->input('categoria') : null;
         $customCategory = $this->filled('categoria_personalizada')
             ? trim((string) $this->input('categoria_personalizada'))
@@ -86,7 +98,7 @@ class StoreSkillRequest extends FormRequest
             'evidencias' => ['nullable', 'array'],
             'evidencias.*.tipo' => ['required_with:evidencias', Rule::in(self::EVIDENCE_TYPES)],
             'evidencias.*.titulo' => ['required_with:evidencias', 'string', 'max:180'],
-            'evidencias.*.descripcion' => ['nullable', 'string', 'max:1000'],
+            'evidencias.*.descripcion' => ['nullable', 'string', 'max:3000'],
             'evidencias.*.url' => ['nullable', 'url', 'max:255'],
             'evidencias.*.emisor' => ['nullable', 'string', 'max:180'],
             'evidencias.*.fecha' => ['nullable', 'date'],

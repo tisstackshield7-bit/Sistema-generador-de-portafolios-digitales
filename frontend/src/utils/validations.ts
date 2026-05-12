@@ -1,3 +1,5 @@
+import { richTextToPlainText } from "./richText";
+
 export const validateEmail = (value: string) => {
   if (!value.trim()) return "El correo electronico es obligatorio.";
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,9 +22,11 @@ export const validateRequired = (value: string, message: string) => {
 };
 
 export const validateBiography = (value: string) => {
-  if (!value.trim()) return "La biografia es obligatoria.";
-  if (value.trim().length < 10) return "La biografia debe tener al menos 10 caracteres.";
-  if (value.length > 500) return "La biografia no puede superar los 500 caracteres.";
+  const plainText = richTextToPlainText(value);
+
+  if (!plainText) return "La biografia es obligatoria.";
+  if (plainText.length < 10) return "La biografia debe tener al menos 10 caracteres.";
+  if (plainText.length > 1200) return "La biografia no puede superar los 1200 caracteres.";
   return "";
 };
 

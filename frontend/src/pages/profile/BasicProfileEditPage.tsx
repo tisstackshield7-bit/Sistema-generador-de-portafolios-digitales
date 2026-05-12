@@ -2,7 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import FormInput from "../../components/common/FormInput";
-import FormTextarea from "../../components/common/FormTextarea";
+import RichTextEditor from "../../components/common/RichTextEditor";
 import AlertMessage from "../../components/common/AlertMessage";
 import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
@@ -15,7 +15,21 @@ import {
   sanitizeLettersAndSpaces,
 } from "../../utils/validations";
 import { getMyProfile, updateBasicProfile } from "../../api/profile";
+import { getMySkills } from "../../api/skills";
 import type { Perfil } from "../../types/profile";
+import type { Skill } from "../../types/skill";
+import { limitRichText } from "../../utils/richText";
+
+const DEFAULT_VISIBILITY = {
+  mostrar_correo: true,
+  mostrar_telefono: false,
+  mostrar_redes: true,
+  mostrar_biografia: true,
+  mostrar_habilidades: true,
+  mostrar_proyectos: true,
+  mostrar_experiencia: true,
+  mostrar_evidencias: true,
+};
 
 type ApiErrorData = {
   message?: string;
@@ -46,16 +60,82 @@ function splitLegacyFullName(fullName: string) {
   };
 }
 
+function SocialFieldIcon({ type }: { type: "linkedin" | "github" | "web" }) {
+  if (type === "github") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 3.5a8.5 8.5 0 0 0-2.7 16.6c.4.1.6-.2.6-.4v-1.5c-2.3.5-2.8-1-2.8-1-.4-.9-.9-1.2-.9-1.2-.8-.5.1-.5.1-.5.8.1 1.3.9 1.3.9.8 1.3 2 1 2.4.8.1-.6.3-1 .5-1.2-1.8-.2-3.7-.9-3.7-4a3.1 3.1 0 0 1 .8-2.2 2.9 2.9 0 0 1 .1-2.1s.7-.2 2.3.8a8 8 0 0 1 4.2 0c1.6-1 2.3-.8 2.3-.8.4.9.1 1.8.1 2.1.5.6.8 1.3.8 2.2 0 3.1-1.9 3.8-3.7 4 .3.3.6.8.6 1.6v2.3c0 .3.2.5.6.4A8.5 8.5 0 0 0 12 3.5Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  if (type === "web") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="8" />
+          <path d="M4 12h16M12 4c2 2.2 3 4.8 3 8s-1 5.8-3 8M12 4c-2 2.2-3 4.8-3 8s1 5.8 3 8" />
+        </g>
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g fill="currentColor">
+        <path d="M6.7 9.2H3.9v9h2.8v-9Z" />
+        <path d="M5.3 5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z" />
+        <path d="M10.8 9.2H8.1v9h2.7v-4.7c0-1.2.6-2 1.7-2s1.5.8 1.5 2v4.7h2.8V13c0-2.7-1.4-4-3.3-4-1.5 0-2.2.8-2.6 1.4h-.1V9.2Z" />
+      </g>
+    </svg>
+  );
+}
+
+function ContactFieldIcon({ type }: { type: "email" | "phone" | "location" }) {
+  const path = {
+    email: (
+      <>
+        <rect x="4" y="6" width="16" height="12" rx="2" />
+        <path d="m5 8 7 5 7-5" />
+      </>
+    ),
+    phone: <path d="M6.5 5.5 9 4l2.2 4-1.4 1.1c.9 1.8 2.3 3.2 4.1 4.1l1.1-1.4 4 2.2-1.5 2.5c-.5.8-1.5 1.1-2.4.8-4.1-1.4-7.3-4.6-8.7-8.7-.3-.9 0-1.9.8-2.4Z" />,
+    location: (
+      <>
+        <path d="M12 21s6-5.2 6-11a6 6 0 0 0-12 0c0 5.8 6 11 6 11Z" />
+        <circle cx="12" cy="10" r="2" />
+      </>
+    ),
+  }[type];
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {path}
+      </g>
+    </svg>
+  );
+}
+
 export default function BasicProfileEditPage() {
   const navigate = useNavigate();
   const [perfilData, setPerfilData] = useState<Perfil | null>(null);
+  const [habilidades, setHabilidades] = useState<Skill[]>([]);
 
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [profesion, setProfesion] = useState("");
   const [titularProfesional, setTitularProfesional] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
   const [biografia, setBiografia] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [sitioWebUrl, setSitioWebUrl] = useState("");
+  const [visibilidad, setVisibilidad] = useState(DEFAULT_VISIBILITY);
   const [foto, setFoto] = useState<File | null>(null);
   const [existingPhoto, setExistingPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState("");
@@ -68,15 +148,17 @@ export default function BasicProfileEditPage() {
     profesion?: string;
     titular_profesional?: string;
     telefono?: string;
+    ubicacion?: string;
     biografia?: string;
   }>({});
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const data = await getMyProfile();
+        const [data, skillData] = await Promise.all([getMyProfile(), getMySkills()]);
         const perfil = data.perfil;
         setPerfilData(perfil || null);
+        setHabilidades(skillData.habilidades || []);
 
         if (perfil?.nombres || perfil?.apellidos) {
           setNombres(sanitizeLettersAndSpaces(perfil.nombres || ""));
@@ -90,7 +172,12 @@ export default function BasicProfileEditPage() {
         setProfesion(perfil?.profesion || "");
         setTitularProfesional(perfil?.titular_profesional || "");
         setTelefono(perfil?.telefono || "");
+        setUbicacion(perfil?.ubicacion || "");
         setBiografia(perfil?.biografia || "");
+        setLinkedinUrl(perfil?.linkedin_url || "");
+        setGithubUrl(perfil?.github_url || "");
+        setSitioWebUrl(perfil?.sitio_web_url || "");
+        setVisibilidad({ ...DEFAULT_VISIBILITY, ...(perfil?.visibilidad || {}) });
         setExistingPhoto(perfil?.foto_perfil || null);
       } catch {
         setServerError("No se pudo cargar el perfil.");
@@ -105,6 +192,13 @@ const preview = useMemo(() => {
   if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
   return null;
 }, [foto, existingPhoto]);
+  const skillLinkSuggestions = useMemo(
+    () => habilidades.map((skill) => ({
+      label: skill.nombre,
+      href: `#habilidad-${skill.id}`,
+    })),
+    [habilidades],
+  );
 
   const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
   const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
@@ -157,11 +251,11 @@ const preview = useMemo(() => {
     }));
   };
   const handleBiografiaChange = (value: string) => {
-    const nextValue = value.slice(0, 500);
+    const nextValue = limitRichText(value, 1200);
     setBiografia(nextValue);
     setErrors((prev) => ({
       ...prev,
-      biografia: nextValue.length === 500 ? "La biografia no puede superar los 500 caracteres." : "",
+      biografia: validateBiography(nextValue),
     }));
   };
 
@@ -174,6 +268,7 @@ const preview = useMemo(() => {
       profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
       titular_profesional: validateRequired(titularProfesional, "El rol o especialidad profesional es obligatorio.") || titularProfesionalError,
       telefono: validateBoliviaPhone(telefono),
+      ubicacion: ubicacion.trim().length > 180 ? "La ubicacion no puede superar 180 caracteres." : "",
       biografia: validateBiography(biografia),
     };
 
@@ -190,7 +285,12 @@ const preview = useMemo(() => {
         profesion,
         titular_profesional: titularProfesional,
         telefono,
+        ubicacion,
         biografia,
+        linkedin_url: linkedinUrl,
+        github_url: githubUrl,
+        sitio_web_url: sitioWebUrl,
+        visibilidad,
         foto_perfil: foto,
       });
 
@@ -208,85 +308,172 @@ const preview = useMemo(() => {
       title="Perfil"
       subtitle="Actualiza tu informacion publica, datos de contacto y presentacion profesional."
     >
-      <section className="surface-card workspace-section-card">
-        <div className="workspace-section-head">
-          <div>
-            <p className="section-label">Informacion personal</p>
-            <h2>Datos basicos del perfil profesional</h2>
-          </div>
-        </div>
-
+      <section className="surface-card workspace-section-card profile-edit-card">
         <AlertMessage message={message || serverError} />
 
         <form id="basic-profile-edit-form" onSubmit={handleSubmit} className="form-stack">
-          <ProfilePhotoInput preview={preview} error={photoError} onFileChange={handlePhotoChange} />
+          <section className="surface-card profile-personal-panel">
+            <div className="professional-links-head">
+              <h3>Informacion Personal</h3>
+              <p>Datos basicos de tu perfil profesional</p>
+            </div>
 
-          <div className="workspace-form-grid">
-            <FormInput
-              label="Nombre(s)"
-              value={nombres}
-              onChange={handleNombresChange}
-              error={errors.nombres}
-              pattern={lettersPattern}
-              title={onlyLettersMessage}
-              inputMode="text"
+            <ProfilePhotoInput preview={preview} error={photoError} onFileChange={handlePhotoChange} />
+
+            <div className="workspace-form-grid">
+              <FormInput
+                label="Nombre(s) *"
+                value={nombres}
+                onChange={handleNombresChange}
+                error={errors.nombres}
+                pattern={lettersPattern}
+                title={onlyLettersMessage}
+                inputMode="text"
+                placeholder="Ej. Juan Daniel"
+              />
+              <FormInput
+                label="Apellidos *"
+                value={apellidos}
+                onChange={handleApellidosChange}
+                error={errors.apellidos}
+                pattern={lettersPattern}
+                title={onlyLettersMessage}
+                inputMode="text"
+                placeholder="Ej. Vasquez Casana"
+              />
+            </div>
+
+            <div className="workspace-form-grid">
+              <FormInput
+                label="Profesion/Titulo *"
+                value={profesion}
+                onChange={handleProfesionChange}
+                error={errors.profesion}
+                pattern={lettersPattern}
+                title={onlyLettersMessage}
+                inputMode="text"
+                placeholder="Ej. Ingenieria Informatica"
+              />
+
+              <FormInput
+                label="Rol o especialidad *"
+                value={titularProfesional}
+                onChange={handleTitularProfesionalChange}
+                error={errors.titular_profesional}
+                pattern={lettersPattern}
+                title={onlyLettersMessage}
+                inputMode="text"
+                placeholder="Ej. Ingeniero DevOps"
+              />
+            </div>
+
+            <RichTextEditor
+              label="Biografia *"
+              value={biografia}
+              onChange={handleBiografiaChange}
+              error={errors.biografia}
+              placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
+              linkSuggestions={skillLinkSuggestions}
             />
-            <FormInput
-              label="Apellidos"
-              value={apellidos}
-              onChange={handleApellidosChange}
-              error={errors.apellidos}
-              pattern={lettersPattern}
-              title={onlyLettersMessage}
-              inputMode="text"
-            />
-          </div>
+          </section>
 
-          <FormInput
-            label="Profesion"
-            value={profesion}
-            onChange={handleProfesionChange}
-            error={errors.profesion}
-            pattern={lettersPattern}
-            title={onlyLettersMessage}
-            inputMode="text"
-            placeholder="Ej. Ingenieria Informatica"
-          />
+          <section className="surface-card professional-links-panel contact-info-panel">
+            <div className="professional-links-head">
+              <h3>Informacion de Contacto</h3>
+              <p>Como pueden contactarte</p>
+            </div>
 
-          <FormInput
-            label="Rol o especialidad profesional"
-            value={titularProfesional}
-            onChange={handleTitularProfesionalChange}
-            error={errors.titular_profesional}
-            pattern={lettersPattern}
-            title={onlyLettersMessage}
-            inputMode="text"
-            placeholder="Ej. Ingeniero DevOps"
-          />
+            <div className="professional-links-list">
+              <label className="professional-link-field">
+                <span>Correo Electronico *</span>
+                <div className="professional-link-input is-readonly">
+                  <ContactFieldIcon type="email" />
+                  <input value={perfilData?.correo || ""} readOnly aria-readonly="true" />
+                </div>
+              </label>
 
-          <FormInput
-            label="Numero telefonico"
-            value={telefono}
-            onChange={setTelefono}
-            error={errors.telefono}
-            inputMode="tel"
-            placeholder="Ej. 71234567 o +59171234567"
-          />
+              <label className="professional-link-field">
+                <span>Telefono</span>
+                <div className={`professional-link-input${errors.telefono ? " error" : ""}`}>
+                  <ContactFieldIcon type="phone" />
+                  <input
+                    value={telefono}
+                    onChange={(event) => setTelefono(event.target.value)}
+                    inputMode="tel"
+                    placeholder="Ej. 71234567 o +59171234567"
+                  />
+                </div>
+                {errors.telefono ? <p className="form-error">{errors.telefono}</p> : null}
+              </label>
 
-          <FormTextarea
-            label="Biografia"
-            value={biografia}
-            onChange={handleBiografiaChange}
-            error={errors.biografia}
-            maxLength={500}
-            placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
-          />
+              <label className="professional-link-field">
+                <span>Ubicacion</span>
+                <div className={`professional-link-input${errors.ubicacion ? " error" : ""}`}>
+                  <ContactFieldIcon type="location" />
+                  <input
+                    value={ubicacion}
+                    onChange={(event) => setUbicacion(event.target.value)}
+                    inputMode="text"
+                    placeholder="Ej: Cercado, Cochabamba"
+                  />
+                </div>
+                {errors.ubicacion ? <p className="form-error">{errors.ubicacion}</p> : null}
+              </label>
+            </div>
+          </section>
 
-          <section className="account-security-box">
+          <section className="surface-card professional-links-panel">
+            <div className="professional-links-head">
+              <h3>Enlaces Profesionales</h3>
+              <p>Tus perfiles en redes profesionales</p>
+            </div>
+
+            <div className="professional-links-list">
+              <label className="professional-link-field">
+                <span>LinkedIn</span>
+                <div className="professional-link-input">
+                  <SocialFieldIcon type="linkedin" />
+                  <input
+                    value={linkedinUrl}
+                    onChange={(event) => setLinkedinUrl(event.target.value)}
+                    inputMode="url"
+                    placeholder="https://linkedin.com/in/usuario"
+                  />
+                </div>
+              </label>
+
+              <label className="professional-link-field">
+                <span>GitHub</span>
+                <div className="professional-link-input">
+                  <SocialFieldIcon type="github" />
+                  <input
+                    value={githubUrl}
+                    onChange={(event) => setGithubUrl(event.target.value)}
+                    inputMode="url"
+                    placeholder="https://github.com/usuario"
+                  />
+                </div>
+              </label>
+
+              <label className="professional-link-field">
+                <span>Sitio Web Personal</span>
+                <div className="professional-link-input">
+                  <SocialFieldIcon type="web" />
+                  <input
+                    value={sitioWebUrl}
+                    onChange={(event) => setSitioWebUrl(event.target.value)}
+                    inputMode="url"
+                    placeholder="https://miportafolio.com"
+                  />
+                </div>
+              </label>
+            </div>
+          </section>
+
+          <section className="surface-card profile-security-strip">
             <div>
-              <p className="section-label">Seguridad de la cuenta</p>
-              <h3>Cambiar contrasena</h3>
-              <p>Actualiza tu contrasena de acceso para mantener protegida tu cuenta.</p>
+              <h3>Seguridad de la cuenta</h3>
+              <p>Actualiza tu contrasena de acceso cuando sea necesario.</p>
             </div>
             <button type="button" className="btn btn-secondary" onClick={() => navigate("/perfil/cambiar-contrasena")}>
               Cambiar contrasena

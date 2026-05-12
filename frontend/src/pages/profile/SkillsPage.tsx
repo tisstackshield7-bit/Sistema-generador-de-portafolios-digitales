@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import AlertMessage from "../../components/common/AlertMessage";
+import RichTextEditor from "../../components/common/RichTextEditor";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
 import { getMyProfile } from "../../api/profile";
 import { createSkill, deleteSkill, getMySkills, updateSkill, updateSkillVisibility } from "../../api/skills";
 import type { Perfil } from "../../types/profile";
 import type { Skill, SkillEvidencePayload, SkillPayload, SkillType } from "../../types/skill";
+import { isRichTextEmpty, limitRichText } from "../../utils/richText";
 
 const FALLBACK_TECHNICAL_CATEGORIES = [
   "Frontend",
@@ -101,7 +103,7 @@ function groupSkillsByCategory(skills: Skill[]) {
 function hasEvidenceContent(evidence: SkillEvidencePayload) {
   return Boolean(
     evidence.titulo.trim()
-      || evidence.descripcion?.trim()
+      || !isRichTextEmpty(evidence.descripcion || "")
       || evidence.url?.trim()
       || evidence.emisor?.trim()
       || evidence.fecha
@@ -819,19 +821,19 @@ export default function SkillsPage() {
                                 </div>
                               </div>
 
-                              <div className="form-field">
-                                <label className="form-label">Descripcion</label>
-                                <textarea
-                                  className="form-input form-textarea"
-                                  value={evidence.descripcion}
-                                  placeholder="Describe brevemente que respalda esta evidencia."
-                                  onChange={(event) => setForm((prev) => {
-                                    const evidencias = [...(prev.evidencias || [])];
-                                    evidencias[index] = { ...evidencias[index], descripcion: event.target.value };
-                                    return { ...prev, evidencias };
-                                  })}
-                                />
-                              </div>
+                              <RichTextEditor
+                                label="Descripcion"
+                                value={evidence.descripcion || ""}
+                                placeholder="Describe brevemente que respalda esta evidencia."
+                                onChange={(value) => setForm((prev) => {
+                                  const evidencias = [...(prev.evidencias || [])];
+                                  evidencias[index] = {
+                                    ...evidencias[index],
+                                    descripcion: limitRichText(value, 900),
+                                  };
+                                  return { ...prev, evidencias };
+                                })}
+                              />
 
                               <div className="workspace-form-grid">
                                 <div className="form-field">

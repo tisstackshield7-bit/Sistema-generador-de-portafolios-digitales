@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_ORIGIN } from "../api/axios";
 import { getPublicProfileBySlug } from "../api/profile";
+import RichTextContent from "../components/common/RichTextContent";
 import { authStore } from "../store/authStore";
 import type { Perfil } from "../types/profile";
 import type { Project } from "../types/project";
@@ -37,6 +38,27 @@ function PortfolioIcon() {
         <rect x="3" y="5" width="18" height="16" rx="3" />
         <path d="M9 5V3.8A1.8 1.8 0 0 1 10.8 2h2.4A1.8 1.8 0 0 1 15 3.8V5" />
         <path d="M3 11h18" />
+      </g>
+    </svg>
+  );
+}
+
+function ExperienceMarkIcon({ type }: { type: "laboral" | "academica" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="public-experience-icon">
+      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {type === "laboral" ? (
+          <>
+            <path d="M8 7V5h8v2" />
+            <rect x="4" y="7" width="16" height="13" rx="2" />
+            <path d="M4 12h16M10 12v2h4v-2" />
+          </>
+        ) : (
+          <>
+            <path d="m3 8 9-4 9 4-9 4-9-4Z" />
+            <path d="M7 10.2v4.3c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.3" />
+          </>
+        )}
       </g>
     </svg>
   );
@@ -114,10 +136,40 @@ export default function PublicProfilePage() {
   const technicalSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "tecnica" && skill.visible_publico) || [];
   const softSkills = perfil?.habilidades?.filter((skill) => skill.tipo === "blanda" && skill.visible_publico) || [];
   const publicProjects = perfil?.proyectos?.filter((project) => project.visible_publico) || [];
+  const publicExperiences = perfil?.experiencias?.filter((experience) => experience.visible_publico) || [];
+  const publicWorkExperiences = publicExperiences.filter((experience) => experience.tipo === "laboral");
+  const publicEducationExperiences = publicExperiences.filter((experience) => experience.tipo === "academica");
+  const visibility = {
+    mostrar_correo: true,
+    mostrar_telefono: false,
+    mostrar_redes: true,
+    mostrar_biografia: true,
+    mostrar_habilidades: true,
+    mostrar_proyectos: true,
+    mostrar_experiencia: true,
+    mostrar_evidencias: true,
+    ...(perfil?.visibilidad || {}),
+  };
   const summaryText = perfil?.biografia || "Perfil publico disponible dentro de la plataforma.";
   const backToHomePath = authStore.isAuthenticated() ? "/dashboard" : "/";
   const backToHomeLabel = authStore.isAuthenticated() ? "Volver al dashboard" : "Volver al inicio";
   const phoneHref = perfil?.telefono ? `tel:${perfil.telefono.replace(/\s+/g, "")}` : "";
+
+  const handleInternalSkillLink = (event: React.MouseEvent<HTMLDivElement>) => {
+    const link = (event.target as HTMLElement).closest("a");
+    const href = link?.getAttribute("href") || "";
+
+    if (!href.startsWith("#habilidad-")) return;
+
+    event.preventDefault();
+
+    const skillId = Number(href.replace("#habilidad-", ""));
+    const targetSkill = [...technicalSkills, ...softSkills].find((skill) => skill.id === skillId);
+
+    if (!targetSkill) return;
+
+    setEvidenceSkill(targetSkill);
+  };
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -164,7 +216,7 @@ export default function PublicProfilePage() {
   }
 
   return (
-    <div className="public-portfolio-shell app-shell">
+    <div className="public-portfolio-shell app-shell" onClick={handleInternalSkillLink}>
       <section className="public-portfolio-hero">
         <div className="page-section public-portfolio-hero-inner">
           <div className="public-portfolio-identity">
@@ -182,21 +234,34 @@ export default function PublicProfilePage() {
               <h1>{perfil.nombre_completo}</h1>
               <p className="public-portfolio-role">{title}</p>
               <p className="public-portfolio-profession">{perfil.profesion}</p>
-              {perfil.correo || perfil.telefono ? (
+              {(visibility.mostrar_correo && perfil.correo) || (visibility.mostrar_telefono && perfil.telefono) || perfil.ubicacion ? (
                 <div className="public-portfolio-contact-row" aria-label="Datos de contacto">
-                  {perfil.correo ? (
+                  {visibility.mostrar_correo && perfil.correo ? (
                     <a className="public-portfolio-contact-link" href={`mailto:${perfil.correo}`}>
                       {perfil.correo}
                     </a>
                   ) : null}
-                  {perfil.telefono ? (
+                  {visibility.mostrar_telefono && perfil.telefono ? (
                     <a className="public-portfolio-contact-link" href={phoneHref}>
                       {perfil.telefono}
                     </a>
                   ) : null}
+                  {perfil.ubicacion ? (
+                    <span className="public-portfolio-contact-link as-text">
+                      {perfil.ubicacion}
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
-              <p className="public-portfolio-bio">{summaryText}</p>
+              {visibility.mostrar_biografia ? <RichTextContent value={summaryText} className="public-portfolio-bio" /> : null}
+
+              {visibility.mostrar_redes && (perfil.linkedin_url || perfil.github_url || perfil.sitio_web_url) ? (
+                <div className="public-social-links">
+                  {perfil.linkedin_url ? <a href={perfil.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a> : null}
+                  {perfil.github_url ? <a href={perfil.github_url} target="_blank" rel="noreferrer">GitHub</a> : null}
+                  {perfil.sitio_web_url ? <a href={perfil.sitio_web_url} target="_blank" rel="noreferrer">Sitio web</a> : null}
+                </div>
+              ) : null}
 
               <div className="public-portfolio-meta-row">
                 <span className="public-portfolio-meta-pill">
@@ -224,121 +289,131 @@ export default function PublicProfilePage() {
       </section>
 
       <main className="page-section public-portfolio-content">
-        <section className="public-skills-intro">
-          <div className="public-skills-title-mark">
-            <RibbonIcon />
-          </div>
-          <div className="public-skills-heading">
-            <h2>Habilidades</h2>
-            <p className="public-skill-help">Pulsa una habilidad para ver su certificado.</p>
-          </div>
-        </section>
-
-        <section className="public-skills-layout">
-          <article className="surface-card public-skills-card">
-            <button
-              type="button"
-              className="public-skill-group-toggle"
-              onClick={() => setExpandedSkillGroups((prev) => ({ ...prev, technical: !prev.technical }))}
-              aria-expanded={expandedSkillGroups.technical}
-            >
-              <span>
-                <strong>Habilidades Tecnicas</strong>
-              </span>
-              <ChevronIcon expanded={expandedSkillGroups.technical} />
-            </button>
-            {expandedSkillGroups.technical && technicalSkills.length ? (
-              <div className="public-skill-chip-list">
-                {technicalSkills.map((skill) => (
-                  skill.evidencias?.length ? (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
-                      onClick={() => setEvidenceSkill(skill)}
-                    >
-                      {skill.nombre} - {skill.nivel_dominio}
-                    </button>
-                  ) : skill.certificado_pdf ? (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
-                      onClick={() => setCertificateUrl(buildCertificateViewerUrl(skill.certificado_pdf || ""))}
-                    >
-                      {skill.nombre} - {skill.nivel_dominio}
-                    </button>
-                  ) : (
-                    <span key={skill.id} className={`public-skill-chip tone-${getSkillTone(skill)}`}>
-                      {skill.nombre} - {skill.nivel_dominio}
-                    </span>
-                  )
-                ))}
+        {visibility.mostrar_habilidades ? (
+          <>
+            <section className="public-skills-intro">
+              <div className="public-skills-title-mark">
+                <RibbonIcon />
               </div>
-            ) : (
-              expandedSkillGroups.technical ? <p className="section-copy">No hay habilidades tecnicas visibles.</p> : null
-            )}
-          </article>
-
-          <article className="surface-card public-skills-card">
-            <button
-              type="button"
-              className="public-skill-group-toggle"
-              onClick={() => setExpandedSkillGroups((prev) => ({ ...prev, soft: !prev.soft }))}
-              aria-expanded={expandedSkillGroups.soft}
-            >
-              <span>
-                <strong>Habilidades Blandas</strong>
-              </span>
-              <ChevronIcon expanded={expandedSkillGroups.soft} />
-            </button>
-            {expandedSkillGroups.soft && softSkills.length ? (
-              <div className="public-skill-chip-list">
-                {softSkills.map((skill) => (
-                  skill.evidencias?.length ? (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
-                      onClick={() => setEvidenceSkill(skill)}
-                    >
-                      {skill.nombre} - {skill.nivel_dominio}
-                    </button>
-                  ) : skill.certificado_pdf ? (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
-                      onClick={() => setCertificateUrl(buildCertificateViewerUrl(skill.certificado_pdf || ""))}
-                    >
-                      {skill.nombre} - {skill.nivel_dominio}
-                    </button>
-                  ) : (
-                    <span key={skill.id} className={`public-skill-chip tone-${getSkillTone(skill)}`}>
-                      {skill.nombre} - {skill.nivel_dominio}
-                    </span>
-                  )
-                ))}
+              <div className="public-skills-heading">
+                <h2>Habilidades</h2>
+                <p className="public-skill-help">Pulsa una habilidad para ver su certificado.</p>
               </div>
-            ) : (
-              expandedSkillGroups.soft ? <p className="section-copy">No hay habilidades blandas visibles.</p> : null
-            )}
-          </article>
-        </section>
+            </section>
 
-        <section className="public-skills-intro">
-          <div className="public-skills-title-mark">
-            <PortfolioIcon />
-          </div>
-          <div className="public-skills-heading">
-            <h2>Proyectos</h2>
-          </div>
-        </section>
+            <section className="public-skills-layout">
+              <article className="surface-card public-skills-card">
+                <button
+                  type="button"
+                  className="public-skill-group-toggle"
+                  onClick={() => setExpandedSkillGroups((prev) => ({ ...prev, technical: !prev.technical }))}
+                  aria-expanded={expandedSkillGroups.technical}
+                >
+                  <span>
+                    <strong>Habilidades Tecnicas</strong>
+                  </span>
+                  <ChevronIcon expanded={expandedSkillGroups.technical} />
+                </button>
+                {expandedSkillGroups.technical && technicalSkills.length ? (
+                  <div className="public-skill-chip-list">
+                    {technicalSkills.map((skill) => (
+                      skill.evidencias?.length && visibility.mostrar_evidencias ? (
+                        <button
+                          key={skill.id}
+                          id={`habilidad-${skill.id}`}
+                          type="button"
+                          className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
+                          onClick={() => setEvidenceSkill(skill)}
+                        >
+                          {skill.nombre} - {skill.nivel_dominio}
+                        </button>
+                      ) : skill.certificado_pdf ? (
+                        <button
+                          key={skill.id}
+                          id={`habilidad-${skill.id}`}
+                          type="button"
+                          className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
+                          onClick={() => setCertificateUrl(buildCertificateViewerUrl(skill.certificado_pdf || ""))}
+                        >
+                          {skill.nombre} - {skill.nivel_dominio}
+                        </button>
+                      ) : (
+                        <span key={skill.id} id={`habilidad-${skill.id}`} className={`public-skill-chip tone-${getSkillTone(skill)}`}>
+                          {skill.nombre} - {skill.nivel_dominio}
+                        </span>
+                      )
+                    ))}
+                  </div>
+                ) : (
+                  expandedSkillGroups.technical ? <p className="section-copy">No hay habilidades tecnicas visibles.</p> : null
+                )}
+              </article>
 
-        {publicProjects.length ? (
-          <section className="portfolio-project-list">
-            {publicProjects.map((project) => (
-              <article key={project.id} className="surface-card portfolio-project-card">
+              <article className="surface-card public-skills-card">
+                <button
+                  type="button"
+                  className="public-skill-group-toggle"
+                  onClick={() => setExpandedSkillGroups((prev) => ({ ...prev, soft: !prev.soft }))}
+                  aria-expanded={expandedSkillGroups.soft}
+                >
+                  <span>
+                    <strong>Habilidades Blandas</strong>
+                  </span>
+                  <ChevronIcon expanded={expandedSkillGroups.soft} />
+                </button>
+                {expandedSkillGroups.soft && softSkills.length ? (
+                  <div className="public-skill-chip-list">
+                    {softSkills.map((skill) => (
+                      skill.evidencias?.length && visibility.mostrar_evidencias ? (
+                        <button
+                          key={skill.id}
+                          id={`habilidad-${skill.id}`}
+                          type="button"
+                          className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
+                          onClick={() => setEvidenceSkill(skill)}
+                        >
+                          {skill.nombre} - {skill.nivel_dominio}
+                        </button>
+                      ) : skill.certificado_pdf ? (
+                        <button
+                          key={skill.id}
+                          id={`habilidad-${skill.id}`}
+                          type="button"
+                          className={`public-skill-chip tone-${getSkillTone(skill)} is-clickable`}
+                          onClick={() => setCertificateUrl(buildCertificateViewerUrl(skill.certificado_pdf || ""))}
+                        >
+                          {skill.nombre} - {skill.nivel_dominio}
+                        </button>
+                      ) : (
+                        <span key={skill.id} id={`habilidad-${skill.id}`} className={`public-skill-chip tone-${getSkillTone(skill)}`}>
+                          {skill.nombre} - {skill.nivel_dominio}
+                        </span>
+                      )
+                    ))}
+                  </div>
+                ) : (
+                  expandedSkillGroups.soft ? <p className="section-copy">No hay habilidades blandas visibles.</p> : null
+                )}
+              </article>
+            </section>
+          </>
+        ) : null}
+
+        {visibility.mostrar_proyectos ? (
+          <>
+            <section className="public-skills-intro">
+              <div className="public-skills-title-mark">
+                <PortfolioIcon />
+              </div>
+              <div className="public-skills-heading">
+                <h2>Proyectos</h2>
+              </div>
+            </section>
+
+            {publicProjects.length ? (
+              <section className="portfolio-project-list">
+                {publicProjects.map((project) => (
+                  <article key={project.id} className="surface-card portfolio-project-card">
                 {resolveProjectImageSrc(project.url_imagen) && !imageErrors[project.id] ? (
                   <img
                     src={resolveProjectImageSrc(project.url_imagen) || ""}
@@ -362,7 +437,7 @@ export default function PublicProfilePage() {
                     </span>
                   </div>
 
-                  <p className="portfolio-project-description">{project.descripcion}</p>
+                  <RichTextContent value={project.descripcion} className="portfolio-project-description" />
 
                   {(project.tecnologias || []).length ? (
                     <div className="portfolio-project-block">
@@ -393,14 +468,82 @@ export default function PublicProfilePage() {
                     </a>
                   ) : null}
                 </div>
-              </article>
-            ))}
+                  </article>
+                ))}
+              </section>
+            ) : (
+              <section className="surface-card public-skills-card">
+                <p className="section-copy">No hay proyectos visibles.</p>
+              </section>
+            )}
+          </>
+        ) : null}
+
+        {visibility.mostrar_experiencia && publicExperiences.length ? (
+          <section className="public-experience-section">
+            {publicWorkExperiences.length ? (
+              <div className="public-experience-group">
+                <h2>Experiencia Laboral</h2>
+                <div className="public-experience-list">
+                  {publicWorkExperiences.map((experience) => (
+                    <article key={experience.id} className="surface-card public-experience-card">
+                      <div className="public-experience-mark laboral">
+                        <ExperienceMarkIcon type="laboral" />
+                      </div>
+                      <div className="public-experience-body">
+                        <h3>{experience.titulo}</h3>
+                        <p className="public-experience-place">{experience.institucion}</p>
+                        {experience.ubicacion ? <p className="public-experience-location">{experience.ubicacion}</p> : null}
+                        <p className="public-experience-date">
+                          {formatProjectMonthYear(experience.fecha_inicio)} - {experience.actualidad ? "Presente" : formatProjectMonthYear(experience.fecha_fin)}
+                        </p>
+                        {experience.descripcion ? <RichTextContent value={experience.descripcion} className="public-experience-description" /> : null}
+                        {experience.logros?.length ? (
+                          <ul className="project-achievement-list public-experience-achievements">
+                            {experience.logros.map((achievement) => (
+                              <li key={achievement}>{achievement}</li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {publicEducationExperiences.length ? (
+              <div className="public-experience-group">
+                <h2>Educacion</h2>
+                <div className="public-experience-list">
+                  {publicEducationExperiences.map((experience) => (
+                    <article key={experience.id} className="surface-card public-experience-card">
+                      <div className="public-experience-mark academica">
+                        <ExperienceMarkIcon type="academica" />
+                      </div>
+                      <div className="public-experience-body">
+                        <h3>{experience.titulo}</h3>
+                        <p className="public-experience-place">{experience.institucion}</p>
+                        {experience.ubicacion ? <p className="public-experience-location">{experience.ubicacion}</p> : null}
+                        <p className="public-experience-date">
+                          {formatProjectMonthYear(experience.fecha_inicio)} - {experience.actualidad ? "Presente" : formatProjectMonthYear(experience.fecha_fin)}
+                        </p>
+                        {experience.descripcion ? <RichTextContent value={experience.descripcion} className="public-experience-description" /> : null}
+                        {experience.logros?.length ? (
+                          <ul className="project-achievement-list public-experience-achievements">
+                            {experience.logros.map((achievement) => (
+                              <li key={achievement}>{achievement}</li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </section>
-        ) : (
-          <section className="surface-card public-skills-card">
-            <p className="section-copy">No hay proyectos visibles.</p>
-          </section>
-        )}
+        ) : null}
       </main>
 
       {certificateUrl ? (
@@ -417,38 +560,80 @@ export default function PublicProfilePage() {
         </div>
       ) : null}
 
-      {evidenceSkill ? (
+      {evidenceSkill && visibility.mostrar_evidencias ? (
         <div className="public-certificate-backdrop" role="presentation" onClick={() => setEvidenceSkill(null)}>
           <section className="public-certificate-modal evidence-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="public-certificate-head">
-              <h2>Evidencias de {evidenceSkill.nombre}</h2>
-              <button type="button" onClick={() => setEvidenceSkill(null)}>
+            <div className="skill-modal-head">
+              <div>
+                <span className="skill-modal-eyebrow">
+                  Habilidad {evidenceSkill.tipo === "tecnica" ? "tecnica" : "blanda"}
+                </span>
+                <h2>{evidenceSkill.nombre}</h2>
+                <p>{evidenceSkill.categoria || "Sin categoria"} - Nivel {evidenceSkill.nivel_dominio}</p>
+              </div>
+              <button type="button" className="skill-modal-close" onClick={() => setEvidenceSkill(null)}>
                 Cerrar
               </button>
             </div>
             <div className="public-evidence-list">
-              {(evidenceSkill.evidencias || []).map((evidence) => (
-                <article key={evidence.id} className="public-evidence-card">
+              <article className="public-evidence-card skill-overview-card">
+                <div>
+                  <span className="portfolio-project-label">
+                    Habilidad {evidenceSkill.tipo === "tecnica" ? "tecnica" : "blanda"}
+                  </span>
+                  <h3>{evidenceSkill.nombre}</h3>
+                  <p className="meta-text">
+                    {evidenceSkill.categoria || "Sin categoria"} · Nivel {evidenceSkill.nivel_dominio}
+                  </p>
+                </div>
+                <div className="skill-actions">
+                  {evidenceSkill.certificado_pdf ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setEvidenceSkill(null);
+                        setCertificateUrl(buildCertificateViewerUrl(evidenceSkill.certificado_pdf || ""));
+                      }}
+                    >
+                      Ver certificado
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+
+              {(evidenceSkill.evidencias || []).length ? (
+                (evidenceSkill.evidencias || []).map((evidence) => (
+                  <article key={evidence.id} className="public-evidence-card skill-evidence-card">
+                    <div>
+                      <span className="portfolio-project-label">{evidence.tipo}</span>
+                      <h3>{evidence.titulo}</h3>
+                      {evidence.descripcion ? <RichTextContent value={evidence.descripcion} className="section-copy" /> : null}
+                      {evidence.emisor ? <p className="meta-text">Emisor: {evidence.emisor}</p> : null}
+                    </div>
+                    <div className="skill-actions">
+                      {evidence.url ? (
+                        <a href={evidence.url} target="_blank" rel="noreferrer" className="btn btn-secondary">
+                          Abrir enlace
+                        </a>
+                      ) : null}
+                      {evidence.archivo ? (
+                        <a href={buildStorageUrl(evidence.archivo)} target="_blank" rel="noreferrer" className="btn btn-secondary">
+                          Abrir archivo
+                        </a>
+                      ) : null}
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <article className="public-evidence-card skill-empty-evidence">
                   <div>
-                    <span className="portfolio-project-label">{evidence.tipo}</span>
-                    <h3>{evidence.titulo}</h3>
-                    {evidence.descripcion ? <p className="section-copy">{evidence.descripcion}</p> : null}
-                    {evidence.emisor ? <p className="meta-text">Emisor: {evidence.emisor}</p> : null}
-                  </div>
-                  <div className="skill-actions">
-                    {evidence.url ? (
-                      <a href={evidence.url} target="_blank" rel="noreferrer" className="btn btn-secondary">
-                        Abrir enlace
-                      </a>
-                    ) : null}
-                    {evidence.archivo ? (
-                      <a href={buildStorageUrl(evidence.archivo)} target="_blank" rel="noreferrer" className="btn btn-secondary">
-                        Abrir archivo
-                      </a>
-                    ) : null}
+                    <span className="portfolio-project-label">Respaldo</span>
+                    <h3>Nivel declarado</h3>
+                    <p className="section-copy">Esta habilidad no tiene evidencias publicas registradas todavia.</p>
                   </div>
                 </article>
-              ))}
+              )}
             </div>
           </section>
         </div>

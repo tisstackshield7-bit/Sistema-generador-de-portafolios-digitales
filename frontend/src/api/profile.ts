@@ -20,7 +20,12 @@ export const createBasicProfile = async (payload: BasicProfilePayload) => {
   formData.append("profesion", payload.profesion);
   formData.append("titular_profesional", payload.titular_profesional);
   formData.append("telefono", payload.telefono || "");
+  formData.append("ubicacion", payload.ubicacion || "");
   formData.append("biografia", payload.biografia);
+  formData.append("linkedin_url", payload.linkedin_url || "");
+  formData.append("github_url", payload.github_url || "");
+  formData.append("sitio_web_url", payload.sitio_web_url || "");
+  formData.append("visibilidad", JSON.stringify(payload.visibilidad || {}));
 
   if (payload.foto_perfil) {
     formData.append("foto_perfil", payload.foto_perfil);
@@ -70,7 +75,12 @@ export const updateBasicProfile = async (payload: BasicProfilePayload) => {
   formData.append("profesion", payload.profesion);
   formData.append("titular_profesional", payload.titular_profesional);
   formData.append("telefono", payload.telefono || "");
+  formData.append("ubicacion", payload.ubicacion || "");
   formData.append("biografia", payload.biografia);
+  formData.append("linkedin_url", payload.linkedin_url || "");
+  formData.append("github_url", payload.github_url || "");
+  formData.append("sitio_web_url", payload.sitio_web_url || "");
+  formData.append("visibilidad", JSON.stringify(payload.visibilidad || {}));
 
   if (payload.foto_perfil) {
     formData.append("foto_perfil", payload.foto_perfil);

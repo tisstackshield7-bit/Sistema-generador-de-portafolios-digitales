@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PasswordRecoveryController;
+use App\Http\Controllers\Api\ExperienceController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\SkillController;
@@ -38,4 +39,10 @@ Route::middleware('auth.custom')->group(function () {
     Route::put('/proyectos/{proyecto}', [ProjectController::class, 'update']);
     Route::patch('/proyectos/{proyecto}/visibilidad', [ProjectController::class, 'updateVisibility']);
     Route::delete('/proyectos/{proyecto}', [ProjectController::class, 'destroy']);
+
+    Route::get('/experiencias', [ExperienceController::class, 'index']);
+    Route::post('/experiencias', [ExperienceController::class, 'store']);
+    Route::put('/experiencias/{experiencia}', [ExperienceController::class, 'update']);
+    Route::patch('/experiencias/{experiencia}/visibilidad', [ExperienceController::class, 'updateVisibility']);
+    Route::delete('/experiencias/{experiencia}', [ExperienceController::class, 'destroy']);
 });
