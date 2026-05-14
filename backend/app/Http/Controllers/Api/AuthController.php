@@ -191,6 +191,10 @@ class AuthController extends Controller
 
         $usuario = Usuario::with('perfil')->where('correo', $correo)->first();
 
+        if ($usuario && ($statePayload['intent'] ?? 'login') === 'register') {
+            return $this->redirectWithFrontendProviderError('/register', 'google', 'Esta cuenta ya fue creada. Inicia sesion para continuar.');
+        }
+
         if (!$usuario) {
             $usuario = Usuario::create([
                 'nombre' => $nombre !== '' ? $nombre : null,
@@ -339,6 +343,10 @@ class AuthController extends Controller
         }
 
         $usuario = Usuario::with('perfil')->where('correo', $correo)->first();
+
+        if ($usuario && ($statePayload['intent'] ?? 'login') === 'register') {
+            return $this->redirectWithFrontendProviderError('/register', 'github', 'Esta cuenta ya fue creada. Inicia sesion para continuar.');
+        }
 
         if (!$usuario) {
             $usuario = Usuario::create([

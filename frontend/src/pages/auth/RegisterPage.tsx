@@ -85,7 +85,20 @@ export default function RegisterPage() {
       authStore.setSession(data.token, data.usuario);
       navigate(data.redirect_to || "/perfil/crear");
     } catch (error: unknown) {
-      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Ocurrio un error al registrar.";
+      const apiError = error as {
+        response?: {
+          data?: {
+            message?: string;
+            errors?: Record<string, string[] | string>;
+          };
+        };
+      };
+      const correoApiError = apiError?.response?.data?.errors?.correo;
+      const correoMessage = Array.isArray(correoApiError) ? correoApiError[0] : correoApiError;
+      const msg = correoMessage || apiError?.response?.data?.message || "Ocurrio un error al registrar.";
+      if (correoMessage) {
+        setErrors((prev) => ({ ...prev, correo: String(correoMessage) }));
+      }
       setServerError(msg);
     }
   };

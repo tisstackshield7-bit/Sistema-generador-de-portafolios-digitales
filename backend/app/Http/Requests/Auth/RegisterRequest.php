@@ -32,7 +32,7 @@ class RegisterRequest extends FormRequest
         return [
             'correo.required' => 'El correo electronico es obligatorio.',
             'correo.email' => 'El correo no es valido.',
-            'correo.unique' => 'El usuario ya esta registrado.',
+            'correo.unique' => 'Esta cuenta ya fue creada. Inicia sesion para continuar.',
             'contrasena.required' => 'La contrasena es obligatoria.',
             'contrasena.min' => 'La contrasena debe tener al menos 8 caracteres.',
             'contrasena.regex' => 'La contrasena debe incluir mayuscula, minuscula, numero y simbolo.',

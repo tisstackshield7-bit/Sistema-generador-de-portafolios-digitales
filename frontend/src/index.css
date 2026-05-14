@@ -2184,10 +2184,14 @@ img {
 }
 
 .auth-mini-footer {
-  padding: 10px 0 24px;
+  padding: 6px 0 26px;
 }
 
 .auth-mini-footer-inner {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
   display: flex;
   align-items: center;
   justify-content: space-between;
