@@ -9,6 +9,7 @@ import { createSkill, deleteSkill, getMySkills, updateSkill, updateSkillVisibili
 import type { Perfil } from "../../types/profile";
 import type { Skill, SkillEvidencePayload, SkillPayload, SkillType } from "../../types/skill";
 import { isRichTextEmpty, limitRichText } from "../../utils/richText";
+import { sanitizeAlphaNumericText } from "../../utils/validations";
 
 const FALLBACK_TECHNICAL_CATEGORIES = [
   "Frontend",
@@ -260,17 +261,17 @@ export default function SkillsPage() {
       categoria: skill.tipo === "blanda"
         ? (isKnownSoftSkill ? (skill.categoria || skill.nombre) : "__custom__")
         : (skill.categoria || ""),
-      categoria_personalizada: skill.tipo === "blanda" && !isKnownSoftSkill ? (skill.categoria || skill.nombre) : "",
+      categoria_personalizada: skill.tipo === "blanda" && !isKnownSoftSkill ? sanitizeAlphaNumericText(skill.categoria || skill.nombre) : "",
       nivel_dominio: skill.nivel_dominio,
       visible_publico: skill.visible_publico,
       certificado_pdf: null,
       evidencias: skillEvidence.map((evidence) => ({
         id: evidence.id,
         tipo: evidence.tipo,
-        titulo: evidence.titulo || "",
+        titulo: sanitizeAlphaNumericText(evidence.titulo || ""),
         descripcion: evidence.descripcion || "",
         url: evidence.url || "",
-        emisor: evidence.emisor || "",
+        emisor: sanitizeAlphaNumericText(evidence.emisor || ""),
         fecha: evidence.fecha || "",
         archivo: null,
         archivo_actual: evidence.archivo || null,
@@ -643,7 +644,7 @@ export default function SkillsPage() {
                           className={`form-input${errors.categoria_personalizada ? " error" : ""}`}
                           value={form.categoria_personalizada}
                           placeholder="Ej: Resolucion de conflictos"
-                          onChange={(event) => setForm((prev) => ({ ...prev, categoria_personalizada: event.target.value }))}
+                          onChange={(event) => setForm((prev) => ({ ...prev, categoria_personalizada: sanitizeAlphaNumericText(event.target.value) }))}
                         />
                         {errors.categoria_personalizada ? <p className="form-error">{errors.categoria_personalizada}</p> : null}
                       </div>
@@ -813,7 +814,7 @@ export default function SkillsPage() {
                                     placeholder="Ej: Certificado React Avanzado"
                                     onChange={(event) => setForm((prev) => {
                                       const evidencias = [...(prev.evidencias || [])];
-                                      evidencias[index] = { ...evidencias[index], titulo: event.target.value };
+                                      evidencias[index] = { ...evidencias[index], titulo: sanitizeAlphaNumericText(event.target.value) };
                                       return { ...prev, evidencias };
                                     })}
                                   />
@@ -885,7 +886,7 @@ export default function SkillsPage() {
                                     placeholder="Ej: Coursera, AWS, universidad"
                                     onChange={(event) => setForm((prev) => {
                                       const evidencias = [...(prev.evidencias || [])];
-                                      evidencias[index] = { ...evidencias[index], emisor: event.target.value };
+                                      evidencias[index] = { ...evidencias[index], emisor: sanitizeAlphaNumericText(event.target.value) };
                                       return { ...prev, evidencias };
                                     })}
                                   />

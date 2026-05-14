@@ -90,6 +90,15 @@ function getProfileHighlights(profile: PublicProfileCard, category?: string) {
     .slice(0, 3);
 }
 
+function getProfilePrimaryCategory(profile: PublicProfileCard) {
+  const firstTechnicalSkill = (profile.habilidades || []).find((skill) => skill.tipo === "tecnica" && skill.categoria);
+  return firstTechnicalSkill?.categoria || "Perfil general";
+}
+
+function getCategoryDomId(category: string) {
+  return `featured-category-${normalizeText(category).replace(/\s+/g, "-") || "general"}`;
+}
+
 function compareProfilesBySkillLevel(left: PublicProfileCard, right: PublicProfileCard, category?: string) {
   const leftHighlights = getProfileHighlights(left, category);
   const rightHighlights = getProfileHighlights(right, category);
@@ -223,9 +232,9 @@ function SearchIcon() {
   );
 }
 
-function ChevronIcon() {
+function ChevronIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" className={className}>
       <path
         d="M5.5 7.5 10 12l4.5-4.5"
         fill="none"
@@ -395,6 +404,7 @@ export default function HomePage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState(initialAdvancedFilters);
   const [showAllFeaturedProfiles, setShowAllFeaturedProfiles] = useState(false);
+  const [collapsedFeaturedCategories, setCollapsedFeaturedCategories] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -465,7 +475,7 @@ export default function HomePage() {
   const technologyOptions = publicTechnologies;
   const searchResults = useMemo(
     () =>
-      filteredProfiles
+      [...filteredProfiles]
         .sort((left, right) => compareProfilesBySkillLevel(left, right, selectedCategory || undefined))
         .slice(0, 6),
     [filteredProfiles, selectedCategory],
@@ -473,16 +483,37 @@ export default function HomePage() {
 
   const featuredProfiles = useMemo(
     () =>
-      filteredProfiles
+      [...filteredProfiles]
         .filter((profile) => getProfileHighlights(profile, selectedFeaturedCategory || undefined).length > 0)
         .sort((left, right) => compareFeaturedProfiles(left, right, selectedFeaturedCategory || undefined)),
     [filteredProfiles, selectedFeaturedCategory],
   );
 
-  const visibleFeaturedProfiles = showAllFeaturedProfiles ? featuredProfiles : featuredProfiles.slice(0, 6);
+  const groupedFeaturedProfiles = useMemo(() => {
+    const groups = new Map<string, PublicProfileCard[]>();
+
+    featuredProfiles.forEach((profile) => {
+      const category = selectedFeaturedCategory || getProfilePrimaryCategory(profile);
+      groups.set(category, [...(groups.get(category) || []), profile]);
+    });
+
+    return Array.from(groups.entries()).map(([category, profiles]) => ({ category, profiles }));
+  }, [featuredProfiles, selectedFeaturedCategory]);
+
+  const visibleFeaturedGroups = useMemo(
+    () =>
+      groupedFeaturedProfiles.map(({ category, profiles }) => ({
+        category,
+        profiles: showAllFeaturedProfiles ? profiles : profiles.slice(0, 4),
+        hiddenCount: showAllFeaturedProfiles ? 0 : Math.max(profiles.length - 4, 0),
+        total: profiles.length,
+      })),
+    [groupedFeaturedProfiles, showAllFeaturedProfiles],
+  );
 
   useEffect(() => {
     setShowAllFeaturedProfiles(false);
+    setCollapsedFeaturedCategories({});
   }, [selectedFeaturedCategory, selectedLevel, appliedQuery]);
 
   const handleLogout = async () => {
@@ -521,7 +552,50 @@ export default function HomePage() {
     setSelectedCategory("");
     setSelectedLevel("");
     setAdvancedFilters(initialAdvancedFilters);
+    setShowAdvancedFilters(false);
+    closeFilterMenu();
+    closeAdvancedFilterMenu();
   };
+  const toggleFeaturedCategory = (category: string) => {
+    setCollapsedFeaturedCategories((current) => ({
+      ...current,
+      [category]: !current[category],
+    }));
+  };
+  const activeFilterCount =
+    (selectedCategory ? 1 : 0) +
+    (selectedLevel ? 1 : 0) +
+    (advancedFilters.role ? 1 : 0) +
+    (advancedFilters.experienceMin || advancedFilters.experienceMax ? 1 : 0) +
+    advancedFilters.technologies.length +
+    (advancedFilters.technologyLevel ? 1 : 0);
+  const activeFilterChips = [
+    selectedCategory ? { key: "category", label: `Area: ${selectedCategory}`, onRemove: () => setSelectedCategory("") } : null,
+    selectedLevel ? { key: "level", label: `Nivel: ${selectedLevel}`, onRemove: () => setSelectedLevel("") } : null,
+    advancedFilters.role ? { key: "role", label: `Rol: ${advancedFilters.role}`, onRemove: () => updateAdvancedFilter("role", "") } : null,
+    advancedFilters.experienceMin || advancedFilters.experienceMax
+      ? {
+          key: "experience",
+          label: `Experiencia: ${advancedFilters.experienceMin || "0"}-${advancedFilters.experienceMax || "max"} anos`,
+          onRemove: () => {
+            updateAdvancedFilter("experienceMin", "");
+            updateAdvancedFilter("experienceMax", "");
+          },
+        }
+      : null,
+    advancedFilters.technologyLevel
+      ? {
+          key: "technologyLevel",
+          label: `Nivel tech: ${advancedFilters.technologyLevel}`,
+          onRemove: () => updateAdvancedFilter("technologyLevel", ""),
+        }
+      : null,
+    ...advancedFilters.technologies.map((technology) => ({
+      key: `technology-${technology}`,
+      label: technology,
+      onRemove: () => toggleTechnologyFilter(technology),
+    })),
+  ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
 
   return (
     <div className="home-landing-shell">
@@ -800,6 +874,25 @@ export default function HomePage() {
               </div>
             ) : null}
           </div>
+
+          {activeFilterChips.length ? (
+            <div className="landing-active-filters" aria-label="Filtros activos">
+              <div className="landing-active-filters-head">
+                <strong>{activeFilterCount} filtros activos</strong>
+                <button type="button" onClick={clearAllFilters}>
+                  Limpiar todo
+                </button>
+              </div>
+              <div className="landing-active-filter-list">
+                {activeFilterChips.map((chip) => (
+                  <button key={chip.key} type="button" className="landing-active-filter-chip" onClick={chip.onRemove}>
+                    <span>{chip.label}</span>
+                    <CloseIcon />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
 
         {hasActiveSearch && (
@@ -867,17 +960,50 @@ export default function HomePage() {
           </div>
 
           <div className="landing-featured-directory">
-            {visibleFeaturedProfiles.length ? (
+            {visibleFeaturedGroups.length ? (
               <>
-                <div className="landing-profile-grid">
-                  {visibleFeaturedProfiles.map((profile) => (
-                    <ProfileCard
-                      key={`featured-${profile.id}`}
-                      profile={profile}
-                      category={selectedFeaturedCategory || undefined}
-                      onViewProfile={viewPublicProfile}
-                    />
-                  ))}
+                <div className="landing-category-stack">
+                  {visibleFeaturedGroups.map(({ category, profiles, hiddenCount, total }) => {
+                    const isCollapsed = collapsedFeaturedCategories[category] ?? false;
+                    const categoryId = getCategoryDomId(category);
+
+                    return (
+                      <section key={category} className="landing-category-group">
+                        <div className="landing-category-head">
+                          <div>
+                            <h3>{category}</h3>
+                            <span>{total} perfiles visibles</span>
+                          </div>
+                          <div className="landing-category-actions">
+                            {hiddenCount > 0 ? <span>{hiddenCount} mas al expandir</span> : null}
+                            <button
+                              type="button"
+                              className="landing-category-toggle"
+                              onClick={() => toggleFeaturedCategory(category)}
+                              aria-expanded={!isCollapsed}
+                              aria-controls={categoryId}
+                            >
+                              <span>{isCollapsed ? "Mostrar" : "Ocultar"}</span>
+                              <ChevronIcon className={`landing-category-chevron${isCollapsed ? "" : " is-expanded"}`} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div id={categoryId} className="landing-category-body" hidden={isCollapsed}>
+                          <div className="landing-profile-grid">
+                            {profiles.map((profile) => (
+                              <ProfileCard
+                                key={`featured-${category}-${profile.id}`}
+                                profile={profile}
+                                category={selectedFeaturedCategory || category}
+                                onViewProfile={viewPublicProfile}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
 
                 {featuredProfiles.length > 6 ? (

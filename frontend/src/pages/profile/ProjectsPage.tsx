@@ -13,7 +13,7 @@ import type { Project, ProjectPayload } from "../../types/project";
 import type { Skill } from "../../types/skill";
 import { resolveProjectImageSrc, isAbsoluteImageUrl } from "../../utils/projectImages";
 import { isRichTextEmpty, limitRichText } from "../../utils/richText";
-import { validateProjectImage } from "../../utils/validations";
+import { sanitizeAlphaNumericText, sanitizePlainMultilineText, validateProjectImage } from "../../utils/validations";
 
 const EMPTY_FORM: ProjectPayload = {
   titulo: "",
@@ -163,13 +163,13 @@ export default function ProjectsPage() {
   const openEditForm = (project: Project) => {
     setEditingProject(project);
     setForm({
-      titulo: project.titulo,
-      rol: project.rol,
+      titulo: sanitizeAlphaNumericText(project.titulo),
+      rol: sanitizeAlphaNumericText(project.rol),
       descripcion: project.descripcion,
       fecha_inicio: project.fecha_inicio || "",
       fecha_fin: project.fecha_fin || "",
       tecnologias: (project.tecnologias || []).join(", "),
-      logros: (project.logros || []).join("\n"),
+      logros: sanitizePlainMultilineText((project.logros || []).join("\n")),
       enlace_proyecto: project.enlace_proyecto || "",
       url_imagen: isAbsoluteImageUrl(project.url_imagen) ? project.url_imagen || "" : "",
       visible_publico: project.visible_publico,
@@ -488,7 +488,7 @@ export default function ProjectsPage() {
                       className={`form-input${errors.titulo ? " error" : ""}`}
                       value={form.titulo}
                       placeholder="Ej: Plataforma de portafolios"
-                      onChange={(event) => setForm((prev) => ({ ...prev, titulo: event.target.value }))}
+                      onChange={(event) => setForm((prev) => ({ ...prev, titulo: sanitizeAlphaNumericText(event.target.value) }))}
                     />
                     {errors.titulo ? <p className="form-error">{errors.titulo}</p> : null}
                   </div>
@@ -499,7 +499,7 @@ export default function ProjectsPage() {
                       className={`form-input${errors.rol ? " error" : ""}`}
                       value={form.rol}
                       placeholder="Ej: Desarrollador full stack"
-                      onChange={(event) => setForm((prev) => ({ ...prev, rol: event.target.value }))}
+                      onChange={(event) => setForm((prev) => ({ ...prev, rol: sanitizeAlphaNumericText(event.target.value) }))}
                     />
                     {errors.rol ? <p className="form-error">{errors.rol}</p> : null}
                   </div>
@@ -601,7 +601,7 @@ export default function ProjectsPage() {
                     className="form-input form-textarea"
                     value={form.logros}
                     placeholder={"Logro 1\nLogro 2\nLogro 3"}
-                    onChange={(event) => setForm((prev) => ({ ...prev, logros: event.target.value }))}
+                    onChange={(event) => setForm((prev) => ({ ...prev, logros: sanitizePlainMultilineText(event.target.value) }))}
                   />
                   <p className="form-help">Agrega resultados, impactos o mejoras importantes del proyecto.</p>
                 </div>

@@ -13,6 +13,8 @@ import {
   validateProfilePhoto,
   validateRequired,
   sanitizeLettersAndSpaces,
+  sanitizeDigits,
+  sanitizeLocationText,
 } from "../../utils/validations";
 import { getMyProfile, updateBasicProfile } from "../../api/profile";
 import { getMySkills } from "../../api/skills";
@@ -169,10 +171,10 @@ export default function BasicProfileEditPage() {
           setApellidos(sanitizeLettersAndSpaces(legacyName.apellidos));
         }
 
-        setProfesion(perfil?.profesion || "");
-        setTitularProfesional(perfil?.titular_profesional || "");
-        setTelefono(perfil?.telefono || "");
-        setUbicacion(perfil?.ubicacion || "");
+        setProfesion(sanitizeLettersAndSpaces(perfil?.profesion || ""));
+        setTitularProfesional(sanitizeLettersAndSpaces(perfil?.titular_profesional || ""));
+        setTelefono(sanitizeDigits(perfil?.telefono || ""));
+        setUbicacion(sanitizeLocationText(perfil?.ubicacion || ""));
         setBiografia(perfil?.biografia || "");
         setLinkedinUrl(perfil?.linkedin_url || "");
         setGithubUrl(perfil?.github_url || "");
@@ -398,7 +400,7 @@ const preview = useMemo(() => {
                   <ContactFieldIcon type="phone" />
                   <input
                     value={telefono}
-                    onChange={(event) => setTelefono(event.target.value)}
+                    onChange={(event) => setTelefono(sanitizeDigits(event.target.value))}
                     inputMode="tel"
                     placeholder="Ej. 71234567 o +59171234567"
                   />
@@ -412,7 +414,7 @@ const preview = useMemo(() => {
                   <ContactFieldIcon type="location" />
                   <input
                     value={ubicacion}
-                    onChange={(event) => setUbicacion(event.target.value)}
+                    onChange={(event) => setUbicacion(sanitizeLocationText(event.target.value))}
                     inputMode="text"
                     placeholder="Ej: Cercado, Cochabamba"
                   />

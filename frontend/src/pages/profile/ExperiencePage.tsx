@@ -15,6 +15,7 @@ import {
 import type { Perfil } from "../../types/profile";
 import type { Experience, ExperiencePayload, ExperienceType } from "../../types/experience";
 import { isRichTextEmpty, limitRichText } from "../../utils/richText";
+import { sanitizeAlphaNumericText, sanitizeLocationText, sanitizePlainMultilineText } from "../../utils/validations";
 
 const EMPTY_FORM: ExperiencePayload = {
   tipo: "laboral",
@@ -148,14 +149,14 @@ export default function ExperiencePage() {
     setEditingExperience(experience);
     setForm({
       tipo: experience.tipo,
-      titulo: experience.titulo,
-      institucion: experience.institucion,
-      ubicacion: experience.ubicacion || "",
+      titulo: sanitizeAlphaNumericText(experience.titulo),
+      institucion: sanitizeAlphaNumericText(experience.institucion),
+      ubicacion: sanitizeLocationText(experience.ubicacion || ""),
       descripcion: experience.descripcion || "",
       fecha_inicio: experience.fecha_inicio || "",
       fecha_fin: experience.fecha_fin || "",
       actualidad: experience.actualidad,
-      logros: (experience.logros || []).join("\n"),
+      logros: sanitizePlainMultilineText((experience.logros || []).join("\n")),
       visible_publico: experience.visible_publico,
     });
     setErrors({});
@@ -373,7 +374,7 @@ export default function ExperiencePage() {
                     className={`form-input${errors.titulo ? " error" : ""}`}
                     value={form.titulo}
                     placeholder={form.tipo === "laboral" ? "Ej: Desarrollador Full Stack Senior" : "Ej: Master en Ingenieria de Software"}
-                    onChange={(event) => setForm((prev) => ({ ...prev, titulo: event.target.value }))}
+                    onChange={(event) => setForm((prev) => ({ ...prev, titulo: sanitizeAlphaNumericText(event.target.value) }))}
                   />
                   {errors.titulo ? <p className="form-error">{errors.titulo}</p> : null}
                 </div>
@@ -384,7 +385,7 @@ export default function ExperiencePage() {
                     className={`form-input${errors.institucion ? " error" : ""}`}
                     value={form.institucion}
                     placeholder={form.tipo === "laboral" ? "Ej: TechCorp Solutions" : "Ej: Universidad Politecnica"}
-                    onChange={(event) => setForm((prev) => ({ ...prev, institucion: event.target.value }))}
+                    onChange={(event) => setForm((prev) => ({ ...prev, institucion: sanitizeAlphaNumericText(event.target.value) }))}
                   />
                   {errors.institucion ? <p className="form-error">{errors.institucion}</p> : null}
                 </div>
@@ -395,7 +396,7 @@ export default function ExperiencePage() {
                     className={`form-input${errors.ubicacion ? " error" : ""}`}
                     value={form.ubicacion || ""}
                     placeholder="Ej: Cercado, Cochabamba"
-                    onChange={(event) => setForm((prev) => ({ ...prev, ubicacion: event.target.value }))}
+                    onChange={(event) => setForm((prev) => ({ ...prev, ubicacion: sanitizeLocationText(event.target.value) }))}
                   />
                   {errors.ubicacion ? <p className="form-error">{errors.ubicacion}</p> : null}
                 </div>
@@ -439,7 +440,7 @@ export default function ExperiencePage() {
                     className="form-input form-textarea"
                     value={form.logros}
                     placeholder={"Logro 1\nLogro 2\nLogro 3"}
-                    onChange={(event) => setForm((prev) => ({ ...prev, logros: event.target.value }))}
+                    onChange={(event) => setForm((prev) => ({ ...prev, logros: sanitizePlainMultilineText(event.target.value) }))}
                   />
                 </div>
 

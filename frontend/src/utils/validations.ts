@@ -65,7 +65,22 @@ export const validateProjectImage = (file?: File | null) => {
 };
 
 export const sanitizeLettersAndSpaces = (value: string) => {
-  return value.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g, "");
+  return value.replace(/[^A-Za-z\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s]/g, "");
+};
+
+export const sanitizeAlphaNumericText = (value: string) => {
+  return value.replace(/[^A-Za-z0-9\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s.,-]/g, "");
+};
+
+export const sanitizeLocationText = (value: string) => {
+  return value.replace(/[^A-Za-z0-9\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s.,-]/g, "");
+};
+
+export const sanitizePlainMultilineText = (value: string) => {
+  return value
+    .split(/\r?\n/)
+    .map((line) => sanitizeAlphaNumericText(line))
+    .join("\n");
 };
 
 export const sanitizeDigits = (value: string) => {

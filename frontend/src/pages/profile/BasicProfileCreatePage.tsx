@@ -8,6 +8,7 @@ import ProfilePhotoInput from "../../components/profile/ProfilePhotoInput";
 import {
   sanitizeDigits,
   sanitizeLettersAndSpaces,
+  sanitizeLocationText,
   validateBiography,
   validateBoliviaPhone,
   validateProfilePhoto,
@@ -349,7 +350,7 @@ export default function BasicProfileCreatePage() {
             <FormInput
               label="Ubicacion"
               value={ubicacion}
-              onChange={setUbicacion}
+              onChange={(value) => setUbicacion(sanitizeLocationText(value))}
               onBlur={() => {
                 markFieldAsTouched("ubicacion");
                 setFieldError("ubicacion", ubicacion);
