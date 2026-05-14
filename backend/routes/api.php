@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+Route::get('/auth/github/redirect', [AuthController::class, 'redirectToGithub']);
+Route::get('/auth/github/callback', [AuthController::class, 'handleGithubCallback']);
 
 // Listado pÃºblico de perfiles para el home
 Route::get('/perfiles-publicos', [ProfileController::class, 'listPublic']);

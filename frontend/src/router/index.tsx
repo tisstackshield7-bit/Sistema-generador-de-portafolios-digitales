@@ -3,6 +3,7 @@ import RegisterPage from "../pages/auth/RegisterPage";
 import LoginPage from "../pages/auth/LoginPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
+import SocialAuthCallbackPage from "../pages/auth/SocialAuthCallbackPage";
 import BasicProfileCreatePage from "../pages/profile/BasicProfileCreatePage";
 import BasicProfileEditPage from "../pages/profile/BasicProfileEditPage";
 import ChangePasswordPage from "../pages/profile/ChangePasswordPage";
@@ -32,6 +33,10 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/auth/:provider/callback",
+    element: <SocialAuthCallbackPage />,
   },
   {
     path: "/recuperar-contrasena",
