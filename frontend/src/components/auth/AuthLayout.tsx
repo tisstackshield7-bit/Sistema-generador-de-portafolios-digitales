@@ -14,10 +14,10 @@ export default function AuthLayout({ title, subtitle, children }: Props) {
         <section className="surface-card auth-hero">
           <div className="auth-hero-brand">
             <div className="auth-hero-logo-frame">
-              <img src={logo} alt="Portfolio Pro" />
+              <img src={logo} alt="PortaFolioPro" />
             </div>
             <div>
-              <p className="section-label">Portfolio Pro</p>
+              <p className="section-label">PortaFolioPro</p>
               <strong>Portafolios profesionales verificables</strong>
             </div>
           </div>
