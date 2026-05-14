@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import AuthMiniFooter from "../../components/auth/AuthMiniFooter";
 import FormInput from "../../components/common/FormInput";
 import AlertMessage from "../../components/common/AlertMessage";
 import { validateEmail } from "../../utils/validations";
@@ -118,6 +119,7 @@ export default function ForgotPasswordPage() {
           </div>
         </section>
       </div>
+      <AuthMiniFooter />
     </div>
   );
 }

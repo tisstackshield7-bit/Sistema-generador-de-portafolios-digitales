@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import AuthMiniFooter from "../../components/auth/AuthMiniFooter";
 import FormInput from "../../components/common/FormInput";
 import AlertMessage from "../../components/common/AlertMessage";
 import { validateEmail, validatePassword } from "../../utils/validations";
@@ -198,6 +199,7 @@ export default function RegisterPage() {
           </div>
         </section>
       </div>
+      <AuthMiniFooter />
     </div>
   );
 }
