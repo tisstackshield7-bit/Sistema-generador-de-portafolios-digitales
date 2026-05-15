@@ -51,14 +51,28 @@ const defaultProfileVisibility = {
 
 const initialAdvancedFilters: Pick<
   ProfileSearchFilters,
-  "role" | "experienceMin" | "experienceMax" | "technologies" | "technologyLevel"
+  "role" | "experienceType" | "experienceMin" | "experienceMax" | "technologies" | "technologyLevel"
 > = {
   role: "",
+  experienceType: "todas",
   experienceMin: "",
   experienceMax: "",
   technologies: [],
   technologyLevel: "",
 };
+
+const experienceTypeLabels: Record<typeof initialAdvancedFilters.experienceType, string> = {
+  todas: "Todas las experiencias",
+  laboral: "Experiencia laboral",
+  academica: "Experiencia academica",
+};
+
+const experienceTypeOptions = Object.entries(experienceTypeLabels) as [
+  typeof initialAdvancedFilters.experienceType,
+  string,
+][];
+
+const FEATURED_PROFILE_LIMIT = 10;
 
 function getSkillLevelRank(level?: string | null) {
   return skillLevelOrder[normalizeText(level)] ?? 99;
@@ -88,11 +102,6 @@ function getProfileHighlights(profile: PublicProfileCard, category?: string) {
       return leftLevel - rightLevel || left.nombre.localeCompare(right.nombre);
     })
     .slice(0, 3);
-}
-
-function getProfilePrimaryCategory(profile: PublicProfileCard) {
-  const firstTechnicalSkill = (profile.habilidades || []).find((skill) => skill.tipo === "tecnica" && skill.categoria);
-  return firstTechnicalSkill?.categoria || "Perfil general";
 }
 
 function getCategoryDomId(category: string) {
@@ -298,10 +307,12 @@ function LandingSocialIcon({ type }: { type: "linkedin" | "github" | "web" }) {
 function ProfileCard({
   profile,
   category,
+  ranking,
   onViewProfile,
 }: {
   profile: PublicProfileCard;
   category?: string;
+  ranking?: number;
   onViewProfile: (slug: string) => void;
 }) {
   const highlights = getProfileHighlights(profile, category);
@@ -320,7 +331,13 @@ function ProfileCard({
     : [];
 
   return (
-    <article className="landing-profile-card">
+    <article className={`landing-profile-card${ranking ? ` has-ranking rank-${Math.min(ranking, 4)}` : ""}`}>
+      {ranking ? (
+        <span className="landing-ranking-badge">
+          <span>{ranking === 1 ? "TOP" : "N°"}</span>
+          <strong>{ranking}</strong>
+        </span>
+      ) : null}
       <div className="landing-profile-body">
         <div className="landing-profile-identity-block">
           {profile.foto_perfil ? (
@@ -391,6 +408,7 @@ export default function HomePage() {
   const isAuth = authStore.isAuthenticated();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [publicProfiles, setPublicProfiles] = useState<PublicProfileCard[]>([]);
+  const [featuredProfilesSource, setFeaturedProfilesSource] = useState<PublicProfileCard[]>([]);
   const [profileCategories, setProfileCategories] = useState<string[]>([]);
   const [publicRoles, setPublicRoles] = useState<string[]>([]);
   const [publicTechnologies, setPublicTechnologies] = useState<string[]>([]);
@@ -400,11 +418,30 @@ export default function HomePage() {
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel | "">("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [openFilter, setOpenFilter] = useState<"category" | "level" | null>(null);
-  const [openAdvancedFilter, setOpenAdvancedFilter] = useState<"role" | "technologyLevel" | null>(null);
+  const [openAdvancedFilter, setOpenAdvancedFilter] = useState<"role" | "experienceType" | "technologyLevel" | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState(initialAdvancedFilters);
   const [showAllFeaturedProfiles, setShowAllFeaturedProfiles] = useState(false);
   const [collapsedFeaturedCategories, setCollapsedFeaturedCategories] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    getPublicProfiles({}, controller.signal)
+      .then((data) => {
+        setFeaturedProfilesSource(data.perfiles || []);
+        setProfileCategories(data.categorias || []);
+        setPublicRoles(data.roles || []);
+        setPublicTechnologies(data.tecnologias || []);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setFeaturedProfilesSource([]);
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -418,6 +455,7 @@ export default function HomePage() {
         categoria: selectedCategory,
         nivel: selectedLevel,
         rol: advancedFilters.role,
+        tipo_experiencia: advancedFilters.experienceType,
         experiencia_min: advancedFilters.experienceMin,
         experiencia_max: advancedFilters.experienceMax,
         tecnologias: advancedFilters.technologies,
@@ -425,9 +463,6 @@ export default function HomePage() {
       }, controller.signal)
         .then((data) => {
           setPublicProfiles(data.perfiles || []);
-          setProfileCategories(data.categorias || []);
-          setPublicRoles(data.roles || []);
-          setPublicTechnologies(data.tecnologias || []);
         })
         .catch(() => {
           if (!controller.signal.aborted) {
@@ -483,18 +518,33 @@ export default function HomePage() {
 
   const featuredProfiles = useMemo(
     () =>
-      [...filteredProfiles]
+      [...featuredProfilesSource]
         .filter((profile) => getProfileHighlights(profile, selectedFeaturedCategory || undefined).length > 0)
         .sort((left, right) => compareFeaturedProfiles(left, right, selectedFeaturedCategory || undefined)),
-    [filteredProfiles, selectedFeaturedCategory],
+    [featuredProfilesSource, selectedFeaturedCategory],
   );
 
+  const featuredRankingByProfileId = useMemo(() => {
+    const rankings = new Map<number, number>();
+
+    featuredProfiles.slice(0, 10).forEach((profile, index) => {
+      rankings.set(profile.id, index + 1);
+    });
+
+    return rankings;
+  }, [featuredProfiles]);
+
   const groupedFeaturedProfiles = useMemo(() => {
+    if (!selectedFeaturedCategory) {
+      return featuredProfiles.length
+        ? [{ category: "Todos", profiles: featuredProfiles }]
+        : [];
+    }
+
     const groups = new Map<string, PublicProfileCard[]>();
 
     featuredProfiles.forEach((profile) => {
-      const category = selectedFeaturedCategory || getProfilePrimaryCategory(profile);
-      groups.set(category, [...(groups.get(category) || []), profile]);
+      groups.set(selectedFeaturedCategory, [...(groups.get(selectedFeaturedCategory) || []), profile]);
     });
 
     return Array.from(groups.entries()).map(([category, profiles]) => ({ category, profiles }));
@@ -504,8 +554,8 @@ export default function HomePage() {
     () =>
       groupedFeaturedProfiles.map(({ category, profiles }) => ({
         category,
-        profiles: showAllFeaturedProfiles ? profiles : profiles.slice(0, 4),
-        hiddenCount: showAllFeaturedProfiles ? 0 : Math.max(profiles.length - 4, 0),
+        profiles: showAllFeaturedProfiles ? profiles : profiles.slice(0, FEATURED_PROFILE_LIMIT),
+        hiddenCount: showAllFeaturedProfiles ? 0 : Math.max(profiles.length - FEATURED_PROFILE_LIMIT, 0),
         total: profiles.length,
       })),
     [groupedFeaturedProfiles, showAllFeaturedProfiles],
@@ -514,7 +564,7 @@ export default function HomePage() {
   useEffect(() => {
     setShowAllFeaturedProfiles(false);
     setCollapsedFeaturedCategories({});
-  }, [selectedFeaturedCategory, selectedLevel, appliedQuery]);
+  }, [selectedFeaturedCategory]);
 
   const handleLogout = async () => {
     try {
@@ -576,8 +626,9 @@ export default function HomePage() {
     advancedFilters.experienceMin || advancedFilters.experienceMax
       ? {
           key: "experience",
-          label: `Experiencia: ${advancedFilters.experienceMin || "0"}-${advancedFilters.experienceMax || "max"} anos`,
+          label: `${experienceTypeLabels[advancedFilters.experienceType]}: ${advancedFilters.experienceMin || "0"}-${advancedFilters.experienceMax || "max"} anos`,
           onRemove: () => {
+            updateAdvancedFilter("experienceType", "todas");
             updateAdvancedFilter("experienceMin", "");
             updateAdvancedFilter("experienceMax", "");
           },
@@ -780,6 +831,38 @@ export default function HomePage() {
                             }}
                           >
                             {role}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="landing-advanced-field">
+                  <span>Tipo de experiencia</span>
+                  <div className="landing-filter-menu landing-advanced-menu">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenAdvancedFilter(openAdvancedFilter === "experienceType" ? null : "experienceType")
+                      }
+                    >
+                      <span>{experienceTypeLabels[advancedFilters.experienceType]}</span>
+                      <ChevronIcon />
+                    </button>
+                    {openAdvancedFilter === "experienceType" ? (
+                      <div className="landing-filter-options">
+                        {experienceTypeOptions.map(([type, label]) => (
+                          <button
+                            type="button"
+                            key={type}
+                            className={advancedFilters.experienceType === type ? "active" : ""}
+                            onClick={() => {
+                              updateAdvancedFilter("experienceType", type);
+                              closeAdvancedFilterMenu();
+                            }}
+                          >
+                            {label}
                           </button>
                         ))}
                       </div>
@@ -996,6 +1079,7 @@ export default function HomePage() {
                                 key={`featured-${category}-${profile.id}`}
                                 profile={profile}
                                 category={selectedFeaturedCategory || category}
+                                ranking={featuredRankingByProfileId.get(profile.id)}
                                 onViewProfile={viewPublicProfile}
                               />
                             ))}
@@ -1006,14 +1090,14 @@ export default function HomePage() {
                   })}
                 </div>
 
-                {featuredProfiles.length > 6 ? (
+                {featuredProfiles.length > FEATURED_PROFILE_LIMIT ? (
                   <div className="landing-directory-actions">
                     <button
                       type="button"
                       className="landing-show-all-profiles"
                       onClick={() => setShowAllFeaturedProfiles((current) => !current)}
                     >
-                      {showAllFeaturedProfiles ? "Ver menos perfiles" : `Ver mas perfiles (${featuredProfiles.length - 6})`}
+                      {showAllFeaturedProfiles ? "Ver menos perfiles" : `Ver mas perfiles (${featuredProfiles.length - FEATURED_PROFILE_LIMIT})`}
                     </button>
                   </div>
                 ) : null}

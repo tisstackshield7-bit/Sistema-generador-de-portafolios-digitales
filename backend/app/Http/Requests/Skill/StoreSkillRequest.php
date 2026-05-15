@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Skill;
 
+use App\Models\Habilidad;
+use App\Models\Perfil;
 use App\Support\RichTextSanitizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -112,6 +114,30 @@ class StoreSkillRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $usuario = $this->attributes->get('auth_usuario');
+            $perfil = $usuario ? Perfil::where('usuario_id', $usuario->id)->first() : null;
+            $skillName = $this->input('tipo') === 'blanda'
+                ? trim((string) $this->input('categoria', ''))
+                : trim((string) $this->input('nombre', ''));
+            $category = trim((string) $this->input('categoria', ''));
+            $currentSkillId = $this->route('habilidad') ? (int) $this->route('habilidad') : null;
+
+            if ($perfil && $skillName !== '' && $category !== '') {
+                $exists = Habilidad::where('perfil_id', $perfil->id)
+                    ->where('nombre', $skillName)
+                    ->where('tipo', $this->input('tipo'))
+                    ->where('categoria', $category)
+                    ->when($currentSkillId, fn ($query) => $query->where('id', '!=', $currentSkillId))
+                    ->exists();
+
+                if ($exists) {
+                    $validator->errors()->add(
+                        'nombre',
+                        'Este perfil ya tiene registrada una habilidad con el mismo nombre, tipo y categoria.'
+                    );
+                }
+            }
+
             foreach ($this->input('evidencias', []) as $index => $evidencia) {
                 $hasUrl = filled($evidencia['url'] ?? null);
                 $hasFile = $this->hasFile("evidencia_archivos.{$index}");

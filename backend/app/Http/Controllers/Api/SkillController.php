@@ -238,7 +238,7 @@ class SkillController extends Controller
                     'archivo' => $archivo,
                     'url' => filled($evidenciaData['url'] ?? null) ? trim((string) $evidenciaData['url']) : null,
                     'emisor' => filled($evidenciaData['emisor'] ?? null) ? trim((string) $evidenciaData['emisor']) : null,
-                    'fecha' => $evidenciaData['fecha'] ?? null,
+                    'fecha' => filled($evidenciaData['fecha'] ?? null) ? $evidenciaData['fecha'] : null,
                     'actualizado_en' => now(),
                 ]);
                 $evidencia->save();
@@ -285,7 +285,7 @@ class SkillController extends Controller
             'archivo' => $archivo,
             'url' => $url,
             'emisor' => filled($data['emisor'] ?? null) ? trim((string) $data['emisor']) : null,
-            'fecha' => $data['fecha'] ?? null,
+            'fecha' => filled($data['fecha'] ?? null) ? $data['fecha'] : null,
             'creado_en' => now(),
             'actualizado_en' => now(),
         ]);

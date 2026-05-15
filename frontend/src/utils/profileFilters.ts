@@ -1,11 +1,14 @@
 import type { PublicProfileCard } from "../types/profile";
 import type { SkillLevel } from "../types/skill";
 
+export type ExperienceFilterType = "todas" | "laboral" | "academica";
+
 export interface ProfileSearchFilters {
   query: string;
   area: string;
   level: SkillLevel | "";
   role: string;
+  experienceType: ExperienceFilterType;
   experienceMin: string;
   experienceMax: string;
   technologies: string[];
@@ -27,11 +30,13 @@ function toNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getProjectExperienceYears(profile: PublicProfileCard) {
-  const ranges = (profile.proyectos || [])
-    .map((project) => {
-      const start = project.fecha_inicio ? new Date(project.fecha_inicio) : null;
-      const end = project.fecha_fin ? new Date(project.fecha_fin) : new Date();
+export function calcularAniosExperiencia(profile: PublicProfileCard, experienceType: ExperienceFilterType = "todas") {
+  const ranges = (profile.experiencias || [])
+    .filter((experience) => experience.visible_publico)
+    .filter((experience) => experienceType === "todas" || experience.tipo === experienceType)
+    .map((experience) => {
+      const start = experience.fecha_inicio ? new Date(experience.fecha_inicio) : null;
+      const end = experience.actualidad || !experience.fecha_fin ? new Date() : new Date(experience.fecha_fin);
 
       if (!start || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
         return 0;
@@ -44,17 +49,6 @@ function getProjectExperienceYears(profile: PublicProfileCard) {
   if (!ranges.length) return null;
 
   return Math.round(ranges.reduce((total, years) => total + years, 0) * 10) / 10;
-}
-
-function getProfileExperience(profile: PublicProfileCard) {
-  const explicitExperience = (profile as PublicProfileCard & { experiencia?: number | string | null }).experiencia;
-
-  if (explicitExperience !== undefined && explicitExperience !== null && explicitExperience !== "") {
-    const parsed = Number(explicitExperience);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  return getProjectExperienceYears(profile);
 }
 
 function profileMatchesText(profile: PublicProfileCard, query: string) {
@@ -118,7 +112,7 @@ export function filterProfiles(profiles: PublicProfileCard[], filters: ProfileSe
     }
 
     if (minExperience !== null || maxExperience !== null) {
-      const experience = getProfileExperience(profile);
+      const experience = calcularAniosExperiencia(profile, filters.experienceType);
       if (experience === null) return false;
       if (minExperience !== null && experience < minExperience) return false;
       if (maxExperience !== null && experience > maxExperience) return false;

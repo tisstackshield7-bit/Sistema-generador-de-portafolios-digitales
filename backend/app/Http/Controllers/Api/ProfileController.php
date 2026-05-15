@@ -186,6 +186,7 @@ class ProfileController extends Controller
             'categoria' => ['nullable', 'string', 'max:100'],
             'nivel' => ['nullable', 'string', 'in:Basico,Intermedio,Avanzado'],
             'rol' => ['nullable', 'string', 'max:150'],
+            'tipo_experiencia' => ['nullable', 'string', 'in:todas,laboral,academica'],
             'experiencia_min' => ['nullable', 'numeric', 'min:0'],
             'experiencia_max' => ['nullable', 'numeric', 'min:0'],
             'tecnologias' => ['nullable', 'array'],
@@ -197,6 +198,7 @@ class ProfileController extends Controller
         $category = trim($filters['categoria'] ?? '');
         $level = $filters['nivel'] ?? null;
         $role = trim($filters['rol'] ?? '');
+        $experienceType = $filters['tipo_experiencia'] ?? 'todas';
         $experienceMin = $filters['experiencia_min'] ?? null;
         $experienceMax = $filters['experiencia_max'] ?? null;
         $technologies = collect($filters['tecnologias'] ?? [])
@@ -292,17 +294,32 @@ class ProfileController extends Controller
         });
 
         if ($experienceMin !== null || $experienceMax !== null) {
+            $experienceTypeCondition = match ($experienceType) {
+                'laboral' => "AND experiencias.tipo = 'laboral'",
+                'academica' => "AND experiencias.tipo = 'academica'",
+                default => "AND experiencias.tipo IN ('laboral', 'academica')",
+            };
+
             $experienceSubquery = "
                 SELECT COALESCE(SUM(
                     GREATEST(
-                        EXTRACT(EPOCH FROM ((COALESCE(fecha_fin, CURRENT_DATE)::timestamp) - fecha_inicio::timestamp)) / 31557600,
+                        EXTRACT(EPOCH FROM (
+                            (
+                                CASE
+                                    WHEN experiencias.actualidad = true OR experiencias.fecha_fin IS NULL
+                                        THEN CURRENT_DATE
+                                    ELSE experiencias.fecha_fin
+                                END
+                            )::timestamp - experiencias.fecha_inicio::timestamp
+                        )) / 31557600,
                         0
                     )
                 ), 0)
-                FROM proyectos
-                WHERE proyectos.perfil_id = perfiles.id
-                    AND proyectos.visible_publico = true
-                    AND proyectos.fecha_inicio IS NOT NULL
+                FROM experiencias
+                WHERE experiencias.perfil_id = perfiles.id
+                    AND experiencias.visible_publico = true
+                    AND experiencias.fecha_inicio IS NOT NULL
+                    {$experienceTypeCondition}
             ";
 
             if ($experienceMin !== null) {
@@ -353,6 +370,7 @@ class ProfileController extends Controller
                 'categoria' => $category,
                 'nivel' => $level,
                 'rol' => $role,
+                'tipo_experiencia' => $experienceType,
                 'experiencia_min' => $experienceMin,
                 'experiencia_max' => $experienceMax,
                 'tecnologias' => $technologies,

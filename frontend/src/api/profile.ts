@@ -7,6 +7,7 @@ export interface PublicProfileFilters {
   categoria?: string;
   nivel?: SkillLevel | "";
   rol?: string;
+  tipo_experiencia?: "todas" | "laboral" | "academica";
   experiencia_min?: string;
   experiencia_max?: string;
   tecnologias?: string[];
@@ -53,6 +54,7 @@ export const getPublicProfiles = async (filters: PublicProfileFilters = {}, sign
       categoria: filters.categoria || undefined,
       nivel: filters.nivel || undefined,
       rol: filters.rol || undefined,
+      tipo_experiencia: filters.tipo_experiencia || undefined,
       experiencia_min: filters.experiencia_min || undefined,
       experiencia_max: filters.experiencia_max || undefined,
       tecnologias: filters.tecnologias?.length ? filters.tecnologias : undefined,
