@@ -21,6 +21,10 @@ function getInitials(name?: string | null) {
     .toUpperCase();
 }
 
+function formatVisibleText(value?: string | null) {
+  return (value || "").replace(/\bPagina web\b/g, "Página web");
+}
+
 function RibbonIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="public-portfolio-icon">
@@ -298,7 +302,8 @@ export default function PublicProfilePage() {
               </div>
               <div className="public-skills-heading">
                 <h2>Habilidades</h2>
-                <p className="public-skill-help">Pulsa una habilidad para ver su certificado.</p>
+                <p className="public-skill-help">Explora las competencias técnicas y blandas del perfil.</p>
+                <p className="public-skill-hint">Pulsa una habilidad para ver su certificado.</p>
               </div>
             </section>
 
@@ -311,7 +316,7 @@ export default function PublicProfilePage() {
                   aria-expanded={expandedSkillGroups.technical}
                 >
                   <span>
-                    <strong>Habilidades Tecnicas</strong>
+                    <strong>Habilidades Técnicas</strong>
                   </span>
                   <ChevronIcon expanded={expandedSkillGroups.technical} />
                 </button>
@@ -346,7 +351,7 @@ export default function PublicProfilePage() {
                     ))}
                   </div>
                 ) : (
-                  expandedSkillGroups.technical ? <p className="section-copy">No hay habilidades tecnicas visibles.</p> : null
+                  expandedSkillGroups.technical ? <p className="section-copy">No hay habilidades técnicas visibles.</p> : null
                 )}
               </article>
 
@@ -408,6 +413,7 @@ export default function PublicProfilePage() {
               </div>
               <div className="public-skills-heading">
                 <h2>Proyectos</h2>
+                <p className="public-skill-help">Conoce los trabajos y proyectos publicados.</p>
               </div>
             </section>
 
@@ -418,7 +424,7 @@ export default function PublicProfilePage() {
                 {resolveProjectImageSrc(project.url_imagen) && !imageErrors[project.id] ? (
                   <img
                     src={resolveProjectImageSrc(project.url_imagen) || ""}
-                    alt={project.titulo}
+                    alt={formatVisibleText(project.titulo)}
                     className="portfolio-project-image"
                     onError={() => setImageErrors((prev) => ({ ...prev, [project.id]: true }))}
                   />
@@ -429,7 +435,7 @@ export default function PublicProfilePage() {
                 <div className="portfolio-project-body">
                   <div className="portfolio-project-head">
                     <div>
-                      <h3>{project.titulo}</h3>
+                      <h3>{formatVisibleText(project.titulo)}</h3>
                       <p>{project.rol}</p>
                     </div>
                     <span className="portfolio-project-date">
@@ -442,7 +448,7 @@ export default function PublicProfilePage() {
 
                   {(project.tecnologias || []).length ? (
                     <div className="portfolio-project-block">
-                      <span className="portfolio-project-label">Tecnologias:</span>
+                      <span className="portfolio-project-label">Tecnologías:</span>
                       <div className="portfolio-project-tags">
                         {project.tecnologias.map((technology) => (
                           <span key={technology}>{technology}</span>
@@ -515,7 +521,15 @@ export default function PublicProfilePage() {
 
             {publicEducationExperiences.length ? (
               <div className="public-experience-group">
-                <h2>Educacion</h2>
+                <section className="public-skills-intro">
+                  <div className="public-skills-title-mark academic">
+                    <ExperienceMarkIcon type="academica" />
+                  </div>
+                  <div className="public-skills-heading">
+                    <h2>Experiencia Académica</h2>
+                    <p className="public-skill-help">Revisa cursos, certificaciones y formación registrada.</p>
+                  </div>
+                </section>
                 <div className="public-experience-list">
                   {publicEducationExperiences.map((experience) => (
                     <article key={experience.id} className="surface-card public-experience-card">
@@ -524,11 +538,22 @@ export default function PublicProfilePage() {
                       </div>
                       <div className="public-experience-body">
                         <h3>{experience.titulo}</h3>
-                        <p className="public-experience-place">{experience.institucion}</p>
-                        {experience.ubicacion ? <p className="public-experience-location">{experience.ubicacion}</p> : null}
-                        <p className="public-experience-date">
-                          {formatProjectMonthYear(experience.fecha_inicio)} - {experience.actualidad ? "Presente" : formatProjectMonthYear(experience.fecha_fin)}
-                        </p>
+                        <div className="public-experience-meta-grid">
+                          <div>
+                            <span>Institución</span>
+                            <strong>{experience.institucion}</strong>
+                          </div>
+                          {experience.ubicacion ? (
+                            <div>
+                              <span>Ubicación</span>
+                              <strong>{experience.ubicacion}</strong>
+                            </div>
+                          ) : null}
+                          <div>
+                            <span>Periodo</span>
+                            <strong>{formatProjectMonthYear(experience.fecha_inicio)} - {experience.actualidad ? "Presente" : formatProjectMonthYear(experience.fecha_fin)}</strong>
+                          </div>
+                        </div>
                         {experience.descripcion ? <RichTextContent value={experience.descripcion} className="public-experience-description" /> : null}
                         {experience.logros?.length ? (
                           <ul className="project-achievement-list public-experience-achievements">

@@ -14,8 +14,8 @@ import {
 } from "../../api/experience";
 import type { Perfil } from "../../types/profile";
 import type { Experience, ExperiencePayload, ExperienceType } from "../../types/experience";
-import { isRichTextEmpty, limitRichText } from "../../utils/richText";
-import { sanitizeAlphaNumericText, sanitizeLocationText, sanitizePlainMultilineText } from "../../utils/validations";
+import { isRichTextEmpty, limitRichText, richTextToPlainText, sanitizeRichText } from "../../utils/richText";
+import { sanitizeAlphaNumericText, sanitizeDigits, sanitizeLocationText, sanitizePlainMultilineText } from "../../utils/validations";
 
 const EMPTY_FORM: ExperiencePayload = {
   tipo: "laboral",
@@ -29,6 +29,35 @@ const EMPTY_FORM: ExperiencePayload = {
   logros: "",
   visible_publico: false,
 };
+
+type AcademicFormationType = "Carrera universitaria" | "Curso" | "Certificación" | "Diplomado" | "Posgrado" | "Taller" | "Otro";
+type AcademicAccreditationType = "Horas" | "Módulos" | "Créditos" | "Sin acreditación";
+
+type AcademicDetails = {
+  tipoFormacion: AcademicFormationType | "";
+  especializacionArea: string;
+  tipoAcreditacion: AcademicAccreditationType;
+  cantidadAcreditacion: string;
+};
+
+const EMPTY_ACADEMIC_DETAILS: AcademicDetails = {
+  tipoFormacion: "",
+  especializacionArea: "",
+  tipoAcreditacion: "Sin acreditación",
+  cantidadAcreditacion: "",
+};
+
+const ACADEMIC_FORMATION_OPTIONS: AcademicFormationType[] = [
+  "Carrera universitaria",
+  "Curso",
+  "Certificación",
+  "Diplomado",
+  "Posgrado",
+  "Taller",
+  "Otro",
+];
+
+const ACADEMIC_ACCREDITATION_OPTIONS: AcademicAccreditationType[] = ["Horas", "Módulos", "Créditos", "Sin acreditación"];
 
 type ApiErrorData = {
   message?: string;
@@ -59,6 +88,82 @@ function normalizeAchievements(value = "") {
     .split(/\r?\n/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function sanitizeAcademicLocationText(value: string) {
+  return value.replace(/[^A-Za-z0-9\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s.,/-]/g, "");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function buildAcademicDescription(details: AcademicDetails, description = "") {
+  const accreditation =
+    details.tipoAcreditacion === "Sin acreditación" || !details.cantidadAcreditacion
+      ? details.tipoAcreditacion
+      : `${details.tipoAcreditacion}: ${details.cantidadAcreditacion}`;
+
+  const metaRows = [
+    ["Tipo de formación", details.tipoFormacion],
+    ["Especialización / Área", details.especializacionArea],
+    ["Acreditación", accreditation],
+  ].filter(([, value]) => value);
+
+  return sanitizeRichText(`
+    ${metaRows.map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`).join("")}
+    <p><strong>Descripción:</strong></p>
+    ${description}
+  `);
+}
+
+function parseAcademicDescription(description = "") {
+  const plainText = richTextToPlainText(description);
+
+  if (!plainText.startsWith("Tipo de formación:")) {
+    return {
+      details: EMPTY_ACADEMIC_DETAILS,
+      description,
+    };
+  }
+
+  const lines = plainText.split(/\n/).map((line) => line.trim()).filter(Boolean);
+  const descriptionIndex = lines.findIndex((line) => line === "Descripción:");
+  const metaLines = descriptionIndex >= 0 ? lines.slice(0, descriptionIndex) : lines;
+  const detailText = descriptionIndex >= 0 ? lines.slice(descriptionIndex + 1).join("\n\n") : "";
+  const nextDetails: AcademicDetails = { ...EMPTY_ACADEMIC_DETAILS };
+
+  metaLines.forEach((line) => {
+    if (line.startsWith("Tipo de formación:")) {
+      const value = line.replace("Tipo de formación:", "").trim();
+      if (ACADEMIC_FORMATION_OPTIONS.includes(value as AcademicFormationType)) {
+        nextDetails.tipoFormacion = value as AcademicFormationType;
+      }
+    }
+
+    if (line.startsWith("Especialización / Área:")) {
+      nextDetails.especializacionArea = line.replace("Especialización / Área:", "").trim();
+    }
+
+    if (line.startsWith("Acreditación:")) {
+      const value = line.replace("Acreditación:", "").trim();
+      const [typeValue, amountValue = ""] = value.split(":").map((item) => item.trim());
+      if (ACADEMIC_ACCREDITATION_OPTIONS.includes(typeValue as AcademicAccreditationType)) {
+        nextDetails.tipoAcreditacion = typeValue as AcademicAccreditationType;
+        nextDetails.cantidadAcreditacion = sanitizeDigits(amountValue);
+      }
+    }
+  });
+
+  return {
+    details: nextDetails,
+    description: sanitizeRichText(detailText),
+  };
 }
 
 function EyeIcon({ off = false }: { off?: boolean }) {
@@ -100,14 +205,37 @@ function ExperienceIcon({ type }: { type: ExperienceType }) {
   );
 }
 
-export default function ExperiencePage() {
+type ExperiencePageProps = {
+  type: ExperienceType;
+};
+
+const PAGE_COPY: Record<ExperienceType, { active: "academic-experience" | "work-experience"; title: string; subtitle: string; button: string; empty: string; emptyDescription: string }> = {
+  academica: {
+    active: "academic-experience",
+    title: "Experiencia Académica",
+    subtitle: "Gestiona tu experiencia académica.",
+    button: "+ Nueva Experiencia Académica",
+    empty: "académica",
+    emptyDescription: "Agrega estudios, cursos, certificaciones o especializaciones para enriquecer tu portafolio profesional.",
+  },
+  laboral: {
+    active: "work-experience",
+    title: "Experiencia Laboral",
+    subtitle: "Gestiona tu experiencia laboral.",
+    button: "+ Nueva Experiencia Laboral",
+    empty: "laboral",
+    emptyDescription: "Agrega una experiencia para enriquecer tu portafolio profesional.",
+  },
+};
+
+export default function ExperiencePage({ type }: ExperiencePageProps) {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [experiencias, setExperiencias] = useState<Experience[]>([]);
-  const [activeTab, setActiveTab] = useState<ExperienceType>("laboral");
   const [showForm, setShowForm] = useState(false);
   const [editingExperience, setEditingExperience] = useState<Experience | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Experience | null>(null);
-  const [form, setForm] = useState<ExperiencePayload>(EMPTY_FORM);
+  const [form, setForm] = useState<ExperiencePayload>({ ...EMPTY_FORM, tipo: type });
+  const [academicDetails, setAcademicDetails] = useState<AcademicDetails>(EMPTY_ACADEMIC_DETAILS);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -129,36 +257,38 @@ export default function ExperiencePage() {
     loadData();
   }, []);
 
-  const laboralCount = experiencias.filter((item) => item.tipo === "laboral").length;
-  const academicCount = experiencias.filter((item) => item.tipo === "academica").length;
+  const pageCopy = PAGE_COPY[type];
   const filteredExperiences = useMemo(
-    () => experiencias.filter((item) => item.tipo === activeTab),
-    [activeTab, experiencias],
+    () => experiencias.filter((item) => item.tipo === type),
+    [type, experiencias],
   );
 
-  const openCreateForm = (tipo: ExperienceType) => {
-    setActiveTab(tipo);
+  const openCreateForm = () => {
     setEditingExperience(null);
-    setForm({ ...EMPTY_FORM, tipo });
+    setForm({ ...EMPTY_FORM, tipo: type });
+    setAcademicDetails(EMPTY_ACADEMIC_DETAILS);
     setErrors({});
     setServerError("");
     setShowForm(true);
   };
 
   const openEditForm = (experience: Experience) => {
+    const academicForm = experience.tipo === "academica" ? parseAcademicDescription(experience.descripcion || "") : null;
+
     setEditingExperience(experience);
     setForm({
       tipo: experience.tipo,
       titulo: sanitizeAlphaNumericText(experience.titulo),
       institucion: sanitizeAlphaNumericText(experience.institucion),
       ubicacion: sanitizeLocationText(experience.ubicacion || ""),
-      descripcion: experience.descripcion || "",
+      descripcion: academicForm?.description || experience.descripcion || "",
       fecha_inicio: experience.fecha_inicio || "",
       fecha_fin: experience.fecha_fin || "",
       actualidad: experience.actualidad,
       logros: sanitizePlainMultilineText((experience.logros || []).join("\n")),
       visible_publico: experience.visible_publico,
     });
+    setAcademicDetails(academicForm?.details || EMPTY_ACADEMIC_DETAILS);
     setErrors({});
     setServerError("");
     setShowForm(true);
@@ -167,7 +297,8 @@ export default function ExperiencePage() {
   const closeForm = () => {
     setShowForm(false);
     setEditingExperience(null);
-    setForm({ ...EMPTY_FORM, tipo: activeTab });
+    setForm({ ...EMPTY_FORM, tipo: type });
+    setAcademicDetails(EMPTY_ACADEMIC_DETAILS);
     setErrors({});
   };
 
@@ -176,6 +307,17 @@ export default function ExperiencePage() {
 
     if (!form.titulo.trim()) nextErrors.titulo = "El titulo es obligatorio.";
     if (!form.institucion.trim()) nextErrors.institucion = "La institucion es obligatoria.";
+    if (form.tipo === "academica" && !academicDetails.tipoFormacion) {
+      nextErrors.tipoFormacion = "El tipo de formacion es obligatorio.";
+    }
+    if (
+      form.tipo === "academica" &&
+      academicDetails.tipoAcreditacion !== "Sin acreditación" &&
+      academicDetails.cantidadAcreditacion &&
+      !/^\d+$/.test(academicDetails.cantidadAcreditacion)
+    ) {
+      nextErrors.cantidadAcreditacion = "La cantidad debe ser numerica.";
+    }
     if (isRichTextEmpty(form.descripcion || "")) nextErrors.descripcion = "La descripcion es obligatoria.";
     if (!form.fecha_inicio) nextErrors.fecha_inicio = "La fecha de inicio es obligatoria.";
     if (form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
@@ -195,12 +337,16 @@ export default function ExperiencePage() {
     setSaving(true);
 
     try {
+      const description =
+        form.tipo === "academica"
+          ? buildAcademicDescription(academicDetails, form.descripcion || "")
+          : form.descripcion || "";
       const payload: ExperiencePayload = {
         ...form,
         titulo: form.titulo.trim(),
         institucion: form.institucion.trim(),
         ubicacion: form.ubicacion?.trim() || "",
-        descripcion: isRichTextEmpty(form.descripcion || "") ? "" : limitRichText(form.descripcion || "", 1800),
+        descripcion: isRichTextEmpty(description) ? "" : limitRichText(description, 1800),
         fecha_fin: form.fecha_fin || "",
         actualidad: !form.fecha_fin,
         logros: normalizeAchievements(form.logros).join("\n"),
@@ -265,7 +411,7 @@ export default function ExperiencePage() {
 
   if (loading) {
     return (
-      <PrivateWorkspaceLayout active="experience" perfil={perfil} title="Experiencia" subtitle="Gestiona tu experiencia laboral y academica">
+      <PrivateWorkspaceLayout active={pageCopy.active} perfil={perfil} title={pageCopy.title} subtitle={pageCopy.subtitle}>
         <section className="surface-card workspace-section-card">
           <p className="section-copy">Cargando experiencia...</p>
         </section>
@@ -274,22 +420,13 @@ export default function ExperiencePage() {
   }
 
   return (
-    <PrivateWorkspaceLayout active="experience" perfil={perfil} title="Experiencia" subtitle="Gestiona tu experiencia laboral y academica">
+    <PrivateWorkspaceLayout active={pageCopy.active} perfil={perfil} title={pageCopy.title} subtitle={pageCopy.subtitle}>
       <div className="experience-page">
         <AlertMessage message={serverError} />
 
         <div className="experience-toolbar">
-          <div className="skills-tabs" role="tablist" aria-label="Tipos de experiencia">
-            <button type="button" className={`skills-tab ${activeTab === "laboral" ? "active" : ""}`} onClick={() => setActiveTab("laboral")}>
-              Experiencia Laboral ({laboralCount})
-            </button>
-            <button type="button" className={`skills-tab ${activeTab === "academica" ? "active" : ""}`} onClick={() => setActiveTab("academica")}>
-              Experiencia Academica ({academicCount})
-            </button>
-          </div>
-
-          <button type="button" className="btn btn-primary" onClick={() => openCreateForm(activeTab)}>
-            + Nueva Experiencia {activeTab === "laboral" ? "Laboral" : "Academica"}
+          <button type="button" className="btn btn-primary" onClick={openCreateForm}>
+            {pageCopy.button}
           </button>
         </div>
 
@@ -346,8 +483,8 @@ export default function ExperiencePage() {
             ))
           ) : (
             <article className="surface-card empty-state-card">
-              <h3>No tienes experiencia {activeTab === "laboral" ? "laboral" : "academica"} registrada</h3>
-              <p className="section-copy">Agrega una experiencia para enriquecer tu portafolio profesional.</p>
+              <h3>No tienes experiencia {pageCopy.empty} registrada</h3>
+              <p className="section-copy">{pageCopy.emptyDescription}</p>
             </article>
           )}
         </section>
@@ -357,9 +494,13 @@ export default function ExperiencePage() {
             <section className="surface-card skills-modal experience-form-modal" role="dialog" aria-modal="true">
               <div className="skills-modal-head">
                 <div>
-                  <h2>{editingExperience ? "Actualizar experiencia" : `Nueva Experiencia ${form.tipo === "laboral" ? "Laboral" : "Academica"}`}</h2>
+                  <h2>{editingExperience ? "Actualizar experiencia" : `Nueva Experiencia ${form.tipo === "laboral" ? "Laboral" : "Académica"}`}</h2>
                   <p className="section-copy">
-                    {editingExperience ? "Actualiza la informacion que aparecera en tu portafolio." : "Agrega una nueva experiencia a tu portafolio."}
+                    {editingExperience
+                      ? "Actualiza la informacion que aparecera en tu portafolio."
+                      : form.tipo === "academica"
+                        ? "Agrega una nueva formación, curso o certificación a tu portafolio."
+                        : "Agrega una nueva experiencia a tu portafolio."}
                   </p>
                 </div>
                 <button type="button" className="modal-close-button" onClick={closeForm} aria-label="Cerrar formulario">
@@ -369,43 +510,89 @@ export default function ExperiencePage() {
 
               <form className="form-stack experience-form-stack" onSubmit={handleSubmit}>
                 <div className="form-field">
-                  <label className="form-label">{form.tipo === "laboral" ? "Cargo/Posicion *" : "Titulo academico *"}</label>
+                  <label className="form-label">{form.tipo === "laboral" ? "Cargo/Posicion *" : "Título / Curso / Programa *"}</label>
                   <input
                     className={`form-input${errors.titulo ? " error" : ""}`}
                     value={form.titulo}
-                    placeholder={form.tipo === "laboral" ? "Ej: Desarrollador Full Stack Senior" : "Ej: Master en Ingenieria de Software"}
+                    placeholder={form.tipo === "laboral" ? "Ej: Desarrollador Full Stack Senior" : "Ej: Ingeniería de Sistemas, CCNA Cisco, Diplomado en Arquitectura de Software"}
                     onChange={(event) => setForm((prev) => ({ ...prev, titulo: sanitizeAlphaNumericText(event.target.value) }))}
                   />
                   {errors.titulo ? <p className="form-error">{errors.titulo}</p> : null}
                 </div>
 
                 <div className="form-field">
-                  <label className="form-label">{form.tipo === "laboral" ? "Empresa *" : "Institucion *"}</label>
+                  <label className="form-label">{form.tipo === "laboral" ? "Empresa *" : "Institución *"}</label>
                   <input
                     className={`form-input${errors.institucion ? " error" : ""}`}
                     value={form.institucion}
-                    placeholder={form.tipo === "laboral" ? "Ej: TechCorp Solutions" : "Ej: Universidad Politecnica"}
+                    placeholder={form.tipo === "laboral" ? "Ej: TechCorp Solutions" : "Ej: Universidad Mayor de San Simón, Cisco Networking Academy"}
                     onChange={(event) => setForm((prev) => ({ ...prev, institucion: sanitizeAlphaNumericText(event.target.value) }))}
                   />
                   {errors.institucion ? <p className="form-error">{errors.institucion}</p> : null}
                 </div>
 
+                {form.tipo === "academica" ? (
+                  <>
+                    <div className="form-field">
+                      <label className="form-label">Tipo de formación *</label>
+                      <select
+                        className={`form-input${errors.tipoFormacion ? " error" : ""}`}
+                        value={academicDetails.tipoFormacion}
+                        onChange={(event) =>
+                          setAcademicDetails((prev) => ({
+                            ...prev,
+                            tipoFormacion: event.target.value as AcademicFormationType | "",
+                          }))
+                        }
+                      >
+                        <option value="">Selecciona un tipo de formación</option>
+                        {ACADEMIC_FORMATION_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.tipoFormacion ? <p className="form-error">{errors.tipoFormacion}</p> : null}
+                    </div>
+
+                    <div className="form-field">
+                      <label className="form-label">Especialización / Área</label>
+                      <input
+                        className="form-input"
+                        value={academicDetails.especializacionArea}
+                        placeholder="Ej: Redes, Arquitectura de Software, Desarrollo Web, Inteligencia Artificial"
+                        onChange={(event) =>
+                          setAcademicDetails((prev) => ({
+                            ...prev,
+                            especializacionArea: sanitizeAlphaNumericText(event.target.value),
+                          }))
+                        }
+                      />
+                    </div>
+                  </>
+                ) : null}
+
                 <div className="form-field">
-                  <label className="form-label">Ubicacion</label>
+                  <label className="form-label">{form.tipo === "academica" ? "Ubicación" : "Ubicacion"}</label>
                   <input
                     className={`form-input${errors.ubicacion ? " error" : ""}`}
                     value={form.ubicacion || ""}
-                    placeholder="Ej: Cercado, Cochabamba"
-                    onChange={(event) => setForm((prev) => ({ ...prev, ubicacion: sanitizeLocationText(event.target.value) }))}
+                    placeholder={form.tipo === "academica" ? "Ej: Cochabamba, Bolivia / Virtual" : "Ej: Cercado, Cochabamba"}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        ubicacion: form.tipo === "academica" ? sanitizeAcademicLocationText(event.target.value) : sanitizeLocationText(event.target.value),
+                      }))
+                    }
                   />
                   {errors.ubicacion ? <p className="form-error">{errors.ubicacion}</p> : null}
                 </div>
 
                 <RichTextEditor
-                  label="Descripcion *"
+                  label={form.tipo === "academica" ? "Descripción *" : "Descripcion *"}
                   value={form.descripcion || ""}
                   error={errors.descripcion}
-                  placeholder="Describe tus responsabilidades, logros y aprendizajes..."
+                  placeholder={form.tipo === "academica" ? "Describe lo aprendido, actividades realizadas, proyectos o conocimientos adquiridos..." : "Describe tus responsabilidades, logros y aprendizajes..."}
                   onChange={(value) => setForm((prev) => ({ ...prev, descripcion: limitRichText(value, 1800) }))}
                 />
 
@@ -434,12 +621,64 @@ export default function ExperiencePage() {
                   </div>
                 </div>
 
+                {form.tipo === "academica" ? (
+                  <div className="form-stack">
+                    <p className="section-label">Acreditación</p>
+                    <div className="workspace-form-grid">
+                      <div className="form-field">
+                        <label className="form-label">Tipo de acreditación</label>
+                        <select
+                          className="form-input"
+                          value={academicDetails.tipoAcreditacion}
+                          onChange={(event) => {
+                            const nextValue = event.target.value as AcademicAccreditationType;
+                            setAcademicDetails((prev) => ({
+                              ...prev,
+                              tipoAcreditacion: nextValue,
+                              cantidadAcreditacion: nextValue === "Sin acreditación" ? "" : prev.cantidadAcreditacion,
+                            }));
+                          }}
+                        >
+                          {ACADEMIC_ACCREDITATION_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-field">
+                        <label className="form-label">Cantidad</label>
+                        <input
+                          className={`form-input${errors.cantidadAcreditacion ? " error" : ""}`}
+                          type="number"
+                          min="0"
+                          value={academicDetails.cantidadAcreditacion}
+                          placeholder="Ej: 40, 6, 120"
+                          disabled={academicDetails.tipoAcreditacion === "Sin acreditación"}
+                          onChange={(event) =>
+                            setAcademicDetails((prev) => ({
+                              ...prev,
+                              cantidadAcreditacion: sanitizeDigits(event.target.value),
+                            }))
+                          }
+                        />
+                        {errors.cantidadAcreditacion ? <p className="form-error">{errors.cantidadAcreditacion}</p> : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="form-field">
                   <label className="form-label">Logros (uno por linea)</label>
                   <textarea
                     className="form-input form-textarea"
                     value={form.logros}
-                    placeholder={"Logro 1\nLogro 2\nLogro 3"}
+                    placeholder={
+                      form.tipo === "academica"
+                        ? "Ej:\nFinalicé el curso con certificación.\nRealicé prácticas de configuración de redes.\nDesarrollé un proyecto final."
+                        : "Logro 1\nLogro 2\nLogro 3"
+                    }
                     onChange={(event) => setForm((prev) => ({ ...prev, logros: sanitizePlainMultilineText(event.target.value) }))}
                   />
                 </div>
@@ -464,7 +703,7 @@ export default function ExperiencePage() {
                     Cancelar
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={saving}>
-                    {editingExperience ? "Guardar Cambios" : "Crear Experiencia"}
+                    {editingExperience ? "Guardar Cambios" : form.tipo === "academica" ? "Crear Experiencia Académica" : "Crear Experiencia"}
                   </button>
                 </div>
               </form>

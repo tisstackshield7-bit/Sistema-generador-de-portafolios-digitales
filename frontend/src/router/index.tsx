@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 import RegisterPage from "../pages/auth/RegisterPage";
 import LoginPage from "../pages/auth/LoginPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
@@ -130,7 +130,23 @@ export const router = createBrowserRouter([
     path: "/perfil/experiencia",
     element: (
       <PrivateRoute>
-        <ExperiencePage />
+        <Navigate to="/perfil/experiencia-academica" replace />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/perfil/experiencia-academica",
+    element: (
+      <PrivateRoute>
+        <ExperiencePage type="academica" />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/perfil/experiencia-laboral",
+    element: (
+      <PrivateRoute>
+        <ExperiencePage type="laboral" />
       </PrivateRoute>
     ),
   },
