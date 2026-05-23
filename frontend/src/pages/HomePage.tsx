@@ -9,6 +9,7 @@ import type { SkillLevel } from "../types/skill";
 import { getAuthenticatedHomePath } from "../utils/authRedirect";
 import type { ProfileSearchFilters } from "../utils/profileFilters";
 import { richTextToPlainText } from "../utils/richText";
+import logo from "../assets/logof.png";
 import "./HomePage.css";
 
 function getInitials(name?: string | null) {
@@ -418,7 +419,7 @@ export default function HomePage() {
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel | "">("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [openFilter, setOpenFilter] = useState<"category" | "level" | null>(null);
-  const [openAdvancedFilter, setOpenAdvancedFilter] = useState<"role" | "experienceType" | "technologyLevel" | null>(null);
+  const [openAdvancedFilter, setOpenAdvancedFilter] = useState<"role" | "experienceType" | "technologyLevel" | "technologies" | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState(initialAdvancedFilters);
   const [showAllFeaturedProfiles, setShowAllFeaturedProfiles] = useState(false);
@@ -497,17 +498,30 @@ export default function HomePage() {
 
   const filteredProfiles = useMemo(() => publicProfiles, [publicProfiles]);
 
-  const hasActiveAdvancedFilters = Boolean(
-    advancedFilters.role ||
-      advancedFilters.experienceMin ||
-      advancedFilters.experienceMax ||
-      advancedFilters.technologies.length ||
-      advancedFilters.technologyLevel,
-  );
+  const selectedTechnologies = advancedFilters.technologies;
+  const advancedActiveFilterCount =
+    (advancedFilters.role ? 1 : 0) +
+    (advancedFilters.experienceType !== "todas" ? 1 : 0) +
+    (advancedFilters.experienceMin ? 1 : 0) +
+    (advancedFilters.experienceMax ? 1 : 0) +
+    selectedTechnologies.length +
+    (advancedFilters.technologyLevel ? 1 : 0);
+  const hasActiveAdvancedFilters = advancedActiveFilterCount > 0;
   const hasActiveSearch = Boolean(appliedQuery || selectedCategory || selectedLevel || hasActiveAdvancedFilters);
 
   const roleOptions = publicRoles;
-  const technologyOptions = publicTechnologies;
+  const technologies = publicTechnologies;
+  const technologySummary =
+    selectedTechnologies.length === 0
+      ? "Todas las tecnologías"
+      : selectedTechnologies.length <= 2
+        ? selectedTechnologies.join(", ")
+        : `${selectedTechnologies.length} tecnologías seleccionadas`;
+
+  const activeFilterCount =
+    (selectedCategory ? 1 : 0) +
+    (selectedLevel ? 1 : 0) +
+    advancedActiveFilterCount;
   const searchResults = useMemo(
     () =>
       [...filteredProfiles]
@@ -612,23 +626,22 @@ export default function HomePage() {
       [category]: !current[category],
     }));
   };
-  const activeFilterCount =
-    (selectedCategory ? 1 : 0) +
-    (selectedLevel ? 1 : 0) +
-    (advancedFilters.role ? 1 : 0) +
-    (advancedFilters.experienceMin || advancedFilters.experienceMax ? 1 : 0) +
-    advancedFilters.technologies.length +
-    (advancedFilters.technologyLevel ? 1 : 0);
   const activeFilterChips = [
     selectedCategory ? { key: "category", label: `Area: ${selectedCategory}`, onRemove: () => setSelectedCategory("") } : null,
     selectedLevel ? { key: "level", label: `Nivel: ${selectedLevel}`, onRemove: () => setSelectedLevel("") } : null,
     advancedFilters.role ? { key: "role", label: `Rol: ${advancedFilters.role}`, onRemove: () => updateAdvancedFilter("role", "") } : null,
+    advancedFilters.experienceType !== "todas"
+      ? {
+          key: "experienceType",
+          label: experienceTypeLabels[advancedFilters.experienceType],
+          onRemove: () => updateAdvancedFilter("experienceType", "todas"),
+        }
+      : null,
     advancedFilters.experienceMin || advancedFilters.experienceMax
       ? {
           key: "experience",
-          label: `${experienceTypeLabels[advancedFilters.experienceType]}: ${advancedFilters.experienceMin || "0"}-${advancedFilters.experienceMax || "max"} anos`,
+          label: `Experiencia: ${advancedFilters.experienceMin || "0"}-${advancedFilters.experienceMax || "max"} anos`,
           onRemove: () => {
-            updateAdvancedFilter("experienceType", "todas");
             updateAdvancedFilter("experienceMin", "");
             updateAdvancedFilter("experienceMax", "");
           },
@@ -641,11 +654,6 @@ export default function HomePage() {
           onRemove: () => updateAdvancedFilter("technologyLevel", ""),
         }
       : null,
-    ...advancedFilters.technologies.map((technology) => ({
-      key: `technology-${technology}`,
-      label: technology,
-      onRemove: () => toggleTechnologyFilter(technology),
-    })),
   ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
 
   return (
@@ -653,10 +661,10 @@ export default function HomePage() {
       <header className="landing-nav">
         <div className="landing-container landing-nav-inner">
           <Link to="/" className="landing-brand">
-            <span className="landing-brand-mark">P</span>
-            <span>
-              Porta<span>FolioPro</span>
+            <span className="landing-brand-mark">
+              <img src={logo} alt="SpherLink" />
             </span>
+            <span>SpherLink</span>
           </Link>
 
           <nav className="landing-links" aria-label="Navegacion principal">
@@ -793,7 +801,7 @@ export default function HomePage() {
               onClick={() => setShowAdvancedFilters((current) => !current)}
             >
               Filtros avanzados
-              {hasActiveAdvancedFilters ? <span>{advancedFilters.technologies.length + (advancedFilters.role ? 1 : 0) + (advancedFilters.experienceMin || advancedFilters.experienceMax ? 1 : 0) + (advancedFilters.technologyLevel ? 1 : 0)}</span> : null}
+              {hasActiveAdvancedFilters ? <span>{advancedActiveFilterCount}</span> : null}
             </button>
 
             {showAdvancedFilters ? (
@@ -936,22 +944,52 @@ export default function HomePage() {
                 </div>
 
                 <div className="landing-advanced-tech-group">
-                  <span>Tecnologias</span>
-                  <div className="landing-advanced-tech-list">
-                    {technologyOptions.length ? (
-                      technologyOptions.map((technology) => (
+                  <span>Tecnologías</span>
+                  <div className="landing-filter-menu landing-advanced-menu">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenAdvancedFilter(openAdvancedFilter === "technologies" ? null : "technologies")
+                      }
+                    >
+                      <span>{technologySummary}</span>
+                      <ChevronIcon />
+                    </button>
+                    {openAdvancedFilter === "technologies" ? (
+                      <div className="landing-filter-options technologies-dropdown-menu">
                         <button
                           type="button"
-                          key={technology}
-                          className={advancedFilters.technologies.includes(technology) ? "active" : ""}
-                          onClick={() => toggleTechnologyFilter(technology)}
+                          className={!selectedTechnologies.length ? "active" : ""}
+                          onClick={() => updateAdvancedFilter("technologies", [])}
                         >
-                          {technology}
+                          <span className="technology-checkbox-mark" aria-hidden="true">
+                            {!selectedTechnologies.length ? "✓" : ""}
+                          </span>
+                          Todas las tecnologías
                         </button>
-                      ))
-                    ) : (
-                      <p>No hay tecnologias publicadas.</p>
-                    )}
+                        {technologies.length ? (
+                          technologies.map((technology) => {
+                            const isSelected = selectedTechnologies.includes(technology);
+
+                            return (
+                              <button
+                                type="button"
+                                key={technology}
+                                className={isSelected ? "active" : ""}
+                                onClick={() => toggleTechnologyFilter(technology)}
+                              >
+                                <span className="technology-checkbox-mark" aria-hidden="true">
+                                  {isSelected ? "✓" : ""}
+                                </span>
+                                {technology}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <p>No hay tecnologías publicadas.</p>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -1125,9 +1163,7 @@ export default function HomePage() {
       <footer className="landing-footer">
         <div className="landing-container landing-footer-grid">
           <div>
-            <h2>
-              Porta<span>FolioPro</span>
-            </h2>
+            <h2>SpherLink</h2>
             <p>Plataforma para crear y compartir portafolios digitales.</p>
           </div>
           <div>
@@ -1147,7 +1183,7 @@ export default function HomePage() {
             <span>Terminos</span>
           </div>
         </div>
-        <p className="landing-copyright">(c) 2026 PortaFolioPro. Todos los derechos reservados.</p>
+        <p className="landing-copyright">(c) 2026 SpherLink. Todos los derechos reservados.</p>
       </footer>
 
       <button className="landing-top-button" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Volver arriba">

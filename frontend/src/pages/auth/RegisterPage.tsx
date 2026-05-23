@@ -6,6 +6,7 @@ import AlertMessage from "../../components/common/AlertMessage";
 import { validateEmail, validatePassword } from "../../utils/validations";
 import { buildGithubAuthUrl, buildGoogleAuthUrl, registerUser } from "../../api/auth";
 import { authStore } from "../../store/authStore";
+import logo from "../../assets/logof.png";
 
 function CheckBadge() {
   return (
@@ -117,9 +118,9 @@ export default function RegisterPage() {
         <section className="login-showcase register-showcase">
           <div className="login-brand">
             <div className="login-brand-mark login-brand-mark-plain">
-              <span>P</span>
+              <img src={logo} alt="SpherLink" />
             </div>
-            <strong>PortaFolio<span>Pro</span></strong>
+            <strong>SpherLink</strong>
           </div>
 
           <div className="login-showcase-copy">

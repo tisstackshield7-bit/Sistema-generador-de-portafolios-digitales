@@ -1,5 +1,5 @@
 ﻿import type { ReactNode } from "react";
-import logo from "../../assets/logo.jpeg";
+import logo from "../../assets/logof.png";
 
 type Props = {
   title: string;
@@ -14,10 +14,10 @@ export default function AuthLayout({ title, subtitle, children }: Props) {
         <section className="surface-card auth-hero">
           <div className="auth-hero-brand">
             <div className="auth-hero-logo-frame">
-              <img src={logo} alt="PortaFolioPro" />
+              <img src={logo} alt="SpherLink" />
             </div>
             <div>
-              <p className="section-label">PortaFolioPro</p>
+              <p className="section-label">SpherLink</p>
               <strong>Portafolios profesionales verificables</strong>
             </div>
           </div>

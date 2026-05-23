@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { logoutUser } from "../../api/auth";
 import { API_ORIGIN } from "../../api/axios";
 import { authStore } from "../../store/authStore";
+import logo from "../../assets/logof.png";
 import type { Perfil } from "../../types/profile";
 
-type ActiveSection = "dashboard" | "projects" | "skills" | "experience" | "profile";
+type ActiveSection = "dashboard" | "projects" | "skills" | "academic-experience" | "work-experience" | "profile";
 
 type Props = {
   active: ActiveSection;
@@ -71,7 +72,8 @@ export default function PrivateWorkspaceLayout({ active, perfil, title, subtitle
     { id: "dashboard", label: "Inicio", to: "/dashboard", icon: "dashboard" as const },
     { id: "projects", label: "Proyectos", to: "/perfil/proyectos", icon: "projects" as const },
     { id: "skills", label: "Habilidades", to: "/perfil/habilidades", icon: "skills" as const },
-    { id: "experience", label: "Experiencia", to: "/perfil/experiencia", icon: "experience" as const },
+    { id: "academic-experience", label: "Experiencia Académica", to: "/perfil/experiencia-academica", icon: "experience" as const },
+    { id: "work-experience", label: "Experiencia Laboral", to: "/perfil/experiencia-laboral", icon: "experience" as const },
     { id: "profile", label: "Perfil", to: "/perfil/editar", icon: "profile" as const },
   ];
 
@@ -80,10 +82,10 @@ export default function PrivateWorkspaceLayout({ active, perfil, title, subtitle
       <header className="workspace-topbar">
         <div className="page-section workspace-topbar-inner">
           <Link to="/" className="workspace-brand">
-            <span className="workspace-brand-mark">P</span>
-            <span>
-              Porta<span>FolioPro</span>
+            <span className="workspace-brand-mark">
+              <img src={logo} alt="SpherLink" />
             </span>
+            <span>SpherLink</span>
           </Link>
 
           <div className="workspace-user">

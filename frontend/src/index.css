@@ -133,6 +133,17 @@ img {
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.26);
   box-shadow: 0 12px 22px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+}
+
+.workspace-brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+  display: block;
+  background: #ffffff;
+  padding: 4px;
 }
 
 .workspace-user {
@@ -1862,7 +1873,7 @@ img {
   width: 100%;
   height: 100%;
   border-radius: 18px;
-  object-fit: cover;
+  object-fit: contain;
   border: 0;
   background: #fff;
   box-shadow: none;
@@ -1976,7 +1987,7 @@ img {
 .login-brand-mark img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .login-brand strong {
@@ -2537,25 +2548,26 @@ img {
 .portfolio-project-list {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .portfolio-project-card {
   padding: 0;
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
   overflow: hidden;
-  border-radius: 14px;
-  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 18px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
   background: #fff;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
 }
 
 .portfolio-project-image {
   width: 100%;
   height: 100%;
-  min-height: 300px;
+  min-height: 240px;
   object-fit: cover;
-  background: #eef2f7;
+  background: #eef2ff;
 }
 
 .portfolio-project-image.project-image-fallback {
@@ -2568,7 +2580,7 @@ img {
 
 .portfolio-project-body {
   min-width: 0;
-  padding: 28px 24px;
+  padding: 26px 28px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -2578,20 +2590,21 @@ img {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 18px;
+  gap: 20px;
 }
 
 .portfolio-project-head h3 {
-  margin: 0 0 8px;
-  color: #020617;
-  font-size: 1.35rem;
-  line-height: 1.2;
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  line-height: 1.12;
 }
 
 .portfolio-project-head p {
-  margin: 0;
-  color: #31456a;
-  font-weight: 600;
+  margin: 8px 0 0;
+  color: #334155;
+  font-size: 0.94rem;
+  font-weight: 800;
 }
 
 .portfolio-project-meta {
@@ -2606,8 +2619,9 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #52627a;
-  font-size: 0.9rem;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 800;
   white-space: nowrap;
 }
 
@@ -2618,21 +2632,23 @@ img {
 
 .portfolio-project-description {
   margin: 0;
-  color: #14213d;
-  line-height: 1.55;
-  font-size: 1rem;
+  color: #334155;
+  line-height: 1.68;
+  font-size: 0.96rem;
 }
 
 .portfolio-project-block {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
 .portfolio-project-label {
-  color: #52627a;
-  font-size: 0.82rem;
-  font-weight: 800;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .portfolio-project-tags {
@@ -2644,27 +2660,32 @@ img {
 .portfolio-project-tags span {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 0 10px;
-  border-radius: 7px;
-  background: #f1f5f9;
-  color: #020617;
-  font-size: 0.82rem;
-  font-weight: 800;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 900;
 }
 
 .portfolio-project-link {
   width: fit-content;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #020617;
+  background: #1d4ed8;
+  color: #ffffff;
   font-weight: 900;
   text-decoration: none;
 }
 
 .portfolio-project-link:hover {
-  color: var(--primary);
+  background: #0f172a;
+  color: #ffffff;
 }
 
 .project-modal {
@@ -3190,7 +3211,7 @@ img {
 }
 
 .public-portfolio-hero {
-  padding: 18px 0 72px;
+  padding: 32px 0 64px;
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 34%),
     linear-gradient(135deg, #1d4ed8 0%, #2563eb 48%, #38bdf8 100%);
@@ -3201,20 +3222,21 @@ img {
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  min-height: 360px;
+  min-height: 300px;
+  max-width: 1160px;
 }
 
 .public-portfolio-identity {
   display: grid;
-  grid-template-columns: 176px minmax(0, 1fr);
+  grid-template-columns: 150px minmax(0, 1fr);
   align-items: center;
-  gap: 28px;
+  gap: 30px;
   color: #fff;
 }
 
 .public-portfolio-avatar {
-  width: 164px;
-  height: 164px;
+  width: 142px;
+  height: 142px;
   border-radius: 999px;
   border: 5px solid rgba(255, 255, 255, 0.98);
   object-fit: cover;
@@ -3223,9 +3245,9 @@ img {
 
 .public-portfolio-copy h1 {
   margin: 0;
-  font-size: clamp(2.75rem, 5vw, 4.15rem);
-  line-height: 1.02;
-  letter-spacing: -0.04em;
+  font-size: clamp(2.45rem, 4.2vw, 3.65rem);
+  line-height: 1.04;
+  letter-spacing: 0;
 }
 
 .public-portfolio-eyebrow {
@@ -3233,8 +3255,9 @@ img {
 }
 
 .public-portfolio-role {
-  margin: 14px 0 0;
-  font-size: clamp(1.18rem, 2vw, 1.5rem);
+  margin: 10px 0 0;
+  font-size: clamp(1.08rem, 1.7vw, 1.34rem);
+  font-weight: 700;
   color: rgba(255, 255, 255, 0.92);
 }
 
@@ -3250,7 +3273,7 @@ img {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 14px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .public-portfolio-contact-link {
@@ -3258,8 +3281,8 @@ img {
   align-items: center;
   gap: 14px;
   color: #fff;
-  font-size: 0.98rem;
-  font-weight: 800;
+  font-size: 0.9rem;
+  font-weight: 700;
   text-decoration: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.55);
 }
@@ -3313,10 +3336,10 @@ img {
 }
 
 .public-portfolio-bio {
-  max-width: 960px;
-  margin: 20px 0 0;
-  font-size: 0.99rem;
-  line-height: 1.75;
+  max-width: 820px;
+  margin: 18px 0 0;
+  font-size: 0.96rem;
+  line-height: 1.7;
   color: rgba(255, 255, 255, 0.92);
 }
 
@@ -3324,12 +3347,12 @@ img {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 28px;
+  margin-top: 22px;
 }
 
 .public-portfolio-meta-pill {
-  min-height: 40px;
-  padding: 0 16px;
+  min-height: 34px;
+  padding: 0 12px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -3337,7 +3360,8 @@ img {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
-  font-weight: 500;
+  font-size: 0.82rem;
+  font-weight: 700;
   backdrop-filter: blur(8px);
 }
 
@@ -3345,7 +3369,7 @@ img {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .public-portfolio-tag-pill {
@@ -3372,20 +3396,23 @@ img {
 .public-portfolio-content {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  margin-top: 56px;
+  gap: 34px;
+  max-width: 1160px;
+  margin-top: 48px;
   padding-bottom: 72px;
 }
 
 .public-skills-intro {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .public-skills-intro h2 {
   margin: 0;
-  font-size: clamp(2.35rem, 3vw, 3.2rem);
+  color: #0f172a;
+  font-size: clamp(1.75rem, 2.4vw, 2.35rem);
+  line-height: 1.08;
   letter-spacing: 0;
 }
 
@@ -3396,14 +3423,18 @@ img {
 }
 
 .public-skills-title-mark {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, #5a30f6, #255fe8);
   color: #fff;
   box-shadow: 0 18px 35px rgba(66, 64, 219, 0.2);
+}
+
+.public-skills-title-mark.academic {
+  background: linear-gradient(135deg, #059669, #0d9488);
 }
 
 .public-skill-help {
@@ -3413,10 +3444,17 @@ img {
   font-weight: 600;
 }
 
+.public-skill-hint {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .public-skills-layout {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 14px;
 }
 
 .public-project-grid {
@@ -3446,8 +3484,10 @@ img {
 }
 
 .public-skills-card {
-  padding: 32px 30px;
-  border-radius: 22px;
+  padding: 24px 26px;
+  border-radius: 18px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
 }
 
 .public-skills-card h3 {
@@ -3476,7 +3516,7 @@ img {
 
 .public-skill-group-toggle strong {
   color: #111827;
-  font-size: 1.3rem;
+  font-size: 1.05rem;
   line-height: 1.2;
   font-weight: 800;
 }
@@ -3572,8 +3612,8 @@ img {
   display: inline-flex;
   align-items: center;
   font-family: inherit;
-  font-size: 0.89rem;
-  font-weight: 500;
+  font-size: 0.86rem;
+  font-weight: 700;
   border: 1px solid transparent;
 }
 
@@ -3850,37 +3890,41 @@ img {
 .public-experience-section {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 34px;
 }
 
-.public-experience-group h2 {
+.public-experience-group > h2 {
   margin: 0 0 16px;
   color: #020617;
   font-size: clamp(1.28rem, 2vw, 1.6rem);
   line-height: 1.15;
 }
 
+.public-experience-group > .public-skills-intro {
+  margin-bottom: 16px;
+}
+
 .public-experience-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .public-experience-card {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr);
   gap: 18px;
-  padding: 24px;
-  border-radius: 14px;
+  padding: 24px 26px;
+  border-radius: 18px;
   background: #ffffff;
   border-color: rgba(203, 213, 225, 0.95);
-  box-shadow: none;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
 }
 
 .public-experience-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 9px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   color: #ffffff;
@@ -3904,9 +3948,9 @@ img {
 }
 
 .public-experience-body h3 {
-  margin: 4px 0 4px;
+  margin: 2px 0 10px;
   color: #020617;
-  font-size: 1.18rem;
+  font-size: 1.22rem;
   line-height: 1.2;
 }
 
@@ -3933,10 +3977,52 @@ img {
 }
 
 .public-experience-description {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   color: #0f172a;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1.65;
+}
+
+.public-experience-description p {
+  margin: 0 0 10px;
+}
+
+.public-experience-description strong {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.public-experience-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.public-experience-meta-grid div {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(203, 213, 225, 0.92);
+  background: #f8fafc;
+}
+
+.public-experience-meta-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.public-experience-meta-grid strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .public-experience-achievements {
@@ -4124,6 +4210,10 @@ img {
   .public-portfolio-identity {
     grid-template-columns: 1fr;
     gap: 20px;
+  }
+
+  .public-experience-meta-grid {
+    grid-template-columns: 1fr;
   }
 }
 

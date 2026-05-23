@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { logoutUser } from "../../api/auth";
 import { authStore } from "../../store/authStore";
+import logo from "../../assets/logof.png";
 
 type ActiveSection = "dashboard" | "users" | "reports";
 
@@ -76,10 +77,10 @@ export default function AdminLayout({ active, title, subtitle, actions, children
       <header className="workspace-topbar admin-topbar">
         <div className="page-section workspace-topbar-inner">
           <Link to="/" className="workspace-brand">
-            <span className="workspace-brand-mark">P</span>
-            <span>
-              Portfo<span>lio Pro</span>
+            <span className="workspace-brand-mark">
+              <img src={logo} alt="SpherLink" />
             </span>
+            <span>SpherLink</span>
           </Link>
 
           <div className="workspace-user">

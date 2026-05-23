@@ -22,7 +22,7 @@ export default function ComingSoonPage() {
         }}
       >
         <p style={{ margin: "0 0 12px", color: "#64748b", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 800 }}>
-          PortaFolioPro
+          SpherLink
         </p>
         <h1 style={{ margin: "0 0 16px", fontSize: "44px", color: "#0f172a" }}>P&aacute;gina en proceso</h1>
         <p style={{ margin: "0 0 28px", color: "#475569", fontSize: "18px", lineHeight: 1.6 }}>
