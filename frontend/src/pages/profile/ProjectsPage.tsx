@@ -73,6 +73,18 @@ function TrashIcon() {
   );
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="project-link-icon">
+      <g fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 4h6v6" />
+        <path d="m10 14 10-10" />
+        <path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4" />
+      </g>
+    </svg>
+  );
+}
+
 function normalizeTechnologies(value: string) {
   return value
     .split(",")
@@ -462,7 +474,8 @@ export default function ProjectsPage() {
 
                   {project.enlace_proyecto ? (
                     <a href={project.enlace_proyecto} target="_blank" rel="noreferrer" className="project-link">
-                      Ver evidencia
+                      <ExternalLinkIcon />
+                      Abrir evidencia
                     </a>
                   ) : null}
 

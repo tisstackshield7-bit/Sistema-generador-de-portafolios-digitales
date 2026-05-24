@@ -785,13 +785,25 @@
 
 .dashboard-project-link {
   width: fit-content;
-  color: var(--primary);
-  font-weight: 800;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0b3ea8;
+  background: #ffffff;
+  border: 1px solid rgba(17, 85, 217, 0.22);
+  font-weight: 900;
   text-decoration: none;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
 
 .dashboard-project-link:hover {
-  text-decoration: underline;
+  color: #075985;
+  background: #e0faff;
+  border-color: rgba(8, 166, 201, 0.42);
+  box-shadow: 0 14px 28px rgba(8, 166, 201, 0.14);
 }
 
 .dashboard-skill-groups {
