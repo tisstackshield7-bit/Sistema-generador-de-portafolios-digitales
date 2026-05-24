@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../../api/auth";
 import AlertMessage from "../../components/common/AlertMessage";
@@ -10,6 +11,19 @@ import { authStore } from "../../store/authStore";
 import type { Perfil } from "../../types/profile";
 import { getAuthenticatedHomePath } from "../../utils/authRedirect";
 import { validatePassword, validateRequired } from "../../utils/validations";
+
+type ApiErrorData = {
+  message?: string;
+  errors?: Record<string, string[] | string>;
+};
+
+function getApiErrorData(error: unknown) {
+  if (error instanceof AxiosError) {
+    return error.response?.data as ApiErrorData | undefined;
+  }
+
+  return undefined;
+}
 
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
@@ -68,8 +82,9 @@ export default function ChangePasswordPage() {
       setContrasenaNueva("");
       setConfirmacion("");
       setTimeout(() => navigate(getAuthenticatedHomePath(authStore.getUser())), 900);
-    } catch (error: any) {
-      const apiErrors = error?.response?.data?.errors || {};
+    } catch (error: unknown) {
+      const errorData = getApiErrorData(error);
+      const apiErrors = errorData?.errors || {};
       const fieldErrors: Record<string, string> = {};
 
       Object.entries(apiErrors).forEach(([field, value]) => {
@@ -77,7 +92,7 @@ export default function ChangePasswordPage() {
       });
 
       setErrors((prev) => ({ ...prev, ...fieldErrors }));
-      setServerError(error?.response?.data?.message || "No se pudo cambiar la contrasena.");
+      setServerError(errorData?.message || "No se pudo cambiar la contrasena.");
     } finally {
       setSaving(false);
     }
@@ -92,6 +107,7 @@ export default function ChangePasswordPage() {
     try {
       await logoutUser();
     } catch {
+      // Continue clearing the local session even if the server logout fails.
     } finally {
       authStore.clearSession();
       navigate("/login");

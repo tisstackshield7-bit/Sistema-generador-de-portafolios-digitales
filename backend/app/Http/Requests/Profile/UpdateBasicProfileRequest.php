@@ -23,6 +23,9 @@ class UpdateBasicProfileRequest extends FormRequest
 
         $this->merge([
             'biografia' => RichTextSanitizer::clean($this->input('biografia')),
+            'titular_profesional' => $this->filled('titular_profesional')
+                ? $this->input('titular_profesional')
+                : $this->input('profesion'),
             'ubicacion' => $this->filled('ubicacion') ? trim((string) $this->input('ubicacion')) : null,
             'linkedin_url' => $this->filled('linkedin_url') ? trim((string) $this->input('linkedin_url')) : null,
             'github_url' => $this->filled('github_url') ? trim((string) $this->input('github_url')) : null,

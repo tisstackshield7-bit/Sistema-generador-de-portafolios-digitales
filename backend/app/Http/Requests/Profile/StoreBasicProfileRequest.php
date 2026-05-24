@@ -16,6 +16,9 @@ class StoreBasicProfileRequest extends FormRequest
     {
         $this->merge([
             'biografia' => RichTextSanitizer::clean($this->input('biografia')),
+            'titular_profesional' => $this->filled('titular_profesional')
+                ? $this->input('titular_profesional')
+                : $this->input('profesion'),
             'ubicacion' => $this->filled('ubicacion') ? trim((string) $this->input('ubicacion')) : null,
         ]);
     }

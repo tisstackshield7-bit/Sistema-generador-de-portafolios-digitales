@@ -1,10 +1,24 @@
 import { useEffect, useState } from "react";
+import { AxiosError } from "axios";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
 import FormInput from "../../components/common/FormInput";
 import AlertMessage from "../../components/common/AlertMessage";
 import { validatePassword } from "../../utils/validations";
 import { resetPassword, validateResetToken } from "../../api/password";
+
+type ApiErrorData = {
+  message?: string;
+};
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as ApiErrorData | undefined;
+    return data?.message || fallback;
+  }
+
+  return fallback;
+}
 
 export default function ResetPasswordPage() {
   const { token = "" } = useParams();
@@ -29,9 +43,9 @@ export default function ResetPasswordPage() {
       try {
         await validateResetToken(token, correo);
         setTokenValid(true);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setTokenValid(false);
-        setServerError(err?.response?.data?.message || "El enlace no es valido.");
+        setServerError(getApiErrorMessage(err, "El enlace no es valido."));
       }
     };
 
@@ -57,8 +71,8 @@ export default function ResetPasswordPage() {
       setMessage(data.message);
       setServerError("");
       setTimeout(() => navigate("/login"), 1200);
-    } catch (err: any) {
-      setServerError(err?.response?.data?.message || "No se pudo restablecer la contrasena.");
+    } catch (err: unknown) {
+      setServerError(getApiErrorMessage(err, "No se pudo restablecer la contrasena."));
     }
   };
 

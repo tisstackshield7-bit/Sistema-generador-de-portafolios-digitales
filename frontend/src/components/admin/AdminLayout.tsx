@@ -60,6 +60,7 @@ export default function AdminLayout({ active, title, subtitle, actions, children
     try {
       await logoutUser();
     } catch {
+      // Continue clearing the local session even if the server logout fails.
     } finally {
       authStore.clearSession();
       navigate("/");

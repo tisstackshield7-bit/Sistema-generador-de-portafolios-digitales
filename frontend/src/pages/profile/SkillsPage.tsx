@@ -1008,8 +1008,9 @@ export default function SkillsPage() {
                       }
 
                       setErrors((current) => {
-                        const { visible_publico, ...rest } = current;
-                        return rest;
+                        const nextErrors = { ...current };
+                        delete nextErrors.visible_publico;
+                        return nextErrors;
                       });
 
                       return { ...prev, visible_publico: nextVisible };

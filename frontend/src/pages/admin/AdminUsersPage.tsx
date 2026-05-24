@@ -85,8 +85,7 @@ export default function AdminUsersPage() {
       });
   }, [searchParams]);
 
-  const users = data?.usuarios || [];
-  const filteredUsers = useMemo(() => filterUsers(users, query), [users, query]);
+  const filteredUsers = useMemo(() => filterUsers(data?.usuarios || [], query), [data?.usuarios, query]);
 
   const focusUserCard = (userId: number) => {
     setHighlightedUserId(userId);
