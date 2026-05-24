@@ -1,0 +1,88 @@
+import { richTextToPlainText } from "./richText";
+
+export const validateEmail = (value: string) => {
+  if (!value.trim()) return "El correo electronico es obligatorio.";
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(value)) return "El correo no es valido.";
+  return "";
+};
+
+export const validatePassword = (value: string) => {
+  if (!value.trim()) return "La contrasena es obligatoria.";
+  if (value.length < 8) return "La contrasena debe tener al menos 8 caracteres.";
+  if (!/[A-Z]/.test(value)) return "La contrasena debe incluir una mayuscula.";
+  if (!/[a-z]/.test(value)) return "La contrasena debe incluir una minuscula.";
+  if (!/[0-9]/.test(value)) return "La contrasena debe incluir un numero.";
+  if (!/[\W_]/.test(value)) return "La contrasena debe incluir un simbolo.";
+  return "";
+};
+
+export const validateRequired = (value: string, message: string) => {
+  return value.trim() ? "" : message;
+};
+
+export const validateBiography = (value: string) => {
+  const plainText = richTextToPlainText(value);
+
+  if (!plainText) return "La biografia es obligatoria.";
+  if (plainText.length < 10) return "La biografia debe tener al menos 10 caracteres.";
+  if (plainText.length > 1200) return "La biografia no puede superar los 1200 caracteres.";
+  return "";
+};
+
+export const validateBoliviaPhone = (value: string) => {
+  const normalized = value.replace(/\D/g, "");
+
+  if (!normalized) return "El numero telefonico es obligatorio.";
+
+  const boliviaPhoneRegex = /^(?:591)?[67]\d{7}$/;
+
+  if (!boliviaPhoneRegex.test(normalized)) {
+    return "Ingresa un numero de Bolivia valido. Ej: 71234567 o 59171234567.";
+  }
+
+  return "";
+};
+
+export const validateProfilePhoto = (file?: File | null) => {
+  if (!file) return "";
+  const validTypes = ["image/jpeg", "image/png", "image/webp"];
+  const maxSize = 5 * 1024 * 1024;
+
+  if (!validTypes.includes(file.type)) {
+    return "Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.";
+  }
+
+  if (file.size > maxSize) {
+    return "Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.";
+  }
+
+  return "";
+};
+
+export const validateProjectImage = (file?: File | null) => {
+  return validateProfilePhoto(file);
+};
+
+export const sanitizeLettersAndSpaces = (value: string) => {
+  return value.replace(/[^A-Za-z\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s]/g, "");
+};
+
+export const sanitizeAlphaNumericText = (value: string) => {
+  return value.replace(/[^A-Za-z0-9\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s.,-]/g, "");
+};
+
+export const sanitizeLocationText = (value: string) => {
+  return value.replace(/[^A-Za-z0-9\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s.,-]/g, "");
+};
+
+export const sanitizePlainMultilineText = (value: string) => {
+  return value
+    .split(/\r?\n/)
+    .map((line) => sanitizeAlphaNumericText(line))
+    .join("\n");
+};
+
+export const sanitizeDigits = (value: string) => {
+  return value.replace(/\D/g, "");
+};
