@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuthMiniFooter from "../../components/auth/AuthMiniFooter";
 import FormInput from "../../components/common/FormInput";
 import AlertMessage from "../../components/common/AlertMessage";
 import { validateEmail, validatePassword } from "../../utils/validations";
-import { buildGithubAuthUrl, buildGoogleAuthUrl, registerUser } from "../../api/auth";
+import { registerUser } from "../../api/auth";
 import { authStore } from "../../store/authStore";
 import logo from "../../assets/logof.png";
 
@@ -25,50 +25,13 @@ function CheckBadge() {
   );
 }
 
-function GithubMark() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="login-social-svg">
-      <path
-        d="M12 3.5a8.5 8.5 0 0 0-2.7 16.6c.4.1.6-.2.6-.4v-1.5c-2.3.5-2.8-1-2.8-1-.4-.9-.9-1.2-.9-1.2-.8-.5.1-.5.1-.5.8.1 1.3.9 1.3.9.8 1.3 2 1 2.4.8.1-.6.3-1 .5-1.2-1.8-.2-3.7-.9-3.7-4a3.1 3.1 0 0 1 .8-2.2 2.9 2.9 0 0 1 .1-2.1s.7-.2 2.3.8a8 8 0 0 1 4.2 0c1.6-1 2.3-.8 2.3-.8.4.9.1 1.8.1 2.1.5.6.8 1.3.8 2.2 0 3.1-1.9 3.8-3.7 4 .3.3.6.8.6 1.6v2.3c0 .3.2.5.6.4A8.5 8.5 0 0 0 12 3.5Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function GoogleMark() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="login-social-svg">
-      <path
-        d="M21.8 12.2c0-.7-.1-1.2-.2-1.8H12v3.4h5.5a4.7 4.7 0 0 1-2 3.1v2.6h3.3c1.9-1.8 3-4.3 3-7.3Z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12 22c2.7 0 4.9-.9 6.5-2.5l-3.3-2.6c-.9.6-2 .9-3.2.9-2.5 0-4.7-1.7-5.5-4H3.1v2.7A10 10 0 0 0 12 22Z"
-        fill="#34A853"
-      />
-      <path
-        d="M6.5 13.8a6 6 0 0 1 0-3.7V7.4H3.1a10 10 0 0 0 0 9l3.4-2.6Z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12 6.2c1.4 0 2.6.5 3.6 1.4l2.7-2.7A10 10 0 0 0 3.1 7.4L6.5 10c.8-2.4 3-3.8 5.5-3.8Z"
-        fill="#EA4335"
-      />
-    </svg>
-  );
-}
-
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [errors, setErrors] = useState<{ correo?: string; contrasena?: string }>({});
   const [serverError, setServerError] = useState("");
-  const githubError = new URLSearchParams(location.search).get("github_error") || "";
-  const googleError = new URLSearchParams(location.search).get("google_error") || "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,14 +65,6 @@ export default function RegisterPage() {
       }
       setServerError(msg);
     }
-  };
-
-  const handleGoogleRegister = () => {
-    window.location.assign(buildGoogleAuthUrl("register"));
-  };
-
-  const handleGithubRegister = () => {
-    window.location.assign(buildGithubAuthUrl("register"));
   };
 
   return (
@@ -166,22 +121,7 @@ export default function RegisterPage() {
             <p>Comienza tu presencia profesional con un registro rapido y claro.</p>
           </div>
 
-          <AlertMessage message={githubError || googleError || serverError} />
-
-          <div className="login-social-row">
-            <button type="button" className="login-social-button" onClick={handleGithubRegister}>
-              <GithubMark />
-              <span>GitHub</span>
-            </button>
-            <button type="button" className="login-social-button" onClick={handleGoogleRegister}>
-              <GoogleMark />
-              <span>Google</span>
-            </button>
-          </div>
-
-          <div className="login-divider">
-            <span>O REGISTRATE CON CORREO</span>
-          </div>
+          <AlertMessage message={serverError} />
 
           <form onSubmit={handleSubmit} className="form-stack login-form">
             <FormInput

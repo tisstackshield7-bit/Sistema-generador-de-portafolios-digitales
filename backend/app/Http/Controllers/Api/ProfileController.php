@@ -238,7 +238,8 @@ class ProfileController extends Controller
                     ->orderByDesc('fecha_inicio')
                     ->orderByDesc('creado_en');
             },
-        ])->where('es_publico', true);
+        ])->where('es_publico', true)
+            ->whereHas('usuario', fn ($query) => $query->where('estado', 'activo'));
 
         if ($search !== '') {
             $perfilesQuery->where(function ($query) use ($search) {
@@ -357,6 +358,7 @@ class ProfileController extends Controller
             'perfiles' => $perfiles,
             'categorias' => Habilidad::where('visible_publico', true)
                 ->where('tipo', 'tecnica')
+                ->whereHas('perfil.usuario', fn ($query) => $query->where('estado', 'activo'))
                 ->whereNotNull('categoria')
                 ->distinct()
                 ->orderBy('categoria')
@@ -382,10 +384,12 @@ class ProfileController extends Controller
     private function getPublicRoleOptions()
     {
         $profileRoles = Perfil::where('es_publico', true)
+            ->whereHas('usuario', fn ($query) => $query->where('estado', 'activo'))
             ->get(['profesion', 'titular_profesional'])
             ->flatMap(fn ($perfil) => [$perfil->profesion, $perfil->titular_profesional]);
 
         $projectRoles = \App\Models\Proyecto::where('visible_publico', true)
+            ->whereHas('perfil.usuario', fn ($query) => $query->where('estado', 'activo'))
             ->distinct()
             ->pluck('rol');
 
@@ -402,10 +406,12 @@ class ProfileController extends Controller
     {
         $skillTechnologies = Habilidad::where('visible_publico', true)
             ->where('tipo', 'tecnica')
+            ->whereHas('perfil.usuario', fn ($query) => $query->where('estado', 'activo'))
             ->distinct()
             ->pluck('nombre');
 
         $projectTechnologies = \App\Models\Proyecto::where('visible_publico', true)
+            ->whereHas('perfil.usuario', fn ($query) => $query->where('estado', 'activo'))
             ->pluck('tecnologias')
             ->flatMap(fn ($technologies) => is_array($technologies) ? $technologies : []);
 
@@ -439,6 +445,7 @@ class ProfileController extends Controller
                     ->orderByDesc('creado_en');
             },
         ])->where('es_publico', true)
+            ->whereHas('usuario', fn ($query) => $query->where('estado', 'activo'))
             ->where('slug', $slug)
             ->first();
 

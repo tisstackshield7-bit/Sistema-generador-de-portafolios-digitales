@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ORIGIN } from "../../api/axios";
 import { getAdminDashboard } from "../../api/admin";
+import AlertMessage from "../../components/common/AlertMessage";
 import AdminLayout from "../../components/admin/AdminLayout";
 import type { AdminDashboardResponse, AdminUserSummary } from "../../types/admin";
 
@@ -23,15 +24,24 @@ function getInitials(user: AdminUserSummary) {
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<AdminDashboardResponse | null>(null);
+  const [serverError, setServerError] = useState("");
 
   useEffect(() => {
     getAdminDashboard()
-      .then(setData)
-      .catch(() => setData(null));
+      .then((response) => {
+        setData(response);
+        setServerError("");
+      })
+      .catch(() => {
+        setData(null);
+        setServerError("No se pudo cargar el panel de administracion.");
+      });
   }, []);
 
   return (
     <AdminLayout active="dashboard" title="Panel de Administracion" subtitle="Gestion central del sistema de portafolios digitales.">
+      <AlertMessage message={serverError} />
+
       <section className="admin-hero-banner">
         <div>
           <p className="section-label admin-hero-label">Administracion</p>

@@ -86,6 +86,18 @@ function CalendarIcon() {
   );
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="project-link-icon">
+      <g fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 4h6v6" />
+        <path d="m10 14 10-10" />
+        <path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4" />
+      </g>
+    </svg>
+  );
+}
+
 function buildCertificateViewerUrl(path: string) {
   return `${API_ORIGIN}/storage/${path}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
 }
@@ -160,22 +172,6 @@ export default function PublicProfilePage() {
   const backToHomeLabel = authStore.isAuthenticated() ? "Volver al dashboard" : "Volver al inicio";
   const phoneHref = perfil?.telefono ? `tel:${perfil.telefono.replace(/\s+/g, "")}` : "";
 
-  const handleInternalSkillLink = (event: React.MouseEvent<HTMLDivElement>) => {
-    const link = (event.target as HTMLElement).closest("a");
-    const href = link?.getAttribute("href") || "";
-
-    if (!href.startsWith("#habilidad-")) return;
-
-    event.preventDefault();
-
-    const skillId = Number(href.replace("#habilidad-", ""));
-    const targetSkill = [...technicalSkills, ...softSkills].find((skill) => skill.id === skillId);
-
-    if (!targetSkill) return;
-
-    setEvidenceSkill(targetSkill);
-  };
-
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -221,7 +217,7 @@ export default function PublicProfilePage() {
   }
 
   return (
-    <div className="public-portfolio-shell app-shell" onClick={handleInternalSkillLink}>
+    <div className="public-portfolio-shell app-shell">
       <section className="public-portfolio-hero">
         <div className="page-section public-portfolio-hero-inner">
           <div className="public-portfolio-identity">
@@ -285,6 +281,7 @@ export default function PublicProfilePage() {
 
               <div className="public-portfolio-tag-row">
                 <button type="button" className="public-portfolio-tag-pill" onClick={() => navigate(backToHomePath)}>
+                  <span aria-hidden="true">{"\u2190"}</span>
                   {backToHomeLabel}
                 </button>
               </div>
@@ -470,8 +467,8 @@ export default function PublicProfilePage() {
 
                   {project.enlace_proyecto ? (
                     <a href={project.enlace_proyecto} target="_blank" rel="noreferrer" className="portfolio-project-link">
-                      Ver proyecto
-                      <span aria-hidden="true">-&gt;</span>
+                      <ExternalLinkIcon />
+                      Abrir proyecto
                     </a>
                   ) : null}
                 </div>

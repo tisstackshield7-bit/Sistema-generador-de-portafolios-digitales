@@ -183,6 +183,36 @@ function EyeIcon({ off = false }: { off?: boolean }) {
   );
 }
 
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon-16">
+      <path
+        d="M4 20h4.8L19 9.8 14.2 5 4 15.2V20Zm12.5-13.5 1-1a1.7 1.7 0 0 1 2.4 2.4l-1 1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon-16">
+      <path
+        d="M4 7h16m-10 4v6m4-6v6M9 7V5h6v2m-9 0 1 13h10l1-13"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function ExperienceIcon({ type }: { type: ExperienceType }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="experience-card-icon">
@@ -469,14 +499,20 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                 </div>
 
                 <div className="experience-card-actions">
-                  <button type="button" className="icon-action-button" onClick={() => handleToggleVisibility(experience)} title={experience.visible_publico ? "Ocultar" : "Mostrar"}>
+                  <button
+                    type="button"
+                    className="card-icon-action"
+                    onClick={() => handleToggleVisibility(experience)}
+                    title={experience.visible_publico ? "Ocultar" : "Mostrar"}
+                    aria-label={`${experience.visible_publico ? "Ocultar" : "Mostrar"} ${experience.titulo}`}
+                  >
                     <EyeIcon off={!experience.visible_publico} />
                   </button>
-                  <button type="button" className="icon-action-button" onClick={() => openEditForm(experience)} title="Editar">
-                    Editar
+                  <button type="button" className="card-icon-action" onClick={() => openEditForm(experience)} title="Editar" aria-label={`Editar ${experience.titulo}`}>
+                    <EditIcon />
                   </button>
-                  <button type="button" className="icon-action-button danger" onClick={() => setPendingDelete(experience)} title="Eliminar">
-                    Eliminar
+                  <button type="button" className="card-icon-action danger" onClick={() => setPendingDelete(experience)} title="Eliminar" aria-label={`Eliminar ${experience.titulo}`}>
+                    <TrashIcon />
                   </button>
                 </div>
               </article>

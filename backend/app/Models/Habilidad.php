@@ -42,14 +42,27 @@ class Habilidad extends Model
 
     public function getEstadoRespaldoAttribute(): string
     {
-        if ($this->relationLoaded('evidencias') && $this->evidencias->isNotEmpty()) {
-            return 'con_respaldo';
-        }
-
-        if ($this->certificado_pdf) {
+        if ($this->tieneRespaldo()) {
             return 'con_respaldo';
         }
 
         return 'declarado';
+    }
+
+    public function tieneRespaldo(): bool
+    {
+        if ($this->relationLoaded('evidencias')) {
+            return $this->evidencias->isNotEmpty() || (bool) $this->certificado_pdf;
+        }
+
+        if ($this->evidencias()->exists()) {
+            return true;
+        }
+
+        if ($this->certificado_pdf) {
+            return true;
+        }
+
+        return false;
     }
 }

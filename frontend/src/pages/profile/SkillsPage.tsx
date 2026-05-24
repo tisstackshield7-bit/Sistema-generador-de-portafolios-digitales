@@ -74,6 +74,36 @@ function EyeIcon({ off = false }: { off?: boolean }) {
   );
 }
 
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon-16">
+      <path
+        d="M4 20h4.8L19 9.8 14.2 5 4 15.2V20Zm12.5-13.5 1-1a1.7 1.7 0 0 1 2.4 2.4l-1 1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon-16">
+      <path
+        d="M4 7h16m-10 4v6m4-6v6M9 7V5h6v2m-9 0 1 13h10l1-13"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={`icon-16 category-chevron ${expanded ? "expanded" : ""}`}>
@@ -115,6 +145,10 @@ function hasEvidenceContent(evidence: SkillEvidencePayload) {
 
 function getSupportLabel(skill: Skill) {
   return (skill.evidencias?.length || skill.certificado_pdf) ? "Nivel respaldado" : "Nivel declarado";
+}
+
+function hasSavedEvidence(skill: Skill) {
+  return Boolean(skill.certificado_pdf || skill.evidencias?.length);
 }
 
 function getEvidenceSummary(evidence: SkillEvidencePayload, index: number) {
@@ -336,6 +370,10 @@ export default function SkillsPage() {
       }
     });
 
+    if (form.tipo === "tecnica" && form.visible_publico && !(form.evidencias || []).some(hasEvidenceContent)) {
+      nextErrors.visible_publico = "Agrega al menos una evidencia para publicar esta habilidad tecnica.";
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -409,6 +447,11 @@ export default function SkillsPage() {
   };
 
   const handleToggleVisibility = async (skill: Skill) => {
+    if (!skill.visible_publico && skill.tipo === "tecnica" && !hasSavedEvidence(skill)) {
+      setServerError("Agrega al menos una evidencia antes de publicar esta habilidad tecnica.");
+      return;
+    }
+
     try {
       const data = await updateSkillVisibility(skill.id, !skill.visible_publico);
       const updatedSkill = data.habilidad as Skill;
@@ -553,15 +596,21 @@ export default function SkillsPage() {
                           </div>
 
                           <div className="skill-actions">
-                            <button type="button" className="btn btn-secondary" onClick={() => openEditForm(skill)}>
-                              Editar
+                            <button type="button" className="card-icon-action" onClick={() => openEditForm(skill)} title="Editar" aria-label={`Editar ${skill.nombre}`}>
+                              <EditIcon />
                             </button>
-                            <button type="button" className="btn btn-secondary icon-button-text" onClick={() => handleToggleVisibility(skill)}>
+                            <button
+                              type="button"
+                              className="card-icon-action"
+                              onClick={() => handleToggleVisibility(skill)}
+                              title={skill.visible_publico ? "Ocultar" : "Mostrar"}
+                              aria-label={`${skill.visible_publico ? "Ocultar" : "Mostrar"} ${skill.nombre}`}
+                              disabled={!skill.visible_publico && skill.tipo === "tecnica" && !hasSavedEvidence(skill)}
+                            >
                               <EyeIcon off={!skill.visible_publico} />
-                              {skill.visible_publico ? "Ocultar" : "Mostrar"}
                             </button>
-                            <button type="button" className="btn btn-secondary danger-outline" onClick={() => setPendingDelete(skill)}>
-                              Eliminar
+                            <button type="button" className="card-icon-action danger" onClick={() => setPendingDelete(skill)} title="Eliminar" aria-label={`Eliminar ${skill.nombre}`}>
+                              <TrashIcon />
                             </button>
                           </div>
                         </article>
@@ -947,12 +996,30 @@ export default function SkillsPage() {
                   <button
                     type="button"
                     className={`toggle-switch ${form.visible_publico ? "active" : ""}`}
-                    onClick={() => setForm((prev) => ({ ...prev, visible_publico: !prev.visible_publico }))}
+                    onClick={() => setForm((prev) => {
+                      const nextVisible = !prev.visible_publico;
+
+                      if (nextVisible && prev.tipo === "tecnica" && !(prev.evidencias || []).some(hasEvidenceContent)) {
+                        setErrors((current) => ({
+                          ...current,
+                          visible_publico: "Agrega al menos una evidencia para publicar esta habilidad tecnica.",
+                        }));
+                        return prev;
+                      }
+
+                      setErrors((current) => {
+                        const { visible_publico, ...rest } = current;
+                        return rest;
+                      });
+
+                      return { ...prev, visible_publico: nextVisible };
+                    })}
                     aria-pressed={form.visible_publico}
                   >
                     <span />
                   </button>
                 </label>
+                {errors.visible_publico ? <p className="form-error">{errors.visible_publico}</p> : null}
 
                 <div className="form-actions-row">
                   <button type="button" className="btn btn-secondary" onClick={closeForm}>

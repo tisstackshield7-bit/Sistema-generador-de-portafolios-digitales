@@ -414,12 +414,14 @@ export default function HomePage() {
   const [publicRoles, setPublicRoles] = useState<string[]>([]);
   const [publicTechnologies, setPublicTechnologies] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+  const [technologySearch, setTechnologySearch] = useState("");
+  const [roleSearch, setRoleSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedFeaturedCategory, setSelectedFeaturedCategory] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel | "">("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [openFilter, setOpenFilter] = useState<"category" | "level" | null>(null);
-  const [openAdvancedFilter, setOpenAdvancedFilter] = useState<"role" | "experienceType" | "technologyLevel" | "technologies" | null>(null);
+  const [openAdvancedFilter, setOpenAdvancedFilter] = useState<"role" | "experienceType" | "technologyLevel" | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState(initialAdvancedFilters);
   const [showAllFeaturedProfiles, setShowAllFeaturedProfiles] = useState(false);
@@ -510,13 +512,69 @@ export default function HomePage() {
   const hasActiveSearch = Boolean(appliedQuery || selectedCategory || selectedLevel || hasActiveAdvancedFilters);
 
   const roleOptions = publicRoles;
-  const technologies = publicTechnologies;
+  const searchedRoleOptions = useMemo(() => {
+    const normalizedSearch = normalizeText(roleSearch).trim();
+
+    if (!normalizedSearch) {
+      return roleOptions.slice(0, 14);
+    }
+
+    return roleOptions
+      .filter((role) => normalizeText(role).includes(normalizedSearch))
+      .slice(0, 18);
+  }, [roleOptions, roleSearch]);
+  const technologyOptions = publicTechnologies;
   const technologySummary =
     selectedTechnologies.length === 0
       ? "Todas las tecnologías"
       : selectedTechnologies.length <= 2
         ? selectedTechnologies.join(", ")
         : `${selectedTechnologies.length} tecnologías seleccionadas`;
+
+  const technologyUsage = useMemo(() => {
+    const usage = new Map<string, number>();
+
+    featuredProfilesSource.forEach((profile) => {
+      (profile.habilidades || []).forEach((skill) => {
+        usage.set(skill.nombre, (usage.get(skill.nombre) || 0) + 1);
+      });
+
+      (profile.proyectos || []).forEach((project) => {
+        (project.tecnologias || []).forEach((technology) => {
+          usage.set(technology, (usage.get(technology) || 0) + 1);
+        });
+      });
+    });
+
+    return usage;
+  }, [featuredProfilesSource]);
+  const popularTechnologyOptions = useMemo(
+    () =>
+      [...technologyOptions]
+        .sort((left, right) => {
+          const usageDifference = (technologyUsage.get(right) || 0) - (technologyUsage.get(left) || 0);
+          return usageDifference || left.localeCompare(right);
+        })
+        .slice(0, 12),
+    [technologyOptions, technologyUsage],
+  );
+  const searchedTechnologyOptions = useMemo(() => {
+    const normalizedSearch = normalizeText(technologySearch).trim();
+    const selected = new Set(selectedTechnologies);
+
+    if (!normalizedSearch) {
+      return popularTechnologyOptions.filter((technology) => !selected.has(technology));
+    }
+
+    return technologyOptions
+      .filter((technology) => normalizeText(technology).includes(normalizedSearch))
+      .filter((technology) => !selected.has(technology))
+      .sort((left, right) => {
+        const usageDifference = (technologyUsage.get(right) || 0) - (technologyUsage.get(left) || 0);
+        return usageDifference || left.localeCompare(right);
+      })
+      .slice(0, 18);
+  }, [popularTechnologyOptions, selectedTechnologies, technologyOptions, technologySearch, technologyUsage]);
 
   const activeFilterCount =
     (selectedCategory ? 1 : 0) +
@@ -612,6 +670,8 @@ export default function HomePage() {
   };
   const clearAllFilters = () => {
     setQuery("");
+    setTechnologySearch("");
+    setRoleSearch("");
     setAppliedQuery("");
     setSelectedCategory("");
     setSelectedLevel("");
@@ -654,6 +714,11 @@ export default function HomePage() {
           onRemove: () => updateAdvancedFilter("technologyLevel", ""),
         }
       : null,
+    ...selectedTechnologies.map((technology) => ({
+      key: `technology-${technology}`,
+      label: technology,
+      onRemove: () => toggleTechnologyFilter(technology),
+    })),
   ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
 
   return (
@@ -723,6 +788,25 @@ export default function HomePage() {
 
         <section id="explorar" className="landing-search-section">
           <div className="landing-search-card">
+            <div className="landing-filter-menu">
+              <button type="button" onClick={() => setOpenFilter(openFilter === "category" ? null : "category")}>
+                <span>{selectedCategory || "Todas las areas"}</span>
+                <ChevronIcon />
+              </button>
+              {openFilter === "category" ? (
+                <div className="landing-filter-options">
+                  <button type="button" className={!selectedCategory ? "active" : ""} onClick={() => { setSelectedCategory(""); closeFilterMenu(); }}>
+                    Todas las areas
+                  </button>
+                  {profileCategories.map((category) => (
+                    <button type="button" key={category} className={selectedCategory === category ? "active" : ""} onClick={() => { setSelectedCategory(category); closeFilterMenu(); }}>
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
             <label className="landing-search-input">
               <span aria-hidden="true">
                 <SearchIcon />
@@ -743,25 +827,6 @@ export default function HomePage() {
                 </button>
               ) : null}
             </label>
-
-            <div className="landing-filter-menu">
-              <button type="button" onClick={() => setOpenFilter(openFilter === "category" ? null : "category")}>
-                <span>{selectedCategory || "Todas las areas"}</span>
-                <ChevronIcon />
-              </button>
-              {openFilter === "category" ? (
-                <div className="landing-filter-options">
-                  <button type="button" className={!selectedCategory ? "active" : ""} onClick={() => { setSelectedCategory(""); closeFilterMenu(); }}>
-                    Todas las areas
-                  </button>
-                  {profileCategories.map((category) => (
-                    <button type="button" key={category} className={selectedCategory === category ? "active" : ""} onClick={() => { setSelectedCategory(category); closeFilterMenu(); }}>
-                      {category}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
 
             <div className="landing-filter-menu">
               <button type="button" onClick={() => setOpenFilter(openFilter === "level" ? null : "level")}>
@@ -817,30 +882,52 @@ export default function HomePage() {
                       <ChevronIcon />
                     </button>
                     {openAdvancedFilter === "role" ? (
-                      <div className="landing-filter-options">
+                      <div className="landing-filter-options landing-role-options">
+                        <label className="landing-dropdown-search">
+                          <SearchIcon />
+                          <input
+                            value={roleSearch}
+                            onChange={(event) => setRoleSearch(event.target.value)}
+                            placeholder="Buscar rol..."
+                          />
+                          {roleSearch ? (
+                            <button type="button" onClick={() => setRoleSearch("")} aria-label="Limpiar rol">
+                              <CloseIcon />
+                            </button>
+                          ) : null}
+                        </label>
                         <button
                           type="button"
                           className={!advancedFilters.role ? "active" : ""}
                           onClick={() => {
                             updateAdvancedFilter("role", "");
+                            setRoleSearch("");
                             closeAdvancedFilterMenu();
                           }}
                         >
                           Todos los roles
                         </button>
-                        {roleOptions.map((role) => (
-                          <button
-                            type="button"
-                            key={role}
-                            className={advancedFilters.role === role ? "active" : ""}
-                            onClick={() => {
-                              updateAdvancedFilter("role", role);
-                              closeAdvancedFilterMenu();
-                            }}
-                          >
-                            {role}
-                          </button>
-                        ))}
+                        {searchedRoleOptions.length ? (
+                          searchedRoleOptions.map((role) => (
+                            <button
+                              type="button"
+                              key={role}
+                              className={advancedFilters.role === role ? "active" : ""}
+                              onClick={() => {
+                                updateAdvancedFilter("role", role);
+                                setRoleSearch("");
+                                closeAdvancedFilterMenu();
+                              }}
+                            >
+                              {role}
+                            </button>
+                          ))
+                        ) : (
+                          <p>No hay roles con ese texto.</p>
+                        )}
+                        {!roleSearch && roleOptions.length > searchedRoleOptions.length ? (
+                          <small>Mostrando roles principales. Usa el buscador para encontrar otros.</small>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -943,60 +1030,59 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="landing-advanced-tech-group">
-                  <span>Tecnologías</span>
-                  <div className="landing-filter-menu landing-advanced-menu">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOpenAdvancedFilter(openAdvancedFilter === "technologies" ? null : "technologies")
-                      }
-                    >
-                      <span>{technologySummary}</span>
-                      <ChevronIcon />
-                    </button>
-                    {openAdvancedFilter === "technologies" ? (
-                      <div className="landing-filter-options technologies-dropdown-menu">
-                        <button
-                          type="button"
-                          className={!selectedTechnologies.length ? "active" : ""}
-                          onClick={() => updateAdvancedFilter("technologies", [])}
-                        >
-                          <span className="technology-checkbox-mark" aria-hidden="true">
-                            {!selectedTechnologies.length ? "✓" : ""}
-                          </span>
-                          Todas las tecnologías
-                        </button>
-                        {technologies.length ? (
-                          technologies.map((technology) => {
-                            const isSelected = selectedTechnologies.includes(technology);
-
-                            return (
-                              <button
-                                type="button"
-                                key={technology}
-                                className={isSelected ? "active" : ""}
-                                onClick={() => toggleTechnologyFilter(technology)}
-                              >
-                                <span className="technology-checkbox-mark" aria-hidden="true">
-                                  {isSelected ? "✓" : ""}
-                                </span>
-                                {technology}
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <p>No hay tecnologías publicadas.</p>
-                        )}
-                      </div>
+                <div className="landing-advanced-tech-group" aria-label={technologySummary}>
+                  <strong className="landing-technology-title">Tecnologias</strong>
+                  <label className="landing-technology-search">
+                    <SearchIcon />
+                    <input
+                      value={technologySearch}
+                      onChange={(event) => setTechnologySearch(event.target.value)}
+                      placeholder="Buscar tecnologia..."
+                    />
+                    {technologySearch ? (
+                      <button type="button" onClick={() => setTechnologySearch("")} aria-label="Limpiar tecnologia">
+                        <CloseIcon />
+                      </button>
                     ) : null}
+                  </label>
+
+                  {selectedTechnologies.length ? (
+                    <div className="landing-selected-tech-list" aria-label="Tecnologias seleccionadas">
+                      {selectedTechnologies.map((technology) => (
+                        <button type="button" key={technology} onClick={() => toggleTechnologyFilter(technology)}>
+                          {technology}
+                          <CloseIcon />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="landing-advanced-tech-list">
+                    {searchedTechnologyOptions.length ? (
+                      searchedTechnologyOptions.map((technology) => (
+                        <button type="button" key={technology} onClick={() => toggleTechnologyFilter(technology)}>
+                          {technology}
+                          {!technologySearch && technologyUsage.get(technology) ? (
+                            <span>{technologyUsage.get(technology)}</span>
+                          ) : null}
+                        </button>
+                      ))
+                    ) : (
+                      <p>{technologyOptions.length ? "No hay tecnologias con ese texto." : "No hay tecnologias publicadas."}</p>
+                    )}
                   </div>
+
+                  {!technologySearch && technologyOptions.length > popularTechnologyOptions.length ? (
+                    <small className="landing-technology-help">
+                      Mostrando tecnologias populares. Usa el buscador para encontrar otras.
+                    </small>
+                  ) : null}
                 </div>
               </div>
             ) : null}
           </div>
 
-          {activeFilterChips.length ? (
+          {activeFilterChips.length && !showAdvancedFilters ? (
             <div className="landing-active-filters" aria-label="Filtros activos">
               <div className="landing-active-filters-head">
                 <strong>{activeFilterCount} filtros activos</strong>

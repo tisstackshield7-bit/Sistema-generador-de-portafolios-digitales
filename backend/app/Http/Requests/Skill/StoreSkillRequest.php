@@ -150,7 +150,33 @@ class StoreSkillRequest extends FormRequest
                     );
                 }
             }
+
+            if (
+                $this->boolean('visible_publico')
+                && $this->input('tipo') === 'tecnica'
+                && !$this->hasTechnicalEvidence()
+            ) {
+                $validator->errors()->add(
+                    'visible_publico',
+                    'Agrega al menos una evidencia para publicar esta habilidad tecnica.'
+                );
+            }
         });
+    }
+
+    protected function hasTechnicalEvidence(): bool
+    {
+        foreach ($this->input('evidencias', []) as $index => $evidencia) {
+            if (
+                filled($evidencia['url'] ?? null)
+                || filled($evidencia['archivo_actual'] ?? null)
+                || $this->hasFile("evidencia_archivos.{$index}")
+            ) {
+                return true;
+            }
+        }
+
+        return $this->hasFile('certificado_pdf');
     }
 
     public function messages(): array

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { API_ORIGIN } from "../../api/axios";
 import { getAdminUsers, updateAdminUserStatus } from "../../api/admin";
+import AlertMessage from "../../components/common/AlertMessage";
+import RichTextContent from "../../components/common/RichTextContent";
 import AdminLayout from "../../components/admin/AdminLayout";
 import type { AdminUserSummary, AdminUsersResponse } from "../../types/admin";
 
@@ -54,18 +56,34 @@ function filterUsers(users: AdminUserSummary[], query: string) {
 }
 
 export default function AdminUsersPage() {
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState<AdminUsersResponse | null>(null);
   const [query, setQuery] = useState("");
   const [highlightedUserId, setHighlightedUserId] = useState<number | null>(null);
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
+  const [serverError, setServerError] = useState("");
 
   useEffect(() => {
-    getAdminUsers()
+    const selectedUserId = Number(searchParams.get("usuario_id") || 0) || undefined;
+
+    getAdminUsers(selectedUserId)
       .then((response) => {
         setData(response);
+        if (selectedUserId) {
+          setHighlightedUserId(selectedUserId);
+          window.setTimeout(() => {
+            document.getElementById(`admin-user-card-${selectedUserId}`)?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }, 80);
+        }
       })
-      .catch(() => setData(null));
-  }, []);
+      .catch(() => {
+        setData(null);
+        setServerError("No se pudieron cargar los usuarios.");
+      });
+  }, [searchParams]);
 
   const users = data?.usuarios || [];
   const filteredUsers = useMemo(() => filterUsers(users, query), [users, query]);
@@ -81,6 +99,7 @@ export default function AdminUsersPage() {
   const handleToggleStatus = async (user: AdminUserSummary) => {
     const nextStatus = user.estado === "activo" ? "bloqueado" : "activo";
     setSavingUserId(user.id);
+    setServerError("");
 
     try {
       const response = await updateAdminUserStatus(user.id, nextStatus);
@@ -94,6 +113,8 @@ export default function AdminUsersPage() {
           usuarios: current.usuarios.map((item) => (item.id === user.id ? response.usuario as AdminUserSummary : item)),
         };
       });
+    } catch {
+      setServerError("No se pudo actualizar el estado del usuario.");
     } finally {
       setSavingUserId(null);
     }
@@ -101,6 +122,8 @@ export default function AdminUsersPage() {
 
   return (
     <AdminLayout active="users" title="Gestion de Usuarios" subtitle="Administra los usuarios del sistema">
+      <AlertMessage message={serverError} />
+
       <section className="surface-card admin-user-directory-card">
         <div className="admin-panel-head admin-user-directory-head">
           <div>
@@ -158,7 +181,7 @@ export default function AdminUsersPage() {
                       >
                         {user.estado === "activo" ? "Bloquear" : "Reactivar"}
                       </button>
-                      {user.perfil?.slug ? (
+                      {user.estado === "activo" && user.perfil?.slug ? (
                         <Link to={`/perfil-publico/${user.perfil.slug}`} className="btn btn-secondary admin-directory-link">
                           Ver Portafolio
                         </Link>
@@ -167,7 +190,7 @@ export default function AdminUsersPage() {
                   </div>
 
                   {user.perfil?.biografia ? (
-                    <p className="admin-directory-bio">{user.perfil.biografia}</p>
+                    <RichTextContent value={user.perfil.biografia} className="admin-directory-bio" />
                   ) : (
                     <p className="admin-directory-bio">Este usuario aun no completo su descripcion profesional.</p>
                   )}

@@ -7,10 +7,8 @@ import RichTextEditor from "../../components/common/RichTextEditor";
 import PrivateWorkspaceLayout from "../../components/dashboard/PrivateWorkspaceLayout";
 import { getMyProfile } from "../../api/profile";
 import { createProject, deleteProject, getMyProjects, updateProject, updateProjectVisibility } from "../../api/projects";
-import { getMySkills } from "../../api/skills";
 import type { Perfil } from "../../types/profile";
 import type { Project, ProjectPayload } from "../../types/project";
-import type { Skill } from "../../types/skill";
 import { resolveProjectImageSrc, isAbsoluteImageUrl } from "../../utils/projectImages";
 import { isRichTextEmpty, limitRichText } from "../../utils/richText";
 import { sanitizeAlphaNumericText, sanitizePlainMultilineText, validateProjectImage } from "../../utils/validations";
@@ -35,6 +33,36 @@ function EyeIcon({ off = false }: { off?: boolean }) {
         d={off
           ? "M3 4.5 19.5 21M10.6 6.2A10.9 10.9 0 0 1 12 6c5.5 0 9.4 4.8 10 6-.3.7-1.8 3-4.3 4.7M14.8 14.9A3 3 0 0 1 9.1 9.2"
           : "M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon-16">
+      <path
+        d="M4 20h4.8L19 9.8 14.2 5 4 15.2V20Zm12.5-13.5 1-1a1.7 1.7 0 0 1 2.4 2.4l-1 1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="icon-16">
+      <path
+        d="M4 7h16m-10 4v6m4-6v6M9 7V5h6v2m-9 0 1 13h10l1-13"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"
@@ -85,7 +113,6 @@ export default function ProjectsPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [proyectos, setProyectos] = useState<Project[]>([]);
-  const [habilidades, setHabilidades] = useState<Skill[]>([]);
   const [imageErrors, setImageErrors] = useState<Record<number, true>>({});
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -110,10 +137,9 @@ export default function ProjectsPage() {
           return;
         }
 
-        const [projectData, skillData] = await Promise.all([getMyProjects(), getMySkills()]);
+        const projectData = await getMyProjects();
         setPerfil(profileData.perfil);
         setProyectos(projectData.proyectos || []);
-        setHabilidades(skillData.habilidades || []);
       } catch {
         setServerError("No se pudieron cargar los proyectos.");
       } finally {
@@ -140,13 +166,6 @@ export default function ProjectsPage() {
   const technologyCount = useMemo(
     () => new Set(proyectos.flatMap((project) => project.tecnologias || [])).size,
     [proyectos],
-  );
-  const skillLinkSuggestions = useMemo(
-    () => habilidades.map((skill) => ({
-      label: skill.nombre,
-      href: `#habilidad-${skill.id}`,
-    })),
-    [habilidades],
   );
 
   const openCreateForm = () => {
@@ -448,15 +467,20 @@ export default function ProjectsPage() {
                   ) : null}
 
                   <div className="skill-actions">
-                    <button type="button" className="btn btn-secondary" onClick={() => openEditForm(project)}>
-                      Editar
+                    <button type="button" className="card-icon-action" onClick={() => openEditForm(project)} title="Editar" aria-label={`Editar ${project.titulo}`}>
+                      <EditIcon />
                     </button>
-                    <button type="button" className="btn btn-secondary icon-button-text" onClick={() => handleToggleVisibility(project)}>
+                    <button
+                      type="button"
+                      className="card-icon-action"
+                      onClick={() => handleToggleVisibility(project)}
+                      title={project.visible_publico ? "Ocultar" : "Mostrar"}
+                      aria-label={`${project.visible_publico ? "Ocultar" : "Mostrar"} ${project.titulo}`}
+                    >
                       <EyeIcon off={!project.visible_publico} />
-                      {project.visible_publico ? "Ocultar" : "Mostrar"}
                     </button>
-                    <button type="button" className="btn btn-secondary danger-outline" onClick={() => setPendingDelete(project)}>
-                      Eliminar
+                    <button type="button" className="card-icon-action danger" onClick={() => setPendingDelete(project)} title="Eliminar" aria-label={`Eliminar ${project.titulo}`}>
+                      <TrashIcon />
                     </button>
                   </div>
                 </article>
@@ -511,7 +535,6 @@ export default function ProjectsPage() {
                   placeholder="Describe objetivos, alcance y tu aporte principal."
                   onChange={(value) => setForm((prev) => ({ ...prev, descripcion: limitRichText(value, 1800) }))}
                   error={errors.descripcion}
-                  linkSuggestions={skillLinkSuggestions}
                 />
 
                 <div className="workspace-form-grid">

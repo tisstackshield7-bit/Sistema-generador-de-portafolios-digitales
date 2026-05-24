@@ -28,21 +28,15 @@ function sanitizeNode(node: Node, documentRef: Document): Node | null {
 
   const element = node as HTMLElement;
   const tagName = element.tagName.toUpperCase();
-  const safeTag = ALLOWED_TAGS.has(tagName) ? tagName.toLowerCase() : "span";
+  const href = tagName === "A" ? element.getAttribute("href") || "" : "";
+  const isSafeHref = /^(https?:\/\/|mailto:|tel:)/i.test(href);
+  const safeTag = tagName === "A" && !isSafeHref ? "span" : ALLOWED_TAGS.has(tagName) ? tagName.toLowerCase() : "span";
   const safeElement = documentRef.createElement(safeTag);
 
-  if (tagName === "A") {
-    const href = element.getAttribute("href") || "";
-    const isSafeHref = /^(https?:\/\/|mailto:|tel:|#)/i.test(href);
-
-    if (isSafeHref) {
-      safeElement.setAttribute("href", href);
-
-      if (!href.startsWith("#")) {
-        safeElement.setAttribute("target", "_blank");
-        safeElement.setAttribute("rel", "noreferrer");
-      }
-    }
+  if (tagName === "A" && isSafeHref) {
+    safeElement.setAttribute("href", href);
+    safeElement.setAttribute("target", "_blank");
+    safeElement.setAttribute("rel", "noreferrer");
   }
 
   Array.from(element.childNodes).forEach((child) => {

@@ -133,6 +133,12 @@ class SkillController extends Controller
     {
         $habilidad = $this->resolveOwnedSkill($request, $habilidadId);
 
+        if ($request->boolean('visible_publico') && $habilidad->tipo === 'tecnica' && !$habilidad->tieneRespaldo()) {
+            return response()->json([
+                'message' => 'Agrega al menos una evidencia para publicar esta habilidad tecnica.',
+            ], 422);
+        }
+
         $habilidad->visible_publico = $request->boolean('visible_publico');
         $habilidad->actualizado_en = now();
         $habilidad->save();

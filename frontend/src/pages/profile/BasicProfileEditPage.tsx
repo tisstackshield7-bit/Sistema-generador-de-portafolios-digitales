@@ -17,9 +17,7 @@ import {
   sanitizeLocationText,
 } from "../../utils/validations";
 import { getMyProfile, updateBasicProfile } from "../../api/profile";
-import { getMySkills } from "../../api/skills";
 import type { Perfil } from "../../types/profile";
-import type { Skill } from "../../types/skill";
 import { limitRichText } from "../../utils/richText";
 
 const DEFAULT_VISIBILITY = {
@@ -125,7 +123,6 @@ function ContactFieldIcon({ type }: { type: "email" | "phone" | "location" }) {
 export default function BasicProfileEditPage() {
   const navigate = useNavigate();
   const [perfilData, setPerfilData] = useState<Perfil | null>(null);
-  const [habilidades, setHabilidades] = useState<Skill[]>([]);
 
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -157,10 +154,9 @@ export default function BasicProfileEditPage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const [data, skillData] = await Promise.all([getMyProfile(), getMySkills()]);
+        const data = await getMyProfile();
         const perfil = data.perfil;
         setPerfilData(perfil || null);
-        setHabilidades(skillData.habilidades || []);
 
         if (perfil?.nombres || perfil?.apellidos) {
           setNombres(sanitizeLettersAndSpaces(perfil.nombres || ""));
@@ -194,13 +190,6 @@ const preview = useMemo(() => {
   if (existingPhoto) return `${API_ORIGIN}/storage/${existingPhoto}`;
   return null;
 }, [foto, existingPhoto]);
-  const skillLinkSuggestions = useMemo(
-    () => habilidades.map((skill) => ({
-      label: skill.nombre,
-      href: `#habilidad-${skill.id}`,
-    })),
-    [habilidades],
-  );
 
   const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
   const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
@@ -375,7 +364,6 @@ const preview = useMemo(() => {
               onChange={handleBiografiaChange}
               error={errors.biografia}
               placeholder="Describe en pocas lineas que haces, en que destacas y que tipo de proyectos impulsas."
-              linkSuggestions={skillLinkSuggestions}
             />
           </section>
 

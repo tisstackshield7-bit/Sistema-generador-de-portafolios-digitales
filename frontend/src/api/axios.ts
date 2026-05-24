@@ -25,10 +25,10 @@ api.interceptors.response.use(
     const requestUrl = String(error?.config?.url || "");
     const hasToken = authStore.isAuthenticated();
 
-    if (status === 401 && hasToken && !requestUrl.includes("/auth/logout")) {
+    if ((status === 401 || status === 403) && hasToken && !requestUrl.includes("/auth/logout")) {
       authStore.clearSession();
       authStore.setRedirectNotice(
-        "Debe iniciar sesion para acceder a esta seccion.",
+        status === 403 ? "Su cuenta no tiene acceso habilitado actualmente." : "Debe iniciar sesion para acceder a esta seccion.",
         window.location.pathname,
       );
 

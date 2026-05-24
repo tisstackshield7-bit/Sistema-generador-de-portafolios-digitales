@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { exportAdminReports, getAdminReports } from "../../api/admin";
+import AlertMessage from "../../components/common/AlertMessage";
 import AdminLayout from "../../components/admin/AdminLayout";
 import type { AdminReportsResponse } from "../../types/admin";
 
@@ -20,21 +21,33 @@ export default function AdminReportsPage() {
   const [selectedType, setSelectedType] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<AdminReportsResponse | null>(null);
+  const [serverError, setServerError] = useState("");
 
   useEffect(() => {
     getAdminReports({ buscar: query, tipo: selectedType, page })
-      .then(setData)
-      .catch(() => setData(null));
+      .then((response) => {
+        setData(response);
+        setServerError("");
+      })
+      .catch(() => {
+        setData(null);
+        setServerError("No se pudieron cargar los reportes.");
+      });
   }, [page, query, selectedType]);
 
   const handleExport = async () => {
-    const blob = await exportAdminReports({ buscar: query, tipo: selectedType });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "logs-actividad.csv";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = await exportAdminReports({ buscar: query, tipo: selectedType });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "logs-actividad.csv";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setServerError("");
+    } catch {
+      setServerError("No se pudo exportar el reporte.");
+    }
   };
 
   return (
@@ -48,6 +61,8 @@ export default function AdminReportsPage() {
         </button>
       )}
     >
+      <AlertMessage message={serverError} />
+
       <section className="surface-card admin-report-tabs">
         <button type="button" className="admin-report-tab active">
           Logs de Actividad
