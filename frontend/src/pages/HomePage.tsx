@@ -31,6 +31,10 @@ function normalizeText(value?: string | null) {
     .toLowerCase();
 }
 
+function getFirstWord(value?: string | null) {
+  return (value || "").trim().split(/\s+/)[0] || "";
+}
+
 const skillLevelOrder: Record<string, number> = {
   avanzado: 0,
   intermedio: 1,
@@ -493,10 +497,17 @@ export default function HomePage() {
 
   const user = authStore.getUser();
   const dashboardPath = getAuthenticatedHomePath(user);
-  const welcomeName = useMemo(
-    () => perfil?.nombres || perfil?.nombre_completo?.split(" ")[0] || user?.correo?.split("@")[0] || "Profesional",
-    [perfil, user],
-  );
+  const welcomeName = useMemo(() => {
+    const firstName =
+      getFirstWord(perfil?.nombres) ||
+      getFirstWord(perfil?.nombre_completo) ||
+      getFirstWord(user?.nombre) ||
+      user?.correo?.split("@")[0] ||
+      "Profesional";
+    const paternalLastName = getFirstWord(perfil?.apellidos);
+
+    return [firstName, paternalLastName].filter(Boolean).join(" ");
+  }, [perfil?.apellidos, perfil?.nombre_completo, perfil?.nombres, user?.correo, user?.nombre]);
 
   const filteredProfiles = useMemo(() => publicProfiles, [publicProfiles]);
 
@@ -765,8 +776,7 @@ export default function HomePage() {
         <section id="inicio" className="landing-hero">
           <div className="landing-container landing-hero-inner">
             <div className="landing-hero-copy">
-              <span className="landing-badge">
-                <span aria-hidden="true">*</span>
+              <span className={`landing-badge${isAuth ? " landing-welcome-pill" : ""}`}>
                 {isAuth ? `Bienvenido, ${welcomeName}` : "Plataforma profesional para mostrar tu talento"}
               </span>
 
