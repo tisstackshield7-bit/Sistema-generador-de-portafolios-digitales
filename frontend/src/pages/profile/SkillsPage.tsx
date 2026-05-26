@@ -9,7 +9,7 @@ import { createSkill, deleteSkill, getMySkills, updateSkill, updateSkillVisibili
 import type { Perfil } from "../../types/profile";
 import type { Skill, SkillEvidencePayload, SkillPayload, SkillType } from "../../types/skill";
 import { isRichTextEmpty, limitRichText } from "../../utils/richText";
-import { sanitizeAlphaNumericText } from "../../utils/validations";
+import { sanitizeAlphaNumericText, validatePastOrTodayDate, validateUrl } from "../../utils/validations";
 
 const FALLBACK_TECHNICAL_CATEGORIES = [
   "Frontend",
@@ -196,6 +196,7 @@ export default function SkillsPage() {
   const [technicalCategories, setTechnicalCategories] = useState<string[]>(FALLBACK_TECHNICAL_CATEGORIES);
   const [softCategories, setSoftCategories] = useState<string[]>(FALLBACK_SOFT_CATEGORIES);
   const [levels, setLevels] = useState<string[]>(FALLBACK_LEVELS);
+  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     const loadData = async () => {
@@ -367,6 +368,15 @@ export default function SkillsPage() {
 
       if (!evidence.url?.trim() && !evidence.archivo) {
         nextErrors[`evidencias.${index}.url`] = "Agrega un enlace o archivo para esta evidencia.";
+      } else if (evidence.url?.trim()) {
+        nextErrors[`evidencias.${index}.url`] = validateUrl(evidence.url, "Ingresa un enlace valido para la evidencia.");
+      }
+
+      if (evidence.fecha) {
+        nextErrors[`evidencias.${index}.fecha`] = validatePastOrTodayDate(
+          evidence.fecha,
+          "La fecha de la evidencia no puede ser futura.",
+        );
       }
     });
 
@@ -657,7 +667,6 @@ export default function SkillsPage() {
                         <input
                           className={`form-input${errors.nombre ? " error" : ""}`}
                           value={form.nombre}
-                          placeholder="Ej: React, Python, Docker"
                           onChange={(event) => setForm((prev) => ({ ...prev, nombre: event.target.value }))}
                         />
                         {errors.nombre ? <p className="form-error">{errors.nombre}</p> : null}
@@ -692,7 +701,6 @@ export default function SkillsPage() {
                         <input
                           className={`form-input${errors.categoria_personalizada ? " error" : ""}`}
                           value={form.categoria_personalizada}
-                          placeholder="Ej: Resolucion de conflictos"
                           onChange={(event) => setForm((prev) => ({ ...prev, categoria_personalizada: sanitizeAlphaNumericText(event.target.value) }))}
                         />
                         {errors.categoria_personalizada ? <p className="form-error">{errors.categoria_personalizada}</p> : null}
@@ -860,7 +868,6 @@ export default function SkillsPage() {
                                   <input
                                     className={`form-input${errors[`evidencias.${index}.titulo`] ? " error" : ""}`}
                                     value={evidence.titulo}
-                                    placeholder="Ej: Certificado React Avanzado"
                                     onChange={(event) => setForm((prev) => {
                                       const evidencias = [...(prev.evidencias || [])];
                                       evidencias[index] = { ...evidencias[index], titulo: sanitizeAlphaNumericText(event.target.value) };
@@ -932,7 +939,6 @@ export default function SkillsPage() {
                                   <input
                                     className="form-input"
                                     value={evidence.emisor}
-                                    placeholder="Ej: Coursera, AWS, universidad"
                                     onChange={(event) => setForm((prev) => {
                                       const evidencias = [...(prev.evidencias || [])];
                                       evidencias[index] = { ...evidencias[index], emisor: sanitizeAlphaNumericText(event.target.value) };
@@ -944,8 +950,9 @@ export default function SkillsPage() {
                                 <div className="form-field">
                                   <label className="form-label">Fecha</label>
                                   <input
-                                    className="form-input"
+                                    className={`form-input${errors[`evidencias.${index}.fecha`] ? " error" : ""}`}
                                     type="date"
+                                    max={today}
                                     value={evidence.fecha}
                                     onChange={(event) => setForm((prev) => {
                                       const evidencias = [...(prev.evidencias || [])];
@@ -953,6 +960,7 @@ export default function SkillsPage() {
                                       return { ...prev, evidencias };
                                     })}
                                   />
+                                  {errors[`evidencias.${index}.fecha`] ? <p className="form-error">{errors[`evidencias.${index}.fecha`]}</p> : null}
                                 </div>
                               </div>
 

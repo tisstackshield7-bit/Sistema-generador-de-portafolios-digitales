@@ -34,17 +34,17 @@ export default function AdminDashboardPage() {
       })
       .catch(() => {
         setData(null);
-        setServerError("No se pudo cargar el panel de administracion.");
+        setServerError("No se pudo cargar el panel de administración.");
       });
   }, []);
 
   return (
-    <AdminLayout active="dashboard" title="Panel de Administracion" subtitle="Gestion central del sistema de portafolios digitales.">
+    <AdminLayout active="dashboard" title="Panel de Administración" subtitle="Gestión central del sistema de portafolios digitales.">
       <AlertMessage message={serverError} />
 
       <section className="admin-hero-banner">
         <div>
-          <p className="section-label admin-hero-label">Administracion</p>
+          <p className="section-label admin-hero-label">Administración</p>
           <h2>Supervisa usuarios, contenido y actividad del sistema</h2>
         </div>
       </section>
@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
           <div className="admin-panel-head">
             <div>
               <h3>Usuarios Recientes</h3>
-              <p>Ultimos perfiles registrados en la plataforma</p>
+              <p>Últimos perfiles registrados en la plataforma</p>
             </div>
             <button type="button" className="btn btn-secondary" onClick={() => navigate("/admin/usuarios")}>
               Ver Todos
@@ -101,14 +101,14 @@ export default function AdminDashboardPage() {
                 </button>
               </article>
             ))}
-            {!data?.usuarios_recientes?.length ? <p className="meta-text">No hay usuarios registrados todavia.</p> : null}
+            {!data?.usuarios_recientes?.length ? <p className="meta-text">No hay usuarios registrados todavía.</p> : null}
           </div>
         </article>
 
         <article className="surface-card admin-panel-card">
           <div className="admin-panel-head">
             <div>
-              <h3>Estadisticas</h3>
+              <h3>Estadísticas</h3>
               <p>Resumen del sistema</p>
             </div>
             <button type="button" className="btn btn-secondary" onClick={() => navigate("/admin/reportes")}>
@@ -127,7 +127,7 @@ export default function AdminDashboardPage() {
 
             <article className="admin-insight-card tone-green">
               <div>
-                <strong>Habilidades Tecnicas</strong>
+                <strong>Habilidades Técnicas</strong>
                 <p>Total registradas</p>
               </div>
               <span>{data?.estadisticas.habilidades_tecnicas ?? 0}</span>
@@ -154,8 +154,8 @@ export default function AdminDashboardPage() {
 
       <section className="surface-card admin-actions-strip">
         <div>
-          <h3>Acciones Rapidas</h3>
-          <p>Accede de forma directa a las funciones mas usadas del panel.</p>
+          <h3>Acciones Rápidas</h3>
+          <p>Accede de forma directa a las funciones más usadas del panel.</p>
         </div>
         <div className="admin-actions-row">
           <button type="button" className="btn btn-secondary" onClick={() => navigate("/admin/usuarios")}>

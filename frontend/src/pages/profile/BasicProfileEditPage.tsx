@@ -15,6 +15,8 @@ import {
   sanitizeLettersAndSpaces,
   sanitizeDigits,
   sanitizeLocationText,
+  validateDomainUrl,
+  validateUrl,
 } from "../../utils/validations";
 import { getMyProfile, updateBasicProfile } from "../../api/profile";
 import type { Perfil } from "../../types/profile";
@@ -149,6 +151,9 @@ export default function BasicProfileEditPage() {
     telefono?: string;
     ubicacion?: string;
     biografia?: string;
+    linkedin_url?: string;
+    github_url?: string;
+    sitio_web_url?: string;
   }>({});
 
   useEffect(() => {
@@ -261,6 +266,9 @@ const preview = useMemo(() => {
       telefono: validateBoliviaPhone(telefono),
       ubicacion: ubicacion.trim().length > 180 ? "La ubicacion no puede superar 180 caracteres." : "",
       biografia: validateBiography(biografia),
+      linkedin_url: validateDomainUrl(linkedinUrl, ["linkedin.com", "www.linkedin.com"], "Ingresa una URL valida de LinkedIn."),
+      github_url: validateDomainUrl(githubUrl, ["github.com", "www.github.com"], "Ingresa una URL valida de GitHub."),
+      sitio_web_url: validateUrl(sitioWebUrl, "Ingresa una URL valida para tu sitio web."),
     };
 
     setErrors(nextErrors);
@@ -320,7 +328,6 @@ const preview = useMemo(() => {
                 pattern={lettersPattern}
                 title={onlyLettersMessage}
                 inputMode="text"
-                placeholder="Ej. Juan Daniel"
               />
               <FormInput
                 label="Apellidos *"
@@ -330,7 +337,6 @@ const preview = useMemo(() => {
                 pattern={lettersPattern}
                 title={onlyLettersMessage}
                 inputMode="text"
-                placeholder="Ej. Vasquez Casana"
               />
             </div>
 
@@ -343,7 +349,6 @@ const preview = useMemo(() => {
                 pattern={lettersPattern}
                 title={onlyLettersMessage}
                 inputMode="text"
-                placeholder="Ej. Ingenieria Informatica"
               />
 
               <FormInput
@@ -354,7 +359,6 @@ const preview = useMemo(() => {
                 pattern={lettersPattern}
                 title={onlyLettersMessage}
                 inputMode="text"
-                placeholder="Ej. Ingeniero DevOps"
               />
             </div>
 
@@ -390,7 +394,6 @@ const preview = useMemo(() => {
                     value={telefono}
                     onChange={(event) => setTelefono(sanitizeDigits(event.target.value))}
                     inputMode="tel"
-                    placeholder="Ej. 71234567 o +59171234567"
                   />
                 </div>
                 {errors.telefono ? <p className="form-error">{errors.telefono}</p> : null}
@@ -404,7 +407,6 @@ const preview = useMemo(() => {
                     value={ubicacion}
                     onChange={(event) => setUbicacion(sanitizeLocationText(event.target.value))}
                     inputMode="text"
-                    placeholder="Ej: Cercado, Cochabamba"
                   />
                 </div>
                 {errors.ubicacion ? <p className="form-error">{errors.ubicacion}</p> : null}
@@ -430,6 +432,7 @@ const preview = useMemo(() => {
                     placeholder="https://linkedin.com/in/usuario"
                   />
                 </div>
+                {errors.linkedin_url ? <p className="form-error">{errors.linkedin_url}</p> : null}
               </label>
 
               <label className="professional-link-field">
@@ -443,6 +446,7 @@ const preview = useMemo(() => {
                     placeholder="https://github.com/usuario"
                   />
                 </div>
+                {errors.github_url ? <p className="form-error">{errors.github_url}</p> : null}
               </label>
 
               <label className="professional-link-field">
@@ -456,6 +460,7 @@ const preview = useMemo(() => {
                     placeholder="https://miportafolio.com"
                   />
                 </div>
+                {errors.sitio_web_url ? <p className="form-error">{errors.sitio_web_url}</p> : null}
               </label>
             </div>
           </section>

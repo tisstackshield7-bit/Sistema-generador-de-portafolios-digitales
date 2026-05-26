@@ -315,6 +315,91 @@ class ApiSystemReviewTest extends TestCase
         ]);
     }
 
+    public function test_profile_rejects_professional_links_with_unexpected_domains(): void
+    {
+        [, $token] = $this->createPerfilConSesion('invalid-links@example.com', str_repeat('i', 80));
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson('/api/perfil', [
+                'nombres' => 'Maria',
+                'apellidos' => 'Lopez Garcia',
+                'profesion' => 'Desarrolladora Backend',
+                'titular_profesional' => 'Desarrolladora Backend',
+                'telefono' => '71234567',
+                'biografia' => 'Perfil de prueba con informacion suficiente para las validaciones.',
+                'linkedin_url' => 'https://example.com/in/maria',
+                'github_url' => 'https://gitlab.com/maria',
+                'sitio_web_url' => 'https://miportafolio.dev',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['linkedin_url', 'github_url']);
+    }
+
+    public function test_project_rejects_future_dates(): void
+    {
+        [, $token] = $this->createPerfilConSesion('future-project@example.com', str_repeat('j', 80));
+        $futureDate = now()->addDay()->toDateString();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/proyectos', [
+                'titulo' => 'Sistema de portafolios',
+                'rol' => 'Desarrolladora full stack',
+                'descripcion' => '<p>Proyecto con informacion valida y suficiente.</p>',
+                'fecha_inicio' => $futureDate,
+                'fecha_fin' => $futureDate,
+                'tecnologias' => ['React', 'Laravel'],
+                'visible_publico' => false,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['fecha_inicio', 'fecha_fin']);
+    }
+
+    public function test_skill_evidence_rejects_future_dates(): void
+    {
+        [, $token] = $this->createPerfilConSesion('future-skill-evidence@example.com', str_repeat('k', 80));
+        $futureDate = now()->addDay()->toDateString();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/habilidades', [
+                'tipo' => 'tecnica',
+                'nombre' => 'Laravel',
+                'categoria' => 'Backend',
+                'nivel_dominio' => 'Avanzado',
+                'visible_publico' => false,
+                'evidencias' => [[
+                    'tipo' => 'curso',
+                    'titulo' => 'Curso avanzado',
+                    'url' => 'https://example.com/evidencia',
+                    'fecha' => $futureDate,
+                ]],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['evidencias.0.fecha']);
+    }
+
+    public function test_experience_rejects_future_dates(): void
+    {
+        [, $token] = $this->createPerfilConSesion('future-experience@example.com', str_repeat('l', 80));
+        $futureDate = now()->addDay()->toDateString();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/experiencias', [
+                'tipo' => 'academica',
+                'titulo' => 'Diplomado en Arquitectura de Software',
+                'institucion' => 'Universidad Tecnologica',
+                'descripcion' => '<p>Programa academico con descripcion valida.</p>',
+                'fecha_inicio' => $futureDate,
+                'fecha_fin' => $futureDate,
+                'visible_publico' => false,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['fecha_inicio', 'fecha_fin']);
+    }
+
     public function test_public_profile_only_shows_visible_skills(): void
     {
         [$perfil] = $this->createPerfilConSesion('publicskills@example.com', str_repeat('f', 80), 'perfil-publico-skills');

@@ -286,7 +286,6 @@ export default function BasicProfileCreatePage() {
               pattern={lettersPattern}
               title={onlyLettersMessage}
               inputMode="text"
-              placeholder="Ej. Juan Daniel"
             />
 
             <FormInput
@@ -301,7 +300,6 @@ export default function BasicProfileCreatePage() {
               pattern={lettersPattern}
               title={onlyLettersMessage}
               inputMode="text"
-              placeholder="Ej. Vasquez Casana"
             />
 
             <FormInput
@@ -316,7 +314,6 @@ export default function BasicProfileCreatePage() {
               pattern={lettersPattern}
               title={onlyLettersMessage}
               inputMode="text"
-              placeholder="Ej. Ingenieria Informatica"
             />
 
             <FormInput
@@ -331,7 +328,6 @@ export default function BasicProfileCreatePage() {
               pattern={lettersPattern}
               title={onlyLettersMessage}
               inputMode="text"
-              placeholder="Ej. Ingeniero DevOps"
             />
 
             <FormInput
@@ -344,7 +340,6 @@ export default function BasicProfileCreatePage() {
               }}
               error={errors.telefono}
               inputMode="numeric"
-              placeholder="Ej. 71234567 o 59171234567"
             />
 
             <FormInput
@@ -357,7 +352,6 @@ export default function BasicProfileCreatePage() {
               }}
               error={errors.ubicacion}
               inputMode="text"
-              placeholder="Ej: Cercado, Cochabamba"
             />
 
             <RichTextEditor

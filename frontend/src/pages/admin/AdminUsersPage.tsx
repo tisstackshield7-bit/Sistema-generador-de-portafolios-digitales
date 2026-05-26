@@ -120,7 +120,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <AdminLayout active="users" title="Gestion de Usuarios" subtitle="Administra los usuarios del sistema">
+    <AdminLayout active="users" title="Gestión de Usuarios" subtitle="Administra los usuarios del sistema">
       <AlertMessage message={serverError} />
 
       <section className="surface-card admin-user-directory-card">
@@ -191,7 +191,7 @@ export default function AdminUsersPage() {
                   {user.perfil?.biografia ? (
                     <RichTextContent value={user.perfil.biografia} className="admin-directory-bio" />
                   ) : (
-                    <p className="admin-directory-bio">Este usuario aun no completo su descripcion profesional.</p>
+                    <p className="admin-directory-bio">Este usuario aún no completó su descripción profesional.</p>
                   )}
 
                   <div className="admin-directory-meta">
@@ -210,7 +210,7 @@ export default function AdminUsersPage() {
             </article>
           ))}
 
-          {!filteredUsers.length ? <p className="meta-text">No hay usuarios que coincidan con la busqueda.</p> : null}
+          {!filteredUsers.length ? <p className="meta-text">No hay usuarios que coincidan con la búsqueda.</p> : null}
         </div>
       </section>
 
@@ -218,7 +218,7 @@ export default function AdminUsersPage() {
         <div className="admin-panel-head">
           <div>
             <h3>Resumen de Usuarios</h3>
-            <p>Vista rapida de estadisticas por usuario</p>
+            <p>Vista rápida de estadísticas por usuario</p>
           </div>
         </div>
 
@@ -227,11 +227,11 @@ export default function AdminUsersPage() {
             <thead>
               <tr>
                 <th>Usuario</th>
-                <th>Profesion</th>
+                <th>Profesión</th>
                 <th>Proyectos</th>
                 <th>Habilidades</th>
                 <th>Visibles</th>
-                <th>Accion</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody>

@@ -48,8 +48,8 @@ class StoreExperienceRequest extends FormRequest
             'institucion' => ['required', 'string', 'max:180'],
             'ubicacion' => ['nullable', 'string', 'max:180'],
             'descripcion' => ['required', 'string', 'max:5000'],
-            'fecha_inicio' => ['required', 'date'],
-            'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+            'fecha_inicio' => ['required', 'date', 'before_or_equal:today'],
+            'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:today'],
             'actualidad' => ['nullable', 'boolean'],
             'logros' => ['nullable', 'array'],
             'logros.*' => ['required', 'string', 'max:180'],
@@ -66,7 +66,9 @@ class StoreExperienceRequest extends FormRequest
             'institucion.required' => 'La institucion es obligatoria.',
             'descripcion.required' => 'La descripcion es obligatoria.',
             'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
+            'fecha_inicio.before_or_equal' => 'La fecha de inicio no puede ser futura.',
             'fecha_fin.after_or_equal' => 'La fecha de fin no puede ser anterior a la fecha de inicio.',
+            'fecha_fin.before_or_equal' => 'La fecha de fin no puede ser futura.',
         ];
     }
 }

@@ -15,7 +15,13 @@ import {
 import type { Perfil } from "../../types/profile";
 import type { Experience, ExperiencePayload, ExperienceType } from "../../types/experience";
 import { isRichTextEmpty, limitRichText, richTextToPlainText, sanitizeRichText } from "../../utils/richText";
-import { sanitizeAlphaNumericText, sanitizeDigits, sanitizeLocationText, sanitizePlainMultilineText } from "../../utils/validations";
+import {
+  sanitizeAlphaNumericText,
+  sanitizeDigits,
+  sanitizeLocationText,
+  sanitizePlainMultilineText,
+  validatePastOrTodayDate,
+} from "../../utils/validations";
 
 const EMPTY_FORM: ExperiencePayload = {
   tipo: "laboral",
@@ -270,6 +276,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     const loadData = async () => {
@@ -350,8 +357,13 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
     }
     if (isRichTextEmpty(form.descripcion || "")) nextErrors.descripcion = "La descripcion es obligatoria.";
     if (!form.fecha_inicio) nextErrors.fecha_inicio = "La fecha de inicio es obligatoria.";
+    if (!nextErrors.fecha_inicio) {
+      nextErrors.fecha_inicio = validatePastOrTodayDate(form.fecha_inicio, "La fecha de inicio no puede ser futura.");
+    }
     if (form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
       nextErrors.fecha_fin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
+    } else if (form.fecha_fin) {
+      nextErrors.fecha_fin = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
     }
 
     setErrors(nextErrors);
@@ -550,7 +562,6 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                   <input
                     className={`form-input${errors.titulo ? " error" : ""}`}
                     value={form.titulo}
-                    placeholder={form.tipo === "laboral" ? "Ej: Desarrollador Full Stack Senior" : "Ej: Ingeniería de Sistemas, CCNA Cisco, Diplomado en Arquitectura de Software"}
                     onChange={(event) => setForm((prev) => ({ ...prev, titulo: sanitizeAlphaNumericText(event.target.value) }))}
                   />
                   {errors.titulo ? <p className="form-error">{errors.titulo}</p> : null}
@@ -561,7 +572,6 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                   <input
                     className={`form-input${errors.institucion ? " error" : ""}`}
                     value={form.institucion}
-                    placeholder={form.tipo === "laboral" ? "Ej: TechCorp Solutions" : "Ej: Universidad Mayor de San Simón, Cisco Networking Academy"}
                     onChange={(event) => setForm((prev) => ({ ...prev, institucion: sanitizeAlphaNumericText(event.target.value) }))}
                   />
                   {errors.institucion ? <p className="form-error">{errors.institucion}</p> : null}
@@ -596,7 +606,6 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                       <input
                         className="form-input"
                         value={academicDetails.especializacionArea}
-                        placeholder="Ej: Redes, Arquitectura de Software, Desarrollo Web, Inteligencia Artificial"
                         onChange={(event) =>
                           setAcademicDetails((prev) => ({
                             ...prev,
@@ -613,7 +622,6 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                   <input
                     className={`form-input${errors.ubicacion ? " error" : ""}`}
                     value={form.ubicacion || ""}
-                    placeholder={form.tipo === "academica" ? "Ej: Cochabamba, Bolivia / Virtual" : "Ej: Cercado, Cochabamba"}
                     onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
@@ -638,6 +646,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                     <input
                       className={`form-input${errors.fecha_inicio ? " error" : ""}`}
                       type="date"
+                      max={today}
                       value={form.fecha_inicio}
                       onChange={(event) => setForm((prev) => ({ ...prev, fecha_inicio: event.target.value }))}
                     />
@@ -649,6 +658,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                     <input
                       className={`form-input${errors.fecha_fin ? " error" : ""}`}
                       type="date"
+                      max={today}
                       value={form.fecha_fin}
                       onChange={(event) => setForm((prev) => ({ ...prev, fecha_fin: event.target.value }))}
                     />

@@ -64,6 +64,45 @@ export const validateProjectImage = (file?: File | null) => {
   return validateProfilePhoto(file);
 };
 
+export const validateUrl = (value: string, message: string) => {
+  if (!value.trim()) return "";
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? "" : message;
+  } catch {
+    return message;
+  }
+};
+
+export const validateDomainUrl = (value: string, allowedHosts: string[], message: string) => {
+  if (!value.trim()) return "";
+
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+
+    if ((url.protocol === "http:" || url.protocol === "https:") && allowedHosts.includes(host)) {
+      return "";
+    }
+
+    return message;
+  } catch {
+    return message;
+  }
+};
+
+export const validatePastOrTodayDate = (value: string, message: string) => {
+  if (!value) return "";
+
+  const today = new Date();
+  const todayValue = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()))
+    .toISOString()
+    .slice(0, 10);
+
+  return value > todayValue ? message : "";
+};
+
 export const sanitizeLettersAndSpaces = (value: string) => {
   return value.replace(/[^A-Za-z\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s]/g, "");
 };

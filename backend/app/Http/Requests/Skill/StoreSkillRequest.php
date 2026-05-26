@@ -103,7 +103,7 @@ class StoreSkillRequest extends FormRequest
             'evidencias.*.descripcion' => ['nullable', 'string', 'max:3000'],
             'evidencias.*.url' => ['nullable', 'url', 'max:255'],
             'evidencias.*.emisor' => ['nullable', 'string', 'max:180'],
-            'evidencias.*.fecha' => ['nullable', 'date'],
+            'evidencias.*.fecha' => ['nullable', 'date', 'before_or_equal:today'],
             'evidencias.*.id' => ['nullable', 'integer'],
             'evidencias.*.archivo_actual' => ['nullable', 'string', 'max:255'],
             'evidencia_archivos' => ['nullable', 'array'],
@@ -197,6 +197,7 @@ class StoreSkillRequest extends FormRequest
             'evidencias.*.tipo.in' => 'El tipo de evidencia no es valido.',
             'evidencias.*.titulo.required_with' => 'El titulo de la evidencia es obligatorio.',
             'evidencias.*.url.url' => 'Ingresa un enlace valido para la evidencia.',
+            'evidencias.*.fecha.before_or_equal' => 'La fecha de la evidencia no puede ser futura.',
             'evidencia_archivos.*.mimes' => 'La evidencia debe ser PDF, imagen o video.',
             'evidencia_archivos.*.max' => 'La evidencia no puede superar los 10 MB.',
         ];

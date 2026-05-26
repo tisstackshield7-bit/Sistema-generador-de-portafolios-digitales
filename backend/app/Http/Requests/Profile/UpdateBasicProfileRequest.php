@@ -7,6 +7,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBasicProfileRequest extends FormRequest
 {
+    private const LINKEDIN_HOSTS = ['linkedin.com', 'www.linkedin.com'];
+
+    private const GITHUB_HOSTS = ['github.com', 'www.github.com'];
+
     public function authorize(): bool
     {
         return true;
@@ -44,8 +48,16 @@ class UpdateBasicProfileRequest extends FormRequest
             'telefono' => ['required', 'string', 'regex:/^(?:591)?[67]\d{7}$/'],
             'ubicacion' => ['nullable', 'string', 'max:180'],
             'biografia' => ['required', 'string', 'min:10', 'max:5000'],
-            'linkedin_url' => ['nullable', 'url', 'max:255'],
-            'github_url' => ['nullable', 'url', 'max:255'],
+            'linkedin_url' => ['nullable', 'url', 'max:255', function ($attribute, $value, $fail) {
+                if (!$this->hasAllowedHost((string) $value, self::LINKEDIN_HOSTS)) {
+                    $fail('Ingresa una URL valida de LinkedIn.');
+                }
+            }],
+            'github_url' => ['nullable', 'url', 'max:255', function ($attribute, $value, $fail) {
+                if (!$this->hasAllowedHost((string) $value, self::GITHUB_HOSTS)) {
+                    $fail('Ingresa una URL valida de GitHub.');
+                }
+            }],
             'sitio_web_url' => ['nullable', 'url', 'max:255'],
             'visibilidad' => ['nullable', 'array'],
             'visibilidad.mostrar_correo' => ['nullable', 'boolean'],
@@ -79,5 +91,12 @@ class UpdateBasicProfileRequest extends FormRequest
             'foto_perfil.mimes' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.',
             'foto_perfil.max' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.',
         ];
+    }
+
+    private function hasAllowedHost(string $url, array $allowedHosts): bool
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return in_array($host, $allowedHosts, true);
     }
 }

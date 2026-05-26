@@ -53,8 +53,8 @@ export default function AdminReportsPage() {
   return (
     <AdminLayout
       active="reports"
-      title="Reportes y Estadisticas"
-      subtitle="Analisis completo del sistema de portafolios"
+      title="Reportes y Estadísticas"
+      subtitle="Análisis completo del sistema de portafolios"
       actions={(
         <button type="button" className="btn btn-primary" onClick={handleExport}>
           Exportar Logs
@@ -79,7 +79,7 @@ export default function AdminReportsPage() {
         </article>
         <article className="surface-card admin-report-summary-card tone-green">
           <div>
-            <h3>Inicios de Sesion</h3>
+            <h3>Inicios de Sesión</h3>
             <strong>{data?.resumen.inicios_sesion ?? 0}</strong>
           </div>
         </article>
@@ -91,7 +91,7 @@ export default function AdminReportsPage() {
         </article>
         <article className="surface-card admin-report-summary-card tone-amber">
           <div>
-            <h3>Busquedas</h3>
+            <h3>Búsquedas</h3>
             <strong>{data?.resumen.busquedas ?? 0}</strong>
           </div>
         </article>
@@ -159,7 +159,7 @@ export default function AdminReportsPage() {
               Anterior
             </button>
             <span>
-              Pagina {data.reportes.current_page} de {data.reportes.last_page}
+              Página {data.reportes.current_page} de {data.reportes.last_page}
             </span>
             <button
               type="button"

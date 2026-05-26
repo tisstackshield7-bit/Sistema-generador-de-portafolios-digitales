@@ -11,7 +11,13 @@ import type { Perfil } from "../../types/profile";
 import type { Project, ProjectPayload } from "../../types/project";
 import { resolveProjectImageSrc, isAbsoluteImageUrl } from "../../utils/projectImages";
 import { isRichTextEmpty, limitRichText } from "../../utils/richText";
-import { sanitizeAlphaNumericText, sanitizePlainMultilineText, validateProjectImage } from "../../utils/validations";
+import {
+  sanitizeAlphaNumericText,
+  sanitizePlainMultilineText,
+  validatePastOrTodayDate,
+  validateProjectImage,
+  validateUrl,
+} from "../../utils/validations";
 
 const EMPTY_FORM: ProjectPayload = {
   titulo: "",
@@ -138,6 +144,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     const loadData = async () => {
@@ -270,24 +277,25 @@ export default function ProjectsPage() {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     const technologies = normalizeTechnologies(form.tecnologias);
-    const urlPattern = /^https?:\/\/.+\..+/i;
-
     if (!form.titulo.trim()) nextErrors.titulo = "El titulo del proyecto es obligatorio.";
     if (!form.rol.trim()) nextErrors.rol = "Tu rol en el proyecto es obligatorio.";
     if (isRichTextEmpty(form.descripcion)) nextErrors.descripcion = "La descripcion del proyecto es obligatoria.";
     if (!form.fecha_inicio) nextErrors.fecha_inicio = "La fecha de inicio es obligatoria.";
+    if (!nextErrors.fecha_inicio) {
+      nextErrors.fecha_inicio = validatePastOrTodayDate(form.fecha_inicio, "La fecha de inicio no puede ser futura.");
+    }
     if (!technologies.length) nextErrors.tecnologias = "Debes agregar al menos una tecnologia.";
     if (form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
       nextErrors.fecha_fin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
+    } else if (form.fecha_fin) {
+      nextErrors.fecha_fin = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
     }
-    if (form.enlace_proyecto?.trim() && !urlPattern.test(form.enlace_proyecto.trim())) {
-      nextErrors.enlace_proyecto = "Ingrese un enlace valido";
-    }
+    nextErrors.enlace_proyecto = validateUrl(form.enlace_proyecto || "", "Ingrese un enlace valido");
     if (imageFile) {
       const imageError = validateProjectImage(imageFile);
       if (imageError) nextErrors.imagen_archivo = imageError;
-    } else if (form.url_imagen?.trim() && !urlPattern.test((form.url_imagen || "").trim())) {
-      nextErrors.url_imagen = "Ingrese una URL de imagen valida.";
+    } else {
+      nextErrors.url_imagen = validateUrl(form.url_imagen || "", "Ingrese una URL de imagen valida.");
     }
 
     setErrors(nextErrors);
@@ -524,7 +532,6 @@ export default function ProjectsPage() {
                     <input
                       className={`form-input${errors.titulo ? " error" : ""}`}
                       value={form.titulo}
-                      placeholder="Ej: Plataforma de portafolios"
                       onChange={(event) => setForm((prev) => ({ ...prev, titulo: sanitizeAlphaNumericText(event.target.value) }))}
                     />
                     {errors.titulo ? <p className="form-error">{errors.titulo}</p> : null}
@@ -535,7 +542,6 @@ export default function ProjectsPage() {
                     <input
                       className={`form-input${errors.rol ? " error" : ""}`}
                       value={form.rol}
-                      placeholder="Ej: Desarrollador full stack"
                       onChange={(event) => setForm((prev) => ({ ...prev, rol: sanitizeAlphaNumericText(event.target.value) }))}
                     />
                     {errors.rol ? <p className="form-error">{errors.rol}</p> : null}
@@ -556,6 +562,7 @@ export default function ProjectsPage() {
                     <input
                       className={`form-input${errors.fecha_inicio ? " error" : ""}`}
                       type="date"
+                      max={today}
                       value={form.fecha_inicio}
                       onChange={(event) => setForm((prev) => ({ ...prev, fecha_inicio: event.target.value }))}
                     />
@@ -567,6 +574,7 @@ export default function ProjectsPage() {
                     <input
                       className={`form-input${errors.fecha_fin ? " error" : ""}`}
                       type="date"
+                      max={today}
                       value={form.fecha_fin}
                       onChange={(event) => setForm((prev) => ({ ...prev, fecha_fin: event.target.value }))}
                     />
