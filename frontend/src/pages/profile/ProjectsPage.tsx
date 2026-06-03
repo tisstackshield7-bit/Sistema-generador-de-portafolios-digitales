@@ -284,20 +284,24 @@ export default function ProjectsPage() {
     if (isRichTextEmpty(form.descripcion)) nextErrors.descripcion = "La descripcion del proyecto es obligatoria.";
     if (!form.fecha_inicio) nextErrors.fecha_inicio = "La fecha de inicio es obligatoria.";
     if (!nextErrors.fecha_inicio) {
-      nextErrors.fecha_inicio = validatePastOrTodayDate(form.fecha_inicio, "La fecha de inicio no puede ser futura.");
+      const startDateError = validatePastOrTodayDate(form.fecha_inicio, "La fecha de inicio no puede ser futura.");
+      if (startDateError) nextErrors.fecha_inicio = startDateError;
     }
     if (!technologies.length) nextErrors.tecnologias = "Debes agregar al menos una tecnologia.";
     if (!form.actualidad && form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
       nextErrors.fecha_fin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
     } else if (!form.actualidad && form.fecha_fin) {
-      nextErrors.fecha_fin = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
+      const endDateError = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
+      if (endDateError) nextErrors.fecha_fin = endDateError;
     }
-    nextErrors.enlace_proyecto = validateUrl(form.enlace_proyecto || "", "Ingrese un enlace valido");
+    const projectLinkError = validateUrl(form.enlace_proyecto || "", "Ingrese un enlace valido");
+    if (projectLinkError) nextErrors.enlace_proyecto = projectLinkError;
     if (imageFile) {
       const imageError = validateProjectImage(imageFile);
       if (imageError) nextErrors.imagen_archivo = imageError;
     } else {
-      nextErrors.url_imagen = validateUrl(form.url_imagen || "", "Ingrese una URL de imagen valida.");
+      const imageUrlError = validateUrl(form.url_imagen || "", "Ingrese una URL de imagen valida.");
+      if (imageUrlError) nextErrors.url_imagen = imageUrlError;
     }
 
     setErrors(nextErrors);

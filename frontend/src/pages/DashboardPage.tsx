@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ORIGIN } from "../api/axios";
 import { getMyProfile } from "../api/profile";
+import AlertMessage from "../components/common/AlertMessage";
 import RichTextContent from "../components/common/RichTextContent";
 import PrivateWorkspaceLayout from "../components/dashboard/PrivateWorkspaceLayout";
 import type { Perfil } from "../types/profile";
+import { downloadProfileCvPdf } from "../utils/cvExport";
 import { resolveProjectImageSrc } from "../utils/projectImages";
 import "./HomePage.css";
 
@@ -161,6 +163,8 @@ function DashboardExperienceSection({
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [downloadError, setDownloadError] = useState("");
+  const [downloadingCv, setDownloadingCv] = useState<"pdf" | null>(null);
 
   useEffect(() => {
     getMyProfile()
@@ -184,8 +188,22 @@ export default function DashboardPage() {
     perfil?.sitio_web_url ? { type: "web" as const, label: "Sitio Web", url: perfil.sitio_web_url } : null,
   ].filter(Boolean) as { type: "linkedin" | "github" | "web"; label: string; url: string }[];
 
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloadError("");
+      setDownloadingCv("pdf");
+      await downloadProfileCvPdf(perfil);
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : "No se pudo descargar el CV en PDF.");
+    } finally {
+      setDownloadingCv(null);
+    }
+  };
+
   return (
     <PrivateWorkspaceLayout active="dashboard" perfil={perfil} title="" subtitle="">
+      <AlertMessage message={downloadError} />
+
       <section className="dashboard-hero-panel">
         <div className="dashboard-hero-copy">
           <p className="section-label dashboard-light-label">Dashboard</p>
@@ -197,6 +215,14 @@ export default function DashboardPage() {
               onClick={() => navigate(perfil?.slug ? `/perfil-publico/${perfil.slug}` : "/perfil/editar")}
             >
               Ver portafolio publico
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary dashboard-cv-button"
+              onClick={handleDownloadPdf}
+              disabled={!perfil || downloadingCv !== null}
+            >
+              {downloadingCv === "pdf" ? "Generando PDF..." : "Descargar CV en PDF"}
             </button>
           </div>
         </div>

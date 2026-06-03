@@ -371,14 +371,16 @@ export default function SkillsPage() {
       if (!evidence.url?.trim() && !evidence.archivo) {
         nextErrors[`evidencias.${index}.url`] = "Agrega un enlace o archivo para esta evidencia.";
       } else if (evidence.url?.trim()) {
-        nextErrors[`evidencias.${index}.url`] = validateUrl(evidence.url, "Ingresa un enlace valido para la evidencia.");
+        const evidenceUrlError = validateUrl(evidence.url, "Ingresa un enlace valido para la evidencia.");
+        if (evidenceUrlError) nextErrors[`evidencias.${index}.url`] = evidenceUrlError;
       }
 
       if (!evidence.actualidad && evidence.fecha) {
-        nextErrors[`evidencias.${index}.fecha`] = validatePastOrTodayDate(
+        const evidenceDateError = validatePastOrTodayDate(
           evidence.fecha,
           "La fecha de la evidencia no puede ser futura.",
         );
+        if (evidenceDateError) nextErrors[`evidencias.${index}.fecha`] = evidenceDateError;
       }
     });
 

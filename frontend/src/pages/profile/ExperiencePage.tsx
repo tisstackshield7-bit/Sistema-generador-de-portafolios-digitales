@@ -405,12 +405,14 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
     if (isRichTextEmpty(form.descripcion || "")) nextErrors.descripcion = "La descripcion es obligatoria.";
     if (!form.fecha_inicio) nextErrors.fecha_inicio = "La fecha de inicio es obligatoria.";
     if (!nextErrors.fecha_inicio) {
-      nextErrors.fecha_inicio = validatePastOrTodayDate(form.fecha_inicio, "La fecha de inicio no puede ser futura.");
+      const startDateError = validatePastOrTodayDate(form.fecha_inicio, "La fecha de inicio no puede ser futura.");
+      if (startDateError) nextErrors.fecha_inicio = startDateError;
     }
     if (!form.actualidad && form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
       nextErrors.fecha_fin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
     } else if (!form.actualidad && form.fecha_fin) {
-      nextErrors.fecha_fin = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
+      const endDateError = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
+      if (endDateError) nextErrors.fecha_fin = endDateError;
     }
 
     setErrors(nextErrors);
