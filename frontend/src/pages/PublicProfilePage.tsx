@@ -117,9 +117,15 @@ function formatProjectMonthYear(value?: string | null) {
 
 function getProjectDateRange(project: Project) {
   const startDate = formatProjectMonthYear(project.fecha_inicio);
-  const endDate = formatProjectMonthYear(project.fecha_fin) || "Actualidad";
+  const endDate = project.actualidad ? "Actualidad" : (formatProjectMonthYear(project.fecha_fin) || "Actualidad");
 
   return startDate ? `${startDate} - ${endDate}` : endDate;
+}
+
+function getAcademicExperienceMeta(experience: NonNullable<Perfil["experiencias"]>[number]) {
+  return [experience.subtipo_academico, experience.estado_academico, experience.area_especializacion]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
@@ -497,9 +503,12 @@ export default function PublicProfilePage() {
                       <div className="public-experience-body">
                         <h3>{experience.titulo}</h3>
                         <p className="public-experience-place">{experience.institucion}</p>
+                        {experience.tipo === "academica" && getAcademicExperienceMeta(experience) ? (
+                          <p className="public-experience-location">{getAcademicExperienceMeta(experience)}</p>
+                        ) : null}
                         {experience.ubicacion ? <p className="public-experience-location">{experience.ubicacion}</p> : null}
                         <p className="public-experience-date">
-                          {formatProjectMonthYear(experience.fecha_inicio)} - {experience.actualidad ? "Presente" : formatProjectMonthYear(experience.fecha_fin)}
+                          {formatProjectMonthYear(experience.fecha_inicio)} - {experience.actualidad ? "Actualidad" : formatProjectMonthYear(experience.fecha_fin)}
                         </p>
                         {experience.descripcion ? <RichTextContent value={experience.descripcion} className="public-experience-description" /> : null}
                         {experience.logros?.length ? (
@@ -536,6 +545,12 @@ export default function PublicProfilePage() {
                       <div className="public-experience-body">
                         <h3>{experience.titulo}</h3>
                         <div className="public-experience-meta-grid">
+                          {getAcademicExperienceMeta(experience) ? (
+                            <div>
+                              <span>Clasificacion</span>
+                              <strong>{getAcademicExperienceMeta(experience)}</strong>
+                            </div>
+                          ) : null}
                           <div>
                             <span>Institución</span>
                             <strong>{experience.institucion}</strong>
@@ -548,7 +563,7 @@ export default function PublicProfilePage() {
                           ) : null}
                           <div>
                             <span>Periodo</span>
-                            <strong>{formatProjectMonthYear(experience.fecha_inicio)} - {experience.actualidad ? "Presente" : formatProjectMonthYear(experience.fecha_fin)}</strong>
+                            <strong>{formatProjectMonthYear(experience.fecha_inicio)} - {experience.actualidad ? "Actualidad" : formatProjectMonthYear(experience.fecha_fin)}</strong>
                           </div>
                         </div>
                         {experience.descripcion ? <RichTextContent value={experience.descripcion} className="public-experience-description" /> : null}
@@ -633,6 +648,9 @@ export default function PublicProfilePage() {
                       <h3>{evidence.titulo}</h3>
                       {evidence.descripcion ? <RichTextContent value={evidence.descripcion} className="section-copy" /> : null}
                       {evidence.emisor ? <p className="meta-text">Emisor: {evidence.emisor}</p> : null}
+                      {(evidence.actualidad || evidence.fecha) ? (
+                        <p className="meta-text">Fecha: {evidence.actualidad ? "Actualidad" : formatProjectMonthYear(evidence.fecha)}</p>
+                      ) : null}
                     </div>
                     <div className="skill-actions">
                       {evidence.url ? (

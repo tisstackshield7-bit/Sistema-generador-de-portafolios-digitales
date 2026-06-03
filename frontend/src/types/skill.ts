@@ -13,6 +13,7 @@ export interface SkillEvidence {
   url?: string | null;
   emisor?: string | null;
   fecha?: string | null;
+  actualidad: boolean;
 }
 
 export interface SkillEvidencePayload {
@@ -23,6 +24,7 @@ export interface SkillEvidencePayload {
   url?: string;
   emisor?: string;
   fecha?: string;
+  actualidad: boolean;
   archivo?: File | null;
   archivo_actual?: string | null;
 }

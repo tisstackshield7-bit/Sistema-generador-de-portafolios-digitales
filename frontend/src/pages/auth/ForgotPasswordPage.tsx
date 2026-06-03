@@ -5,6 +5,7 @@ import FormInput from "../../components/common/FormInput";
 import AlertMessage from "../../components/common/AlertMessage";
 import { validateEmail } from "../../utils/validations";
 import { requestPasswordRecovery } from "../../api/password";
+import logo from "../../assets/logof.png";
 
 function CheckBadge() {
   return (
@@ -54,21 +55,21 @@ export default function ForgotPasswordPage() {
         <section className="login-showcase recovery-showcase">
           <div className="login-brand">
             <div className="login-brand-mark login-brand-mark-plain">
-              <span>P</span>
+              <img src={logo} alt="SpherLink" />
             </div>
-            <strong>PortaFolio<span>Pro</span></strong>
+            <strong>SpherLink</strong>
           </div>
 
           <div className="login-showcase-copy">
             <h1>
-              <span className="recovery-title-line">Recupera tu</span>
-              <span className="recovery-title-line">acceso de forma</span>
-              <span className="recovery-title-line recovery-title-accent">rapida y segura.</span>
+              <span className="recovery-title-line">Recupera el acceso</span>
+              <span className="recovery-title-line">a tu perfil</span>
+              <span className="recovery-title-line recovery-title-accent">sin friccion.</span>
             </h1>
             <p>
-              <span className="recovery-copy-line">No pierdas el contacto con tus</span>
-              <span className="recovery-copy-line">oportunidades. Restablece tu contrasena y</span>
-              <span className="recovery-copy-line">sigue destacando tu talento al mundo.</span>
+              <span className="recovery-copy-line">Te enviaremos una clave temporal para</span>
+              <span className="recovery-copy-line">volver a entrar, proteger tu cuenta y</span>
+              <span className="recovery-copy-line">actualizar tu contrasena enseguida.</span>
             </p>
           </div>
 
@@ -76,8 +77,16 @@ export default function ForgotPasswordPage() {
             <article className="login-feature-card">
               <CheckBadge />
               <div>
-                <strong>Acceso protegido</strong>
-                <p>Te enviaremos una clave temporal unica y con tiempo limite para proteger tu identidad.</p>
+                <strong>Clave temporal segura</strong>
+                <p>Recibe una contrasena de uso limitado para recuperar el acceso sin exponer tu cuenta.</p>
+              </div>
+            </article>
+
+            <article className="login-feature-card">
+              <CheckBadge />
+              <div>
+                <strong>Recuperacion guiada</strong>
+                <p>Entra, cambia tu contrasena y vuelve a tu panel con el mismo flujo que usa el resto de la plataforma.</p>
               </div>
             </article>
           </div>
@@ -93,7 +102,7 @@ export default function ForgotPasswordPage() {
             <span className="recovery-kicker">ACCESO</span>
             <h2>Recuperar acceso</h2>
             <p>
-              Te enviaremos una contrasena temporal de 8 caracteres a tu correo. La contrasena dura 30 minutos y la usaras para iniciar sesion antes de cambiarla.
+              Ingresa tu correo y te enviaremos una contrasena temporal de 8 caracteres. Tendra una vigencia de 30 minutos para que puedas iniciar sesion y cambiarla.
             </p>
           </div>
 

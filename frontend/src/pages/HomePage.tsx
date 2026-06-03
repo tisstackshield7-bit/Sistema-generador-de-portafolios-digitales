@@ -1212,7 +1212,7 @@ export default function HomePage() {
                               <ProfileCard
                                 key={`featured-${category}-${profile.id}`}
                                 profile={profile}
-                                category={selectedFeaturedCategory || category}
+                                category={selectedFeaturedCategory || (category === "Todos" ? undefined : category)}
                                 ranking={featuredRankingByProfileId.get(profile.id)}
                                 onViewProfile={viewPublicProfile}
                               />

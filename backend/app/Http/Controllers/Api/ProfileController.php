@@ -263,14 +263,7 @@ class ProfileController extends Controller
         }
 
         if ($role !== '') {
-            $perfilesQuery->where(function ($query) use ($role) {
-                $query->where('profesion', 'ilike', "%{$role}%")
-                    ->orWhere('titular_profesional', 'ilike', "%{$role}%")
-                    ->orWhereHas('proyectos', function ($projectQuery) use ($role) {
-                        $projectQuery->where('visible_publico', true)
-                            ->where('rol', 'ilike', "%{$role}%");
-                    });
-            });
+            $perfilesQuery->where('titular_profesional', 'ilike', "%{$role}%");
         }
 
         $technologies->each(function ($technology) use ($perfilesQuery, $technologyLevel) {
@@ -383,18 +376,9 @@ class ProfileController extends Controller
 
     private function getPublicRoleOptions()
     {
-        $profileRoles = Perfil::where('es_publico', true)
+        return Perfil::where('es_publico', true)
             ->whereHas('usuario', fn ($query) => $query->where('estado', 'activo'))
-            ->get(['profesion', 'titular_profesional'])
-            ->flatMap(fn ($perfil) => [$perfil->profesion, $perfil->titular_profesional]);
-
-        $projectRoles = \App\Models\Proyecto::where('visible_publico', true)
-            ->whereHas('perfil.usuario', fn ($query) => $query->where('estado', 'activo'))
-            ->distinct()
-            ->pluck('rol');
-
-        return $profileRoles
-            ->merge($projectRoles)
+            ->pluck('titular_profesional')
             ->map(fn ($role) => trim((string) $role))
             ->filter()
             ->unique()

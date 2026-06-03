@@ -11,6 +11,15 @@ backend/storage/framework/cache/
 backend/storage/framework/sessions/
 backend/storage/framework/testing/
 backend/storage/framework/views/
+!backend/storage/framework/
+!backend/storage/framework/cache/
+!backend/storage/framework/cache/.gitignore
+!backend/storage/framework/sessions/
+!backend/storage/framework/sessions/.gitignore
+!backend/storage/framework/testing/
+!backend/storage/framework/testing/.gitignore
+!backend/storage/framework/views/
+!backend/storage/framework/views/.gitignore
 backend/storage/logs/*.log
 backend/vendor/
 backend/public/storage/

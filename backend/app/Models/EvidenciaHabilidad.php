@@ -19,11 +19,13 @@ class EvidenciaHabilidad extends Model
         'url',
         'emisor',
         'fecha',
+        'actualidad',
         'creado_en',
         'actualizado_en',
     ];
 
     protected $casts = [
+        'actualidad' => 'boolean',
         'fecha' => 'date:Y-m-d',
     ];
 

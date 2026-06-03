@@ -31,6 +31,7 @@ function buildSkillFormData(payload: SkillPayload, method?: "PUT") {
         url: evidencia.url || "",
         emisor: evidencia.emisor || "",
         fecha: evidencia.fecha || "",
+        actualidad: evidencia.actualidad ? "1" : "0",
         archivo_actual: evidencia.archivo_actual || "",
       })),
     ),

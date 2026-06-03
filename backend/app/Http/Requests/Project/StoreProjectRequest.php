@@ -26,6 +26,7 @@ class StoreProjectRequest extends FormRequest
         }
 
         $achievements = $this->input('logros', []);
+        $isCurrent = $this->boolean('actualidad');
 
         if (is_string($achievements)) {
             $achievements = collect(preg_split('/\r\n|\r|\n/', $achievements) ?: [])
@@ -40,6 +41,8 @@ class StoreProjectRequest extends FormRequest
             'titulo' => trim((string) $this->input('titulo')),
             'rol' => trim((string) $this->input('rol')),
             'descripcion' => RichTextSanitizer::clean($this->input('descripcion')),
+            'fecha_fin' => $isCurrent ? null : $this->input('fecha_fin'),
+            'actualidad' => $isCurrent,
             'tecnologias' => $technologies,
             'logros' => $achievements,
             'enlace_proyecto' => $this->filled('enlace_proyecto') ? trim((string) $this->input('enlace_proyecto')) : null,
@@ -61,6 +64,7 @@ class StoreProjectRequest extends FormRequest
             'descripcion' => ['required', 'string', 'max:5000'],
             'fecha_inicio' => ['required', 'date', 'before_or_equal:today'],
             'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:today'],
+            'actualidad' => ['nullable', 'boolean'],
             'tecnologias' => ['required', 'array', 'min:1'],
             'tecnologias.*' => ['required', 'string', 'max:60'],
             'logros' => ['nullable', 'array'],

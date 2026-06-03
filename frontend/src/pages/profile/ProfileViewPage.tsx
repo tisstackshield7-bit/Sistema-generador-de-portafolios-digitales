@@ -40,7 +40,7 @@ function formatProjectMonthYear(value?: string | null) {
 
 function getProjectDateRange(project: Project) {
   const startDate = formatProjectMonthYear(project.fecha_inicio);
-  const endDate = formatProjectMonthYear(project.fecha_fin) || "Actualidad";
+  const endDate = project.actualidad ? "Actualidad" : (formatProjectMonthYear(project.fecha_fin) || "Actualidad");
 
   return startDate ? `${startDate} - ${endDate}` : endDate;
 }

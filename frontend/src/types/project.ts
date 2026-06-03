@@ -6,6 +6,7 @@ export interface Project {
   descripcion: string;
   fecha_inicio: string;
   fecha_fin?: string | null;
+  actualidad: boolean;
   tecnologias: string[];
   logros?: string[] | null;
   enlace_proyecto?: string | null;
@@ -21,6 +22,7 @@ export interface ProjectPayload {
   descripcion: string;
   fecha_inicio: string;
   fecha_fin?: string;
+  actualidad: boolean;
   tecnologias: string;
   logros?: string;
   enlace_proyecto?: string;

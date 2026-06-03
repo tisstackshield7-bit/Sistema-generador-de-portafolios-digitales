@@ -1753,6 +1753,33 @@ img {
   background: #ffffff;
 }
 
+.current-status-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 88px;
+}
+
+.current-status-copy {
+  min-width: 0;
+}
+
+.current-status-copy strong {
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.current-status-copy small {
+  max-width: 34ch;
+  line-height: 1.45;
+}
+
+.current-status-toggle .toggle-switch {
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .toggle-switch {
   width: 56px;
   height: 32px;
@@ -2827,6 +2854,44 @@ img {
   font-weight: 900;
 }
 
+.experience-academic-tools {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.experience-academic-label {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.experience-academic-link {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  color: #0b3ea8;
+  background: rgba(220, 236, 255, 0.72);
+  border: 1px solid rgba(17, 85, 217, 0.18);
+  font-size: 0.84rem;
+  font-weight: 900;
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.experience-academic-link:hover {
+  color: #075985;
+  background: #e0faff;
+  border-color: rgba(8, 166, 201, 0.42);
+  transform: translateY(-1px);
+}
+
 .experience-card-actions {
   display: flex;
   gap: 10px;
@@ -3039,6 +3104,14 @@ img {
   .visibility-toggle {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .current-status-toggle {
+    grid-template-columns: 1fr;
+  }
+
+  .current-status-toggle .toggle-switch {
+    justify-self: start;
   }
 
   .evidence-add-button {

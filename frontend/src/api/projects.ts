@@ -13,6 +13,7 @@ function buildProjectFormData(payload: ProjectPayload, method?: "PUT") {
   formData.append("descripcion", payload.descripcion);
   formData.append("fecha_inicio", payload.fecha_inicio);
   formData.append("fecha_fin", payload.fecha_fin || "");
+  formData.append("actualidad", payload.actualidad ? "1" : "0");
   formData.append("tecnologias", payload.tecnologias);
   formData.append("logros", payload.logros || "");
   formData.append("enlace_proyecto", payload.enlace_proyecto || "");

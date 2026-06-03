@@ -53,6 +53,7 @@ const EMPTY_EVIDENCE: SkillEvidencePayload = {
   url: "",
   emisor: "",
   fecha: "",
+  actualidad: false,
   archivo: null,
   archivo_actual: null,
 };
@@ -308,6 +309,7 @@ export default function SkillsPage() {
         url: evidence.url || "",
         emisor: sanitizeAlphaNumericText(evidence.emisor || ""),
         fecha: evidence.fecha || "",
+        actualidad: evidence.actualidad,
         archivo: null,
         archivo_actual: evidence.archivo || null,
       })),
@@ -372,7 +374,7 @@ export default function SkillsPage() {
         nextErrors[`evidencias.${index}.url`] = validateUrl(evidence.url, "Ingresa un enlace valido para la evidencia.");
       }
 
-      if (evidence.fecha) {
+      if (!evidence.actualidad && evidence.fecha) {
         nextErrors[`evidencias.${index}.fecha`] = validatePastOrTodayDate(
           evidence.fecha,
           "La fecha de la evidencia no puede ser futura.",
@@ -420,6 +422,7 @@ export default function SkillsPage() {
               url: "",
               emisor: "",
               fecha: "",
+              actualidad: false,
             }]
             : [])
           : (form.evidencias || []).filter(hasEvidenceContent),
@@ -953,13 +956,36 @@ export default function SkillsPage() {
                                     className={`form-input${errors[`evidencias.${index}.fecha`] ? " error" : ""}`}
                                     type="date"
                                     max={today}
+                                    disabled={evidence.actualidad}
                                     value={evidence.fecha}
                                     onChange={(event) => setForm((prev) => {
                                       const evidencias = [...(prev.evidencias || [])];
-                                      evidencias[index] = { ...evidencias[index], fecha: event.target.value };
+                                      evidencias[index] = { ...evidencias[index], fecha: event.target.value, actualidad: false };
                                       return { ...prev, evidencias };
                                     })}
                                   />
+                                  <label className="visibility-toggle current-status-toggle">
+                                    <span className="current-status-copy">
+                                      <strong>En actualidad</strong>
+                                      <small>Usa esta opcion si la evidencia sigue vigente o en curso.</small>
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className={`toggle-switch ${evidence.actualidad ? "active" : ""}`}
+                                      onClick={() => setForm((prev) => {
+                                        const evidencias = [...(prev.evidencias || [])];
+                                        evidencias[index] = {
+                                          ...evidencias[index],
+                                          actualidad: !evidencias[index].actualidad,
+                                          fecha: !evidencias[index].actualidad ? "" : evidencias[index].fecha,
+                                        };
+                                        return { ...prev, evidencias };
+                                      })}
+                                      aria-pressed={evidence.actualidad}
+                                    >
+                                      <span />
+                                    </button>
+                                  </label>
                                   {errors[`evidencias.${index}.fecha`] ? <p className="form-error">{errors[`evidencias.${index}.fecha`]}</p> : null}
                                 </div>
                               </div>

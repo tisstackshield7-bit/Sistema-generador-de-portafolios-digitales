@@ -13,7 +13,14 @@ import {
   updateExperienceVisibility,
 } from "../../api/experience";
 import type { Perfil } from "../../types/profile";
-import type { Experience, ExperiencePayload, ExperienceType } from "../../types/experience";
+import type {
+  AcademicAccreditationType,
+  AcademicExperienceStatus,
+  AcademicExperienceSubtype,
+  Experience,
+  ExperiencePayload,
+  ExperienceType,
+} from "../../types/experience";
 import { isRichTextEmpty, limitRichText, richTextToPlainText, sanitizeRichText } from "../../utils/richText";
 import {
   sanitizeAlphaNumericText,
@@ -32,43 +39,76 @@ const EMPTY_FORM: ExperiencePayload = {
   fecha_inicio: "",
   fecha_fin: "",
   actualidad: false,
+  subtipo_academico: "",
+  estado_academico: "",
+  area_especializacion: "",
+  tipo_acreditacion: "Sin acreditacion",
+  cantidad_acreditacion: "",
+  url_credencial: "",
   logros: "",
   visible_publico: false,
 };
 
-type AcademicFormationType = "Carrera universitaria" | "Curso" | "Certificación" | "Diplomado" | "Posgrado" | "Taller" | "Otro";
-type AcademicAccreditationType = "Horas" | "Módulos" | "Créditos" | "Sin acreditación";
+type AcademicFormationType = AcademicExperienceSubtype;
 
 type AcademicDetails = {
   tipoFormacion: AcademicFormationType | "";
   especializacionArea: string;
   tipoAcreditacion: AcademicAccreditationType;
   cantidadAcreditacion: string;
+  estadoAcademico: AcademicExperienceStatus | "";
+  urlCredencial: string;
 };
 
 const EMPTY_ACADEMIC_DETAILS: AcademicDetails = {
-  tipoFormacion: "",
+  tipoFormacion: "Curso",
   especializacionArea: "",
-  tipoAcreditacion: "Sin acreditación",
+  tipoAcreditacion: "Sin acreditacion",
   cantidadAcreditacion: "",
+  estadoAcademico: "Finalizado",
+  urlCredencial: "",
 };
 
 const ACADEMIC_FORMATION_OPTIONS: AcademicFormationType[] = [
   "Carrera universitaria",
-  "Curso",
-  "Certificación",
+  "Tecnico superior",
   "Diplomado",
-  "Posgrado",
+  "Curso",
+  "Bootcamp",
+  "Certificacion",
   "Taller",
+  "Seminario",
+  "Posgrado / Maestria",
+  "Investigacion",
+  "Ponencia / Publicacion",
   "Otro",
 ];
 
-const ACADEMIC_ACCREDITATION_OPTIONS: AcademicAccreditationType[] = ["Horas", "Módulos", "Créditos", "Sin acreditación"];
+const ACADEMIC_STATUS_OPTIONS: AcademicExperienceStatus[] = ["En curso", "Finalizado", "Vigente", "Vencido"];
+const ACADEMIC_ACCREDITATION_OPTIONS: AcademicAccreditationType[] = ["Horas", "Modulos", "Creditos", "Sin acreditacion"];
 
 type ApiErrorData = {
   message?: string;
   errors?: Record<string, string[] | string>;
 };
+
+function focusFirstExperienceError() {
+  window.requestAnimationFrame(() => {
+    const modal = document.querySelector(".experience-form-modal");
+    const firstErrorField = document.querySelector(
+      ".experience-form-modal .form-input.error, .experience-form-modal .form-file.error, .experience-form-modal .form-textarea.error",
+    ) as HTMLElement | null;
+
+    if (modal instanceof HTMLElement) {
+      modal.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    if (firstErrorField) {
+      firstErrorField.scrollIntoView({ block: "center", behavior: "smooth" });
+      firstErrorField.focus();
+    }
+  });
+}
 
 function getApiErrorData(error: unknown) {
   if (error instanceof AxiosError) {
@@ -85,8 +125,21 @@ function formatDate(value?: string | null) {
 
 function getDateRange(experience: Experience) {
   const start = formatDate(experience.fecha_inicio);
-  const end = experience.actualidad ? "Presente" : formatDate(experience.fecha_fin);
+  const end = experience.actualidad ? "Actualidad" : formatDate(experience.fecha_fin);
   return [start, end].filter(Boolean).join(" - ");
+}
+
+function getAcademicMeta(experience: Experience) {
+  const legacy = parseAcademicDescription(experience.descripcion || "").details;
+
+  return {
+    subtipo: experience.subtipo_academico || legacy.tipoFormacion,
+    estado: experience.estado_academico || (experience.actualidad ? "En curso" : ""),
+    area: experience.area_especializacion || legacy.especializacionArea,
+    acreditacion: experience.tipo_acreditacion || legacy.tipoAcreditacion,
+    cantidad: experience.cantidad_acreditacion ? String(experience.cantidad_acreditacion) : legacy.cantidadAcreditacion,
+    urlCredencial: experience.url_credencial || "",
+  };
 }
 
 function normalizeAchievements(value = "") {
@@ -98,34 +151,6 @@ function normalizeAchievements(value = "") {
 
 function sanitizeAcademicLocationText(value: string) {
   return value.replace(/[^A-Za-z0-9\u00C1\u00C9\u00CD\u00D3\u00DA\u00DC\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00FC\u00F1\s.,/-]/g, "");
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function buildAcademicDescription(details: AcademicDetails, description = "") {
-  const accreditation =
-    details.tipoAcreditacion === "Sin acreditación" || !details.cantidadAcreditacion
-      ? details.tipoAcreditacion
-      : `${details.tipoAcreditacion}: ${details.cantidadAcreditacion}`;
-
-  const metaRows = [
-    ["Tipo de formación", details.tipoFormacion],
-    ["Especialización / Área", details.especializacionArea],
-    ["Acreditación", accreditation],
-  ].filter(([, value]) => value);
-
-  return sanitizeRichText(`
-    ${metaRows.map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`).join("")}
-    <p><strong>Descripción:</strong></p>
-    ${description}
-  `);
 }
 
 function parseAcademicDescription(description = "") {
@@ -147,8 +172,14 @@ function parseAcademicDescription(description = "") {
   metaLines.forEach((line) => {
     if (line.startsWith("Tipo de formación:")) {
       const value = line.replace("Tipo de formación:", "").trim();
-      if (ACADEMIC_FORMATION_OPTIONS.includes(value as AcademicFormationType)) {
-        nextDetails.tipoFormacion = value as AcademicFormationType;
+      const normalizedValue = value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace("Posgrado", "Posgrado / Maestria")
+        .replace("Certificacion", "Certificacion");
+
+      if (ACADEMIC_FORMATION_OPTIONS.includes(normalizedValue as AcademicFormationType)) {
+        nextDetails.tipoFormacion = normalizedValue as AcademicFormationType;
       }
     }
 
@@ -159,8 +190,14 @@ function parseAcademicDescription(description = "") {
     if (line.startsWith("Acreditación:")) {
       const value = line.replace("Acreditación:", "").trim();
       const [typeValue, amountValue = ""] = value.split(":").map((item) => item.trim());
-      if (ACADEMIC_ACCREDITATION_OPTIONS.includes(typeValue as AcademicAccreditationType)) {
-        nextDetails.tipoAcreditacion = typeValue as AcademicAccreditationType;
+      const normalizedType = typeValue
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace("Créditos", "Creditos")
+        .replace("Módulos", "Modulos");
+
+      if (ACADEMIC_ACCREDITATION_OPTIONS.includes(normalizedType as AcademicAccreditationType)) {
+        nextDetails.tipoAcreditacion = normalizedType as AcademicAccreditationType;
         nextDetails.cantidadAcreditacion = sanitizeDigits(amountValue);
       }
     }
@@ -322,10 +359,23 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
       fecha_inicio: experience.fecha_inicio || "",
       fecha_fin: experience.fecha_fin || "",
       actualidad: experience.actualidad,
+      subtipo_academico: experience.subtipo_academico || "",
+      estado_academico: experience.estado_academico || "",
+      area_especializacion: experience.area_especializacion || "",
+      tipo_acreditacion: experience.tipo_acreditacion || "Sin acreditacion",
+      cantidad_acreditacion: experience.cantidad_acreditacion ? String(experience.cantidad_acreditacion) : "",
+      url_credencial: experience.url_credencial || "",
       logros: sanitizePlainMultilineText((experience.logros || []).join("\n")),
       visible_publico: experience.visible_publico,
     });
-    setAcademicDetails(academicForm?.details || EMPTY_ACADEMIC_DETAILS);
+    setAcademicDetails({
+      tipoFormacion: experience.subtipo_academico || academicForm?.details.tipoFormacion || "Curso",
+      especializacionArea: experience.area_especializacion || academicForm?.details.especializacionArea || "",
+      tipoAcreditacion: experience.tipo_acreditacion || academicForm?.details.tipoAcreditacion || "Sin acreditacion",
+      cantidadAcreditacion: experience.cantidad_acreditacion ? String(experience.cantidad_acreditacion) : (academicForm?.details.cantidadAcreditacion || ""),
+      estadoAcademico: experience.estado_academico || (experience.actualidad ? "En curso" : "Finalizado"),
+      urlCredencial: experience.url_credencial || "",
+    });
     setErrors({});
     setServerError("");
     setShowForm(true);
@@ -344,29 +394,30 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
 
     if (!form.titulo.trim()) nextErrors.titulo = "El titulo es obligatorio.";
     if (!form.institucion.trim()) nextErrors.institucion = "La institucion es obligatoria.";
-    if (form.tipo === "academica" && !academicDetails.tipoFormacion) {
-      nextErrors.tipoFormacion = "El tipo de formacion es obligatorio.";
-    }
     if (
       form.tipo === "academica" &&
-      academicDetails.tipoAcreditacion !== "Sin acreditación" &&
+      academicDetails.tipoAcreditacion !== "Sin acreditacion" &&
       academicDetails.cantidadAcreditacion &&
       !/^\d+$/.test(academicDetails.cantidadAcreditacion)
     ) {
-      nextErrors.cantidadAcreditacion = "La cantidad debe ser numerica.";
+      nextErrors.cantidad_acreditacion = "La cantidad debe ser numerica.";
     }
     if (isRichTextEmpty(form.descripcion || "")) nextErrors.descripcion = "La descripcion es obligatoria.";
     if (!form.fecha_inicio) nextErrors.fecha_inicio = "La fecha de inicio es obligatoria.";
     if (!nextErrors.fecha_inicio) {
       nextErrors.fecha_inicio = validatePastOrTodayDate(form.fecha_inicio, "La fecha de inicio no puede ser futura.");
     }
-    if (form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
+    if (!form.actualidad && form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
       nextErrors.fecha_fin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
-    } else if (form.fecha_fin) {
+    } else if (!form.actualidad && form.fecha_fin) {
       nextErrors.fecha_fin = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
     }
 
     setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setServerError(Object.values(nextErrors)[0] || "Revisa los campos marcados en rojo.");
+      focusFirstExperienceError();
+    }
     return Object.keys(nextErrors).length === 0;
   };
 
@@ -374,23 +425,25 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
     event.preventDefault();
     setServerError("");
 
-    if (!validate()) return;
+    if (form.tipo !== "academica" && !validate()) return;
 
     setSaving(true);
 
     try {
-      const description =
-        form.tipo === "academica"
-          ? buildAcademicDescription(academicDetails, form.descripcion || "")
-          : form.descripcion || "";
       const payload: ExperiencePayload = {
         ...form,
         titulo: form.titulo.trim(),
         institucion: form.institucion.trim(),
         ubicacion: form.ubicacion?.trim() || "",
-        descripcion: isRichTextEmpty(description) ? "" : limitRichText(description, 1800),
-        fecha_fin: form.fecha_fin || "",
-        actualidad: !form.fecha_fin,
+        descripcion: isRichTextEmpty(form.descripcion || "") ? "" : limitRichText(form.descripcion || "", 1800),
+        fecha_fin: form.actualidad ? "" : (form.fecha_fin || ""),
+        actualidad: form.actualidad,
+        subtipo_academico: form.tipo === "academica" ? academicDetails.tipoFormacion : "",
+        estado_academico: form.tipo === "academica" ? academicDetails.estadoAcademico : "",
+        area_especializacion: form.tipo === "academica" ? academicDetails.especializacionArea.trim() : "",
+        tipo_acreditacion: form.tipo === "academica" ? academicDetails.tipoAcreditacion : "",
+        cantidad_acreditacion: form.tipo === "academica" ? academicDetails.cantidadAcreditacion : "",
+        url_credencial: form.tipo === "academica" ? academicDetails.urlCredencial.trim() : "",
         logros: normalizeAchievements(form.logros).join("\n"),
       };
 
@@ -474,7 +527,10 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
 
         <section className="experience-list">
           {filteredExperiences.length ? (
-            filteredExperiences.map((experience) => (
+            filteredExperiences.map((experience) => {
+              const academicMeta = getAcademicMeta(experience);
+
+              return (
               <article key={experience.id} className="surface-card experience-card">
                 <div className="experience-card-mark">
                   <ExperienceIcon type={experience.tipo} />
@@ -485,8 +541,25 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                     <div>
                       <h2>{experience.titulo}</h2>
                       <p className="experience-institution">{experience.institucion}</p>
+                      {experience.tipo === "academica" ? (
+                        <p className="meta-text">
+                          {[
+                            academicMeta.subtipo,
+                            academicMeta.estado,
+                            academicMeta.area,
+                          ].filter(Boolean).join(" · ")}
+                        </p>
+                      ) : null}
                       {experience.ubicacion ? <p className="meta-text">{experience.ubicacion}</p> : null}
                       <p className="meta-text">{getDateRange(experience)}</p>
+                      {experience.tipo === "academica" && academicMeta.urlCredencial ? (
+                        <div className="experience-academic-tools">
+                          <span className="experience-academic-label">Credencial</span>
+                          <a href={academicMeta.urlCredencial} target="_blank" rel="noreferrer" className="experience-academic-link">
+                            Abrir enlace
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
                     <span className={`skill-visibility-pill ${experience.visible_publico ? "visible" : "hidden"}`}>
                       {experience.visible_publico ? "Visible" : "Oculta"}
@@ -528,7 +601,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                   </button>
                 </div>
               </article>
-            ))
+            )})
           ) : (
             <article className="surface-card empty-state-card">
               <h3>No tienes experiencia {pageCopy.empty} registrada</h3>
@@ -579,30 +652,58 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
 
                 {form.tipo === "academica" ? (
                   <>
-                    <div className="form-field">
-                      <label className="form-label">Tipo de formación *</label>
-                      <select
-                        className={`form-input${errors.tipoFormacion ? " error" : ""}`}
-                        value={academicDetails.tipoFormacion}
-                        onChange={(event) =>
-                          setAcademicDetails((prev) => ({
-                            ...prev,
-                            tipoFormacion: event.target.value as AcademicFormationType | "",
-                          }))
-                        }
-                      >
-                        <option value="">Selecciona un tipo de formación</option>
-                        {ACADEMIC_FORMATION_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.tipoFormacion ? <p className="form-error">{errors.tipoFormacion}</p> : null}
+                    <div className="workspace-form-grid">
+                      <div className="form-field">
+                        <label className="form-label">Subtipo academico *</label>
+                        <select
+                          className={`form-input${errors.subtipo_academico ? " error" : ""}`}
+                          value={academicDetails.tipoFormacion}
+                          onChange={(event) =>
+                            setAcademicDetails((prev) => ({
+                              ...prev,
+                              tipoFormacion: event.target.value as AcademicFormationType | "",
+                            }))
+                          }
+                        >
+                          <option value="">Selecciona un subtipo academico</option>
+                          {ACADEMIC_FORMATION_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.subtipo_academico ? <p className="form-error">{errors.subtipo_academico}</p> : null}
+                      </div>
+
+                      <div className="form-field">
+                        <label className="form-label">Estado academico *</label>
+                        <select
+                          className={`form-input${errors.estado_academico ? " error" : ""}`}
+                          value={academicDetails.estadoAcademico}
+                          onChange={(event) => {
+                            const nextValue = event.target.value as AcademicExperienceStatus | "";
+                            setAcademicDetails((prev) => ({
+                              ...prev,
+                              estadoAcademico: nextValue,
+                            }));
+                            if (nextValue === "En curso") {
+                              setForm((prev) => ({ ...prev, actualidad: true, fecha_fin: "" }));
+                            }
+                          }}
+                        >
+                          <option value="">Selecciona un estado</option>
+                          {ACADEMIC_STATUS_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.estado_academico ? <p className="form-error">{errors.estado_academico}</p> : null}
+                      </div>
                     </div>
 
                     <div className="form-field">
-                      <label className="form-label">Especialización / Área</label>
+                      <label className="form-label">Area / especializacion</label>
                       <input
                         className="form-input"
                         value={academicDetails.especializacionArea}
@@ -659,10 +760,28 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                       className={`form-input${errors.fecha_fin ? " error" : ""}`}
                       type="date"
                       max={today}
+                      disabled={form.actualidad}
                       value={form.fecha_fin}
-                      onChange={(event) => setForm((prev) => ({ ...prev, fecha_fin: event.target.value }))}
+                      onChange={(event) => setForm((prev) => ({ ...prev, fecha_fin: event.target.value, actualidad: false }))}
                     />
-                    <p className="form-help">Deja en blanco si es actual</p>
+                    <label className="visibility-toggle current-status-toggle">
+                      <span className="current-status-copy">
+                        <strong>En actualidad</strong>
+                        <small>Oculta la fecha de fin mientras sigues en esta experiencia o formacion.</small>
+                      </span>
+                      <button
+                        type="button"
+                        className={`toggle-switch ${form.actualidad ? "active" : ""}`}
+                        onClick={() => setForm((prev) => ({
+                          ...prev,
+                          actualidad: !prev.actualidad,
+                          fecha_fin: !prev.actualidad ? "" : prev.fecha_fin,
+                        }))}
+                        aria-pressed={form.actualidad}
+                      >
+                        <span />
+                      </button>
+                    </label>
                     {errors.fecha_fin ? <p className="form-error">{errors.fecha_fin}</p> : null}
                   </div>
                 </div>
@@ -681,7 +800,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                             setAcademicDetails((prev) => ({
                               ...prev,
                               tipoAcreditacion: nextValue,
-                              cantidadAcreditacion: nextValue === "Sin acreditación" ? "" : prev.cantidadAcreditacion,
+                              cantidadAcreditacion: nextValue === "Sin acreditacion" ? "" : prev.cantidadAcreditacion,
                             }));
                           }}
                         >
@@ -696,12 +815,12 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                       <div className="form-field">
                         <label className="form-label">Cantidad</label>
                         <input
-                          className={`form-input${errors.cantidadAcreditacion ? " error" : ""}`}
+                          className={`form-input${errors.cantidad_acreditacion ? " error" : ""}`}
                           type="number"
                           min="0"
                           value={academicDetails.cantidadAcreditacion}
                           placeholder="Ej: 40, 6, 120"
-                          disabled={academicDetails.tipoAcreditacion === "Sin acreditación"}
+                          disabled={academicDetails.tipoAcreditacion === "Sin acreditacion"}
                           onChange={(event) =>
                             setAcademicDetails((prev) => ({
                               ...prev,
@@ -709,9 +828,27 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                             }))
                           }
                         />
-                        {errors.cantidadAcreditacion ? <p className="form-error">{errors.cantidadAcreditacion}</p> : null}
+                        {errors.cantidad_acreditacion ? <p className="form-error">{errors.cantidad_acreditacion}</p> : null}
                       </div>
                     </div>
+
+                    {academicDetails.tipoFormacion === "Certificacion" ? (
+                      <div className="form-field">
+                        <label className="form-label">URL de credencial</label>
+                        <input
+                          className={`form-input${errors.url_credencial ? " error" : ""}`}
+                          value={academicDetails.urlCredencial}
+                          placeholder="https://..."
+                          onChange={(event) =>
+                            setAcademicDetails((prev) => ({
+                              ...prev,
+                              urlCredencial: event.target.value,
+                            }))
+                          }
+                        />
+                        {errors.url_credencial ? <p className="form-error">{errors.url_credencial}</p> : null}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 

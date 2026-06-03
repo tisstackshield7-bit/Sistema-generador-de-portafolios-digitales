@@ -17,6 +17,7 @@ class Proyecto extends Model
         'descripcion',
         'fecha_inicio',
         'fecha_fin',
+        'actualidad',
         'tecnologias',
         'logros',
         'enlace_proyecto',
@@ -29,6 +30,7 @@ class Proyecto extends Model
     protected $casts = [
         'tecnologias' => 'array',
         'logros' => 'array',
+        'actualidad' => 'boolean',
         'visible_publico' => 'boolean',
         'fecha_inicio' => 'date:Y-m-d',
         'fecha_fin' => 'date:Y-m-d',

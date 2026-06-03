@@ -57,6 +57,12 @@ class StoreSkillRequest extends FormRequest
                     $evidencia['descripcion'] = RichTextSanitizer::clean($evidencia['descripcion']);
                 }
 
+                if (is_array($evidencia)) {
+                    $isCurrent = filter_var($evidencia['actualidad'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                    $evidencia['actualidad'] = $isCurrent;
+                    $evidencia['fecha'] = $isCurrent ? null : ($evidencia['fecha'] ?? null);
+                }
+
                 return $evidencia;
             })
             ->values()
@@ -104,6 +110,7 @@ class StoreSkillRequest extends FormRequest
             'evidencias.*.url' => ['nullable', 'url', 'max:255'],
             'evidencias.*.emisor' => ['nullable', 'string', 'max:180'],
             'evidencias.*.fecha' => ['nullable', 'date', 'before_or_equal:today'],
+            'evidencias.*.actualidad' => ['nullable', 'boolean'],
             'evidencias.*.id' => ['nullable', 'integer'],
             'evidencias.*.archivo_actual' => ['nullable', 'string', 'max:255'],
             'evidencia_archivos' => ['nullable', 'array'],

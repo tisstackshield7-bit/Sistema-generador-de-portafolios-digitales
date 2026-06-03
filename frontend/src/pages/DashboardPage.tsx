@@ -27,8 +27,14 @@ function formatExperienceMonthYear(value?: string | null) {
 
 function getExperienceDateRange(experience: NonNullable<Perfil["experiencias"]>[number]) {
   const start = formatExperienceMonthYear(experience.fecha_inicio);
-  const end = experience.actualidad ? "Presente" : formatExperienceMonthYear(experience.fecha_fin);
+  const end = experience.actualidad ? "Actualidad" : formatExperienceMonthYear(experience.fecha_fin);
   return [start, end].filter(Boolean).join(" - ");
+}
+
+function getAcademicExperienceMeta(experience: NonNullable<Perfil["experiencias"]>[number]) {
+  return [experience.subtipo_academico, experience.estado_academico, experience.area_especializacion]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function DashboardExperienceIcon({ type }: { type: "laboral" | "academica" }) {
@@ -98,6 +104,60 @@ function ExternalLinkIcon() {
   );
 }
 
+function DashboardExperienceSection({
+  experiences,
+  emptyMessage,
+  label,
+  title,
+  onManage,
+}: {
+  experiences: NonNullable<Perfil["experiencias"]>;
+  emptyMessage: string;
+  label: string;
+  title: string;
+  onManage: () => void;
+}) {
+  return (
+    <section className="surface-card dashboard-panel dashboard-experience-panel">
+      <div className="section-head dashboard-skills-head">
+        <div>
+          <p className="section-label">{label}</p>
+          <h2 className="section-title">{title}</h2>
+        </div>
+        <button className="btn btn-secondary" onClick={onManage}>
+          Gestionar
+        </button>
+      </div>
+
+      {experiences.length ? (
+        <div className="dashboard-experience-list">
+          {experiences.map((experience) => (
+            <article key={experience.id} className="dashboard-experience-item">
+              <div className={`dashboard-experience-mark ${experience.tipo}`}>
+                <DashboardExperienceIcon type={experience.tipo} />
+              </div>
+              <div className="dashboard-experience-copy">
+                <h3>{experience.titulo}</h3>
+                <p className="dashboard-experience-place">{experience.institucion}</p>
+                {experience.tipo === "academica" && getAcademicExperienceMeta(experience) ? (
+                  <p className="dashboard-experience-location">{getAcademicExperienceMeta(experience)}</p>
+                ) : null}
+                {experience.ubicacion ? <p className="dashboard-experience-location">{experience.ubicacion}</p> : null}
+                <p className="dashboard-experience-date">{getExperienceDateRange(experience)}</p>
+                {experience.descripcion ? (
+                  <RichTextContent value={experience.descripcion} className="dashboard-experience-description" />
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="dashboard-empty-note">{emptyMessage}</div>
+      )}
+    </section>
+  );
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<Perfil | null>(null);
@@ -116,7 +176,8 @@ export default function DashboardPage() {
   const experiences = perfil?.experiencias || [];
   const workExperiences = experiences.filter((experience) => experience.tipo === "laboral");
   const academicExperiences = experiences.filter((experience) => experience.tipo === "academica");
-  const recentExperiences = experiences.slice(0, 3);
+  const recentWorkExperiences = workExperiences.slice(0, 3);
+  const recentAcademicExperiences = academicExperiences.slice(0, 3);
   const socialLinks = [
     perfil?.linkedin_url ? { type: "linkedin" as const, label: "LinkedIn", url: perfil.linkedin_url } : null,
     perfil?.github_url ? { type: "github" as const, label: "GitHub", url: perfil.github_url } : null,
@@ -255,42 +316,21 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <section className="surface-card dashboard-panel dashboard-experience-panel">
-        <div className="section-head dashboard-skills-head">
-          <div>
-            <p className="section-label">Experiencia profesional</p>
-            <h2 className="section-title">Trayectoria laboral y participaciones</h2>
-          </div>
-          <button className="btn btn-secondary" onClick={() => navigate("/perfil/experiencia")}>
-            Gestionar
-          </button>
-        </div>
+      <DashboardExperienceSection
+        experiences={recentWorkExperiences}
+        label="Experiencia laboral"
+        title="Trayectoria laboral y participaciones"
+        emptyMessage="Aun no registraste experiencia laboral. Esta seccion mostrara tus cargos, empresas y periodos profesionales."
+        onManage={() => navigate("/perfil/experiencia-laboral")}
+      />
 
-        {recentExperiences.length ? (
-          <div className="dashboard-experience-list">
-            {recentExperiences.map((experience) => (
-              <article key={experience.id} className="dashboard-experience-item">
-                <div className={`dashboard-experience-mark ${experience.tipo}`}>
-                  <DashboardExperienceIcon type={experience.tipo} />
-                </div>
-                <div className="dashboard-experience-copy">
-                  <h3>{experience.titulo}</h3>
-                  <p className="dashboard-experience-place">{experience.institucion}</p>
-                  {experience.ubicacion ? <p className="dashboard-experience-location">{experience.ubicacion}</p> : null}
-                  <p className="dashboard-experience-date">{getExperienceDateRange(experience)}</p>
-                  {experience.descripcion ? (
-                    <RichTextContent value={experience.descripcion} className="dashboard-experience-description" />
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="dashboard-empty-note">
-            Aun no registraste experiencia. Esta seccion quedara preparada para cargos, instituciones y periodos profesionales.
-          </div>
-        )}
-      </section>
+      <DashboardExperienceSection
+        experiences={recentAcademicExperiences}
+        label="Experiencia academica"
+        title="Formacion y trayectoria academica"
+        emptyMessage="Aun no registraste experiencia academica. Esta seccion mostrara estudios, cursos y certificaciones."
+        onManage={() => navigate("/perfil/experiencia-academica")}
+      />
 
       <section className="surface-card dashboard-panel dashboard-projects-panel">
         <div className="section-head dashboard-skills-head">

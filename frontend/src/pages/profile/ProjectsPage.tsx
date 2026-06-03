@@ -25,6 +25,7 @@ const EMPTY_FORM: ProjectPayload = {
   descripcion: "",
   fecha_inicio: "",
   fecha_fin: "",
+  actualidad: false,
   tecnologias: "",
   logros: "",
   enlace_proyecto: "",
@@ -206,6 +207,7 @@ export default function ProjectsPage() {
       descripcion: project.descripcion,
       fecha_inicio: project.fecha_inicio || "",
       fecha_fin: project.fecha_fin || "",
+      actualidad: project.actualidad || !project.fecha_fin,
       tecnologias: (project.tecnologias || []).join(", "),
       logros: sanitizePlainMultilineText((project.logros || []).join("\n")),
       enlace_proyecto: project.enlace_proyecto || "",
@@ -285,9 +287,9 @@ export default function ProjectsPage() {
       nextErrors.fecha_inicio = validatePastOrTodayDate(form.fecha_inicio, "La fecha de inicio no puede ser futura.");
     }
     if (!technologies.length) nextErrors.tecnologias = "Debes agregar al menos una tecnologia.";
-    if (form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
+    if (!form.actualidad && form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
       nextErrors.fecha_fin = "La fecha de fin no puede ser anterior a la fecha de inicio.";
-    } else if (form.fecha_fin) {
+    } else if (!form.actualidad && form.fecha_fin) {
       nextErrors.fecha_fin = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
     }
     nextErrors.enlace_proyecto = validateUrl(form.enlace_proyecto || "", "Ingrese un enlace valido");
@@ -316,6 +318,8 @@ export default function ProjectsPage() {
         titulo: form.titulo.trim(),
         rol: form.rol.trim(),
         descripcion: limitRichText(form.descripcion, 1800),
+        fecha_fin: form.actualidad ? "" : (form.fecha_fin || ""),
+        actualidad: form.actualidad,
         tecnologias: normalizeTechnologies(form.tecnologias).join(", "),
         logros: normalizeAchievements(form.logros).join("\n"),
         enlace_proyecto: form.enlace_proyecto?.trim() || "",
@@ -453,7 +457,7 @@ export default function ProjectsPage() {
 
                   <div className="skill-card-head">
                     <div>
-                      <p className="section-label">{formatDate(project.fecha_inicio)} - {formatDate(project.fecha_fin)}</p>
+                      <p className="section-label">{formatDate(project.fecha_inicio)} - {project.actualidad ? "Actualidad" : formatDate(project.fecha_fin)}</p>
                       <h3>{project.titulo}</h3>
                     </div>
                     <span className={`skill-visibility-pill ${project.visible_publico ? "visible" : "hidden"}`}>
@@ -575,9 +579,28 @@ export default function ProjectsPage() {
                       className={`form-input${errors.fecha_fin ? " error" : ""}`}
                       type="date"
                       max={today}
+                      disabled={form.actualidad}
                       value={form.fecha_fin}
-                      onChange={(event) => setForm((prev) => ({ ...prev, fecha_fin: event.target.value }))}
+                      onChange={(event) => setForm((prev) => ({ ...prev, fecha_fin: event.target.value, actualidad: false }))}
                     />
+                    <label className="visibility-toggle current-status-toggle">
+                      <span className="current-status-copy">
+                        <strong>En actualidad</strong>
+                        <small>Oculta la fecha de fin mientras el proyecto siga activo.</small>
+                      </span>
+                      <button
+                        type="button"
+                        className={`toggle-switch ${form.actualidad ? "active" : ""}`}
+                        onClick={() => setForm((prev) => ({
+                          ...prev,
+                          actualidad: !prev.actualidad,
+                          fecha_fin: !prev.actualidad ? "" : prev.fecha_fin,
+                        }))}
+                        aria-pressed={form.actualidad}
+                      >
+                        <span />
+                      </button>
+                    </label>
                     {errors.fecha_fin ? <p className="form-error">{errors.fecha_fin}</p> : null}
                   </div>
                 </div>
