@@ -468,10 +468,10 @@ const preview = useMemo(() => {
           <section className="surface-card profile-security-strip">
             <div>
               <h3>Seguridad de la cuenta</h3>
-              <p>Actualiza tu contrasena de acceso cuando sea necesario.</p>
+              <p>Actualiza tu contraseña de acceso cuando sea necesario.</p>
             </div>
             <button type="button" className="btn btn-secondary" onClick={() => navigate("/perfil/cambiar-contrasena")}>
-              Cambiar contrasena
+              Cambiar contraseña
             </button>
           </section>
 

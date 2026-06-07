@@ -8,12 +8,12 @@ export const validateEmail = (value: string) => {
 };
 
 export const validatePassword = (value: string) => {
-  if (!value.trim()) return "La contrasena es obligatoria.";
-  if (value.length < 8) return "La contrasena debe tener al menos 8 caracteres.";
-  if (!/[A-Z]/.test(value)) return "La contrasena debe incluir una mayuscula.";
-  if (!/[a-z]/.test(value)) return "La contrasena debe incluir una minuscula.";
-  if (!/[0-9]/.test(value)) return "La contrasena debe incluir un numero.";
-  if (!/[\W_]/.test(value)) return "La contrasena debe incluir un simbolo.";
+  if (!value.trim()) return "La contraseña es obligatoria.";
+  if (value.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
+  if (!/[A-Z]/.test(value)) return "La contraseña debe incluir una mayuscula.";
+  if (!/[a-z]/.test(value)) return "La contraseña debe incluir una minuscula.";
+  if (!/[0-9]/.test(value)) return "La contraseña debe incluir un numero.";
+  if (!/[\W_]/.test(value)) return "La contraseña debe incluir un simbolo.";
   return "";
 };
 

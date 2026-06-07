@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
             <p>
               <span className="recovery-copy-line">Te enviaremos una clave temporal para</span>
               <span className="recovery-copy-line">volver a entrar, proteger tu cuenta y</span>
-              <span className="recovery-copy-line">actualizar tu contrasena enseguida.</span>
+              <span className="recovery-copy-line">actualizar tu contraseña enseguida.</span>
             </p>
           </div>
 
@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
               <CheckBadge />
               <div>
                 <strong>Clave temporal segura</strong>
-                <p>Recibe una contrasena de uso limitado para recuperar el acceso sin exponer tu cuenta.</p>
+                <p>Recibe una contraseña de uso limitado para recuperar el acceso sin exponer tu cuenta.</p>
               </div>
             </article>
 
@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
               <CheckBadge />
               <div>
                 <strong>Recuperacion guiada</strong>
-                <p>Entra, cambia tu contrasena y vuelve a tu panel con el mismo flujo que usa el resto de la plataforma.</p>
+                <p>Entra, cambia tu contraseña y vuelve a tu panel con el mismo flujo que usa el resto de la plataforma.</p>
               </div>
             </article>
           </div>
@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
             <span className="recovery-kicker">ACCESO</span>
             <h2>Recuperar acceso</h2>
             <p>
-              Ingresa tu correo y te enviaremos una contrasena temporal de 8 caracteres. Tendra una vigencia de 30 minutos para que puedas iniciar sesion y cambiarla.
+              Ingresa tu correo y te enviaremos una contraseña temporal de 8 caracteres. Tendra una vigencia de 30 minutos para que puedas iniciar sesion y cambiarla.
             </p>
           </div>
 
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
             />
 
             <button type="submit" className="btn btn-primary btn-block login-submit-button">
-              Enviar contrasena temporal
+              Enviar contraseña temporal
             </button>
           </form>
 
