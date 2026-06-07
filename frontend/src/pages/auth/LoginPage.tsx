@@ -41,7 +41,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     const correoError = validateEmail(correo);
-    const contrasenaError = validateRequired(contrasena, "La contrasena es obligatoria.");
+    const contrasenaError = validateRequired(contrasena, "La contraseña es obligatoria.");
 
     setErrors({
       correo: correoError,
@@ -129,8 +129,8 @@ export default function LoginPage() {
             />
 
             <div className="login-password-head">
-              <label className="form-label">Contrasena</label>
-              <Link to="/recuperar-contrasena">Olvidaste tu contrasena?</Link>
+              <label className="form-label">Contraseña</label>
+              <Link to="/recuperar-contrasena">Olvidaste tu contraseña?</Link>
             </div>
 
             <FormInput
@@ -139,7 +139,7 @@ export default function LoginPage() {
               value={contrasena}
               onChange={setContrasena}
               error={errors.contrasena}
-              placeholder="Ingresa tu contrasena"
+              placeholder="Ingresa tu contraseña"
               togglePassword
             />
 
