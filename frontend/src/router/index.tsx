@@ -1,4 +1,4 @@
-import { Navigate, createBrowserRouter } from "react-router-dom";
+﻿import { Navigate, createBrowserRouter } from "react-router-dom";
 import RegisterPage from "../pages/auth/RegisterPage";
 import LoginPage from "../pages/auth/LoginPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
@@ -34,11 +34,11 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    path: "/recuperar-contrasena",
+    path: "/recuperar-contraseña",
     element: <ForgotPasswordPage />,
   },
   {
-    path: "/restablecer-contrasena/:token",
+    path: "/restablecer-contraseña/:token",
     element: <ResetPasswordPage />,
   },
   {
@@ -90,7 +90,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/perfil/cambiar-contrasena",
+    path: "/perfil/cambiar-contraseña",
     element: (
       <PrivateRoute>
         <ChangePasswordPage />

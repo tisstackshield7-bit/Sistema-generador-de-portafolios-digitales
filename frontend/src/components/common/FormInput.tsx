@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 
 type Props = {
   label: string;
@@ -57,7 +57,7 @@ export default function FormInput({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             className="form-input-toggle"
           >
             {!showPassword ? (

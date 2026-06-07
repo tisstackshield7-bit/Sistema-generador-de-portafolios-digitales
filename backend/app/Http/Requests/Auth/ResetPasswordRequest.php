@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Requests\Auth;
 
@@ -16,7 +16,7 @@ class ResetPasswordRequest extends FormRequest
         return [
             'correo' => ['required', 'email'],
             'token' => ['required', 'string'],
-            'contrasena' => [
+            'contraseña' => [
                 'required',
                 'string',
                 'min:8',
@@ -35,8 +35,8 @@ class ResetPasswordRequest extends FormRequest
             'correo.required' => 'El correo es obligatorio.',
             'correo.email' => 'El correo no es valido.',
             'token.required' => 'El token es obligatorio.',
-            'contrasena.required' => 'La contrasena es obligatoria.',
-            'contrasena.confirmed' => 'La confirmacion de contrasena no coincide.',
+            'contraseña.required' => 'La contraseña es obligatoria.',
+            'contraseña.confirmed' => 'La confirmacion de contraseña no coincide.',
         ];
     }
 }

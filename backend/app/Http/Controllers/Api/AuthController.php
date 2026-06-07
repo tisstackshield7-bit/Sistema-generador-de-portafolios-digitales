@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\Api;
 
@@ -21,7 +21,7 @@ class AuthController extends Controller
         $usuario = Usuario::create([
             'nombre' => null,
             'correo' => $request->correo,
-            'contrasena' => Hash::make($request->contrasena),
+            'contraseña' => Hash::make($request->contraseña),
             'rol' => 'usuario',
             'estado' => 'activo',
             'creado_en' => now(),
@@ -49,7 +49,7 @@ class AuthController extends Controller
     {
         $usuario = Usuario::with('perfil')->where('correo', $request->correo)->first();
 
-        if (!$usuario || !Hash::check($request->contrasena, $usuario->contrasena)) {
+        if (!$usuario || !Hash::check($request->contraseña, $usuario->contraseña)) {
             return response()->json([
                 'message' => 'Credenciales incorrectas.'
             ], 422);
@@ -61,19 +61,19 @@ class AuthController extends Controller
             ], 403);
         }
 
-        if ($usuario->debe_cambiar_contrasena && $usuario->contrasena_temporal_expira_en && Carbon::parse($usuario->contrasena_temporal_expira_en)->isPast()) {
+        if ($usuario->debe_cambiar_contraseña && $usuario->contraseña_temporal_expira_en && Carbon::parse($usuario->contraseña_temporal_expira_en)->isPast()) {
             return response()->json([
-                'message' => 'La contrasena temporal expiro. Solicita una nueva recuperacion.',
+                'message' => 'La contraseña temporal expiro. Solicita una nueva recuperacion.',
             ], 403);
         }
 
         $sesion = $this->createSession($usuario, $request);
 
-        $requiereCambio = (bool) $usuario->debe_cambiar_contrasena;
+        $requiereCambio = (bool) $usuario->debe_cambiar_contraseña;
         $redirectTo = null;
 
         if ($requiereCambio) {
-            $redirectTo = '/perfil/cambiar-contrasena';
+            $redirectTo = '/perfil/cambiar-contraseña';
         } elseif ($usuario->rol === 'admin') {
             $redirectTo = '/admin/dashboard';
         } elseif ($usuario->rol !== 'admin' && !$usuario->perfil) {
@@ -91,7 +91,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Inicio de sesion exitoso.',
             'token' => $sesion->token,
-            'requiere_cambio_contrasena' => $requiereCambio,
+            'requiere_cambio_contraseña' => $requiereCambio,
             'redirect_to' => $redirectTo,
             'usuario' => [
                 'id' => $usuario->id,
@@ -99,7 +99,7 @@ class AuthController extends Controller
                 'correo' => $usuario->correo,
                 'rol' => $usuario->rol,
                 'estado' => $usuario->estado,
-                'debe_cambiar_contrasena' => $requiereCambio,
+                'debe_cambiar_contraseña' => $requiereCambio,
             ],
         ]);
     }
@@ -118,15 +118,15 @@ class AuthController extends Controller
         /** @var Usuario $usuario */
         $usuario = $request->attributes->get('auth_usuario');
 
-        if (!Hash::check($request->contrasena_actual, $usuario->contrasena)) {
+        if (!Hash::check($request->contraseña_actual, $usuario->contraseña)) {
             return response()->json([
-                'message' => 'La contrasena actual no es correcta.',
+                'message' => 'La contraseña actual no es correcta.',
             ], 422);
         }
 
-        $usuario->contrasena = Hash::make($request->contrasena_nueva);
-        $usuario->debe_cambiar_contrasena = false;
-        $usuario->contrasena_temporal_expira_en = null;
+        $usuario->contraseña = Hash::make($request->contraseña_nueva);
+        $usuario->debe_cambiar_contraseña = false;
+        $usuario->contraseña_temporal_expira_en = null;
         $usuario->recuperacion_solicitada_en = null;
         $usuario->actualizado_en = now();
         $usuario->save();
@@ -139,19 +139,19 @@ class AuthController extends Controller
             $request,
             $usuario,
             'autenticacion',
-            'cambio_contrasena',
-            'Cambio de contrasena realizado correctamente.'
+            'cambio_contraseña',
+            'Cambio de contraseña realizado correctamente.'
         );
 
         return response()->json([
-            'message' => 'Contrasena actualizada correctamente.',
+            'message' => 'contraseña actualizada correctamente.',
             'usuario' => [
                 'id' => $usuario->id,
                 'nombre' => $usuario->nombre,
                 'correo' => $usuario->correo,
                 'rol' => $usuario->rol,
                 'estado' => $usuario->estado,
-                'debe_cambiar_contrasena' => false,
+                'debe_cambiar_contraseña' => false,
             ],
         ]);
     }

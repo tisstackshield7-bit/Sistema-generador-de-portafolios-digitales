@@ -1,11 +1,11 @@
-export interface RegisterPayload {
+﻿export interface RegisterPayload {
   correo: string;
-  contrasena: string;
+  contraseña: string;
 }
 
 export interface LoginPayload {
   correo: string;
-  contrasena: string;
+  contraseña: string;
 }
 
 export interface UsuarioAuth {
@@ -14,7 +14,7 @@ export interface UsuarioAuth {
   correo: string;
   rol: string;
   estado: string;
-  debe_cambiar_contrasena?: boolean;
+  debe_cambiar_contraseña?: boolean;
 }
 
 export interface AuthResponse {
@@ -23,5 +23,5 @@ export interface AuthResponse {
   usuario: UsuarioAuth;
   redirect_to?: string;
   usuario_id?: number;
-  requiere_cambio_contrasena?: boolean;
+  requiere_cambio_contraseña?: boolean;
 }
