@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace Tests\Feature;
 
@@ -19,11 +19,11 @@ class ApiSystemReviewTest extends TestCase
     {
         $response = $this->postJson('/api/auth/register', [
             'correo' => 'debil@example.com',
-            'contraseña' => 'abc123',
+            'contrasena' => 'abc123',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['contraseña']);
+            ->assertJsonValidationErrors(['contrasena']);
     }
 
     public function test_forgot_password_does_not_reveal_if_email_exists(): void
@@ -36,7 +36,7 @@ class ApiSystemReviewTest extends TestCase
 
         $response->assertOk()
             ->assertJson([
-                'message' => 'Si el correo existe, te enviamos una contraseña temporal valida por 30 minutos.',
+                'message' => 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.',
             ]);
 
         Notification::assertNothingSent();
@@ -53,12 +53,12 @@ class ApiSystemReviewTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('message', 'Si el correo existe, te enviamos una contraseña temporal valida por 30 minutos.');
+            ->assertJsonPath('message', 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.');
 
         $usuario->refresh();
 
-        $this->assertTrue((bool) $usuario->debe_cambiar_contraseña);
-        $this->assertNotNull($usuario->contraseña_temporal_expira_en);
+        $this->assertTrue((bool) $usuario->debe_cambiar_contrasena);
+        $this->assertNotNull($usuario->contrasena_temporal_expira_en);
         $this->assertNotNull($usuario->recuperacion_solicitada_en);
         Notification::assertSentTo($usuario, \App\Notifications\TemporaryPasswordNotification::class);
     }
@@ -77,11 +77,11 @@ class ApiSystemReviewTest extends TestCase
 
         $this->postJson('/api/auth/login', [
             'correo' => $usuario->correo,
-            'contraseña' => $temporaryPassword,
+            'contrasena' => $temporaryPassword,
         ])->assertOk()
-            ->assertJsonPath('requiere_cambio_contraseña', true)
-            ->assertJsonPath('redirect_to', '/perfil/cambiar-contraseña')
-            ->assertJsonPath('usuario.debe_cambiar_contraseña', true);
+            ->assertJsonPath('requiere_cambio_contrasena', true)
+            ->assertJsonPath('redirect_to', '/perfil/cambiar-contrasena')
+            ->assertJsonPath('usuario.debe_cambiar_contrasena', true);
     }
 
     public function test_login_without_profile_redirects_to_profile_creation(): void
@@ -90,10 +90,10 @@ class ApiSystemReviewTest extends TestCase
 
         $this->postJson('/api/auth/login', [
             'correo' => $usuario->correo,
-            'contraseña' => 'Password1!',
+            'contrasena' => 'Password1!',
         ])->assertOk()
             ->assertJsonPath('redirect_to', '/perfil/crear')
-            ->assertJsonPath('usuario.debe_cambiar_contraseña', false);
+            ->assertJsonPath('usuario.debe_cambiar_contrasena', false);
     }
 
     public function test_login_with_existing_profile_does_not_force_profile_creation(): void
@@ -102,12 +102,12 @@ class ApiSystemReviewTest extends TestCase
 
         $response = $this->postJson('/api/auth/login', [
             'correo' => 'ready-profile@example.com',
-            'contraseña' => 'Password1!',
+            'contrasena' => 'Password1!',
         ]);
 
         $response->assertOk()
             ->assertJsonPath('redirect_to', null)
-            ->assertJsonPath('usuario.debe_cambiar_contraseña', false);
+            ->assertJsonPath('usuario.debe_cambiar_contrasena', false);
 
         $this->assertNotSame($token, $response->json('token'));
     }
@@ -126,24 +126,24 @@ class ApiSystemReviewTest extends TestCase
 
         $login = $this->postJson('/api/auth/login', [
             'correo' => $usuario->correo,
-            'contraseña' => $temporaryPassword,
+            'contrasena' => $temporaryPassword,
         ]);
 
         $token = $login->json('token');
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->putJson('/api/auth/change-password', [
-                'contraseña_actual' => $temporaryPassword,
-                'contraseña_nueva' => 'NuevaClave1!',
-                'contraseña_nueva_confirmation' => 'NuevaClave1!',
+                'contrasena_actual' => $temporaryPassword,
+                'contrasena_nueva' => 'NuevaClave1!',
+                'contrasena_nueva_confirmation' => 'NuevaClave1!',
             ])
             ->assertOk()
-            ->assertJsonPath('usuario.debe_cambiar_contraseña', false);
+            ->assertJsonPath('usuario.debe_cambiar_contrasena', false);
 
         $usuario->refresh();
 
-        $this->assertFalse((bool) $usuario->debe_cambiar_contraseña);
-        $this->assertNull($usuario->contraseña_temporal_expira_en);
+        $this->assertFalse((bool) $usuario->debe_cambiar_contrasena);
+        $this->assertNull($usuario->contrasena_temporal_expira_en);
     }
 
     public function test_public_profile_can_be_loaded_by_slug_even_if_not_in_home_listing(): void
@@ -438,7 +438,7 @@ class ApiSystemReviewTest extends TestCase
         return Usuario::create([
             'nombre' => null,
             'correo' => $correo,
-            'contraseña' => bcrypt('Password1!'),
+            'contrasena' => bcrypt('Password1!'),
             'estado' => 'activo',
             'creado_en' => now(),
             'actualizado_en' => now(),

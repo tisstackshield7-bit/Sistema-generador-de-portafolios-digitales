@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
@@ -66,12 +66,12 @@ return new class extends Migration
             }
         }
 
-        if (Schema::hasTable('recuperaciones_contraseña') && Schema::hasColumn('recuperaciones_contraseña', 'usado')) {
-            DB::statement('UPDATE recuperaciones_contraseña SET usado = false WHERE usado IS NULL');
+        if (Schema::hasTable('recuperaciones_contrasena') && Schema::hasColumn('recuperaciones_contrasena', 'usado')) {
+            DB::statement('UPDATE recuperaciones_contrasena SET usado = false WHERE usado IS NULL');
 
             if ($isPostgres) {
-                DB::statement('ALTER TABLE recuperaciones_contraseña ALTER COLUMN usado SET DEFAULT false');
-                DB::statement('ALTER TABLE recuperaciones_contraseña ALTER COLUMN usado SET NOT NULL');
+                DB::statement('ALTER TABLE recuperaciones_contrasena ALTER COLUMN usado SET DEFAULT false');
+                DB::statement('ALTER TABLE recuperaciones_contrasena ALTER COLUMN usado SET NOT NULL');
             }
         }
     }
@@ -82,8 +82,8 @@ return new class extends Migration
             return;
         }
 
-        if (Schema::hasTable('recuperaciones_contraseña') && Schema::hasColumn('recuperaciones_contraseña', 'usado')) {
-            DB::statement('ALTER TABLE recuperaciones_contraseña ALTER COLUMN usado DROP NOT NULL');
+        if (Schema::hasTable('recuperaciones_contrasena') && Schema::hasColumn('recuperaciones_contrasena', 'usado')) {
+            DB::statement('ALTER TABLE recuperaciones_contrasena ALTER COLUMN usado DROP NOT NULL');
         }
 
         if (Schema::hasTable('habilidades')) {

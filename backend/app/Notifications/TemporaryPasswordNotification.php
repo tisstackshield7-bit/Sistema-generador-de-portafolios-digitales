@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Notifications;
 
@@ -25,7 +25,7 @@ class TemporaryPasswordNotification extends Notification
     {
         return (new MailMessage)
             ->from((string) config('mail.from.address'), 'PortafolioPro')
-            ->subject('PortafolioPro | contraseña temporal de acceso')
+            ->subject('PortafolioPro | Contrasena temporal de acceso')
             ->view('emails.temporary-password', [
                 'temporaryPassword' => $this->temporaryPassword,
                 'expireMinutes' => $this->expireMinutes,

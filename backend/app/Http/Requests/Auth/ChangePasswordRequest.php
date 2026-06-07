@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Http\Requests\Auth;
 
@@ -14,13 +14,13 @@ class ChangePasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'contraseña_actual' => ['required', 'string'],
-            'contraseña_nueva' => [
+            'contrasena_actual' => ['required', 'string'],
+            'contrasena_nueva' => [
                 'required',
                 'string',
                 'min:8',
                 'confirmed',
-                'different:contraseña_actual',
+                'different:contrasena_actual',
                 'regex:/[A-Z]/',
                 'regex:/[a-z]/',
                 'regex:/[0-9]/',
@@ -32,10 +32,10 @@ class ChangePasswordRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'contraseña_actual.required' => 'La contraseña actual es obligatoria.',
-            'contraseña_nueva.required' => 'La nueva contraseña es obligatoria.',
-            'contraseña_nueva.confirmed' => 'La confirmacion de la nueva contraseña no coincide.',
-            'contraseña_nueva.different' => 'La nueva contraseña debe ser diferente a la actual.',
+            'contrasena_actual.required' => 'La contrasena actual es obligatoria.',
+            'contrasena_nueva.required' => 'La nueva contrasena es obligatoria.',
+            'contrasena_nueva.confirmed' => 'La confirmacion de la nueva contrasena no coincide.',
+            'contrasena_nueva.different' => 'La nueva contrasena debe ser diferente a la actual.',
         ];
     }
 }

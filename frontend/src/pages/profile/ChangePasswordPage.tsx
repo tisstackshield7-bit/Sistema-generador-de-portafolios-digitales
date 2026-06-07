@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../../api/auth";
@@ -28,10 +28,10 @@ function getApiErrorData(error: unknown) {
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
   const currentUser = authStore.getUser();
-  const requiereCambioObligatorio = !!currentUser?.debe_cambiar_contraseña;
+  const requiereCambioObligatorio = !!currentUser?.debe_cambiar_contrasena;
   const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [contraseñaActual, setcontraseñaActual] = useState("");
-  const [contraseñaNueva, setcontraseñaNueva] = useState("");
+  const [contrasenaActual, setContrasenaActual] = useState("");
+  const [contrasenaNueva, setContrasenaNueva] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
@@ -48,12 +48,12 @@ export default function ChangePasswordPage() {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {
-      contraseña_actual: validateRequired(contraseñaActual, "La contraseña actual es obligatoria."),
-      contraseña_nueva: validatePassword(contraseñaNueva),
+      contrasena_actual: validateRequired(contrasenaActual, "La contrasena actual es obligatoria."),
+      contrasena_nueva: validatePassword(contrasenaNueva),
     };
 
-    if (contraseñaNueva !== confirmacion) {
-      nextErrors.confirmacion = "La confirmacion de la nueva contraseña no coincide.";
+    if (contrasenaNueva !== confirmacion) {
+      nextErrors.confirmacion = "La confirmacion de la nueva contrasena no coincide.";
     }
 
     setErrors(nextErrors);
@@ -67,7 +67,7 @@ export default function ChangePasswordPage() {
     setSaving(true);
 
     try {
-      const data = await changePassword(contraseñaActual, contraseñaNueva, confirmacion);
+      const data = await changePassword(contrasenaActual, contrasenaNueva, confirmacion);
       const storedUser = authStore.getUser();
 
       if (storedUser && data.usuario) {
@@ -78,8 +78,8 @@ export default function ChangePasswordPage() {
       }
 
       setMessage(data.message);
-      setcontraseñaActual("");
-      setcontraseñaNueva("");
+      setContrasenaActual("");
+      setContrasenaNueva("");
       setConfirmacion("");
       setTimeout(() => navigate(getAuthenticatedHomePath(authStore.getUser())), 900);
     } catch (error: unknown) {
@@ -92,7 +92,7 @@ export default function ChangePasswordPage() {
       });
 
       setErrors((prev) => ({ ...prev, ...fieldErrors }));
-      setServerError(errorData?.message || "No se pudo cambiar la contraseña.");
+      setServerError(errorData?.message || "No se pudo cambiar la contrasena.");
     } finally {
       setSaving(false);
     }
@@ -118,18 +118,18 @@ export default function ChangePasswordPage() {
     <PrivateWorkspaceLayout
       active="profile"
       perfil={perfil}
-      title="Cambiar contraseña"
+      title="Cambiar contrasena"
       subtitle={
         requiereCambioObligatorio
-          ? "Debes reemplazar la contraseña temporal por una definitiva para continuar."
-          : "Actualiza tu acceso y reemplaza la contraseña temporal por una definitiva."
+          ? "Debes reemplazar la contrasena temporal por una definitiva para continuar."
+          : "Actualiza tu acceso y reemplaza la contrasena temporal por una definitiva."
       }
     >
       <section className="surface-card workspace-section-card">
         <div className="workspace-section-head">
           <div>
             <p className="section-label">Seguridad</p>
-            <h2>{requiereCambioObligatorio ? "Cambio obligatorio de contraseña" : "Define una nueva contraseña"}</h2>
+            <h2>{requiereCambioObligatorio ? "Cambio obligatorio de contrasena" : "Define una nueva contrasena"}</h2>
           </div>
         </div>
 
@@ -137,32 +137,32 @@ export default function ChangePasswordPage() {
 
         <form className="form-stack" onSubmit={handleSubmit}>
           <FormInput
-            label="contraseña actual"
+            label="Contrasena actual"
             type="password"
-            value={contraseñaActual}
-            onChange={setcontraseñaActual}
-            error={errors.contraseña_actual}
-            placeholder="Ingresa tu contraseña actual o temporal"
+            value={contrasenaActual}
+            onChange={setContrasenaActual}
+            error={errors.contrasena_actual}
+            placeholder="Ingresa tu contrasena actual o temporal"
             togglePassword
           />
 
           <FormInput
-            label="Nueva contraseña"
+            label="Nueva contrasena"
             type="password"
-            value={contraseñaNueva}
-            onChange={setcontraseñaNueva}
-            error={errors.contraseña_nueva}
-            placeholder="Define una contraseña segura"
+            value={contrasenaNueva}
+            onChange={setContrasenaNueva}
+            error={errors.contrasena_nueva}
+            placeholder="Define una contrasena segura"
             togglePassword
           />
 
           <FormInput
-            label="Confirmar nueva contraseña"
+            label="Confirmar nueva contrasena"
             type="password"
             value={confirmacion}
             onChange={setConfirmacion}
             error={errors.confirmacion}
-            placeholder="Repite la nueva contraseña"
+            placeholder="Repite la nueva contrasena"
             togglePassword
           />
 
@@ -171,7 +171,7 @@ export default function ChangePasswordPage() {
               {requiereCambioObligatorio ? "Cerrar sesion" : "Cancelar"}
             </button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              Guardar contraseña
+              Guardar contrasena
             </button>
           </div>
         </form>

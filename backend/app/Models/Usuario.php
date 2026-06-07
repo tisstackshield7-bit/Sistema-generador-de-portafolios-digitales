@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Models;
 
@@ -27,10 +27,10 @@ class Usuario extends Model implements AuthenticatableContract, CanResetPassword
     protected $fillable = [
         'nombre',
         'correo',
-        'contraseña',
+        'contrasena',
         'rol',
-        'debe_cambiar_contraseña',
-        'contraseña_temporal_expira_en',
+        'debe_cambiar_contrasena',
+        'contrasena_temporal_expira_en',
         'recuperacion_solicitada_en',
         'correo_verificado_en',
         'estado',
@@ -38,7 +38,7 @@ class Usuario extends Model implements AuthenticatableContract, CanResetPassword
     ];
 
     protected $hidden = [
-        'contraseña',
+        'contrasena',
         'token_recordar',
     ];
 
@@ -54,7 +54,7 @@ class Usuario extends Model implements AuthenticatableContract, CanResetPassword
 
     public function getAuthPassword()
     {
-        return $this->contraseña;
+        return $this->contrasena;
     }
 
     public function getEmailForPasswordReset()
