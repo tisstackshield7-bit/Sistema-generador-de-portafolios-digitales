@@ -387,10 +387,60 @@ function drawTextLines(
   return lines.length * lineHeight;
 }
 
+function fitLineWithEllipsis(ctx: CanvasRenderingContext2D, line: string, width: number) {
+  const ellipsis = "…";
+  let candidate = line.trimEnd();
+
+  if (ctx.measureText(`${candidate}${ellipsis}`).width <= width) return `${candidate}${ellipsis}`;
+
+  while (candidate.length && ctx.measureText(`${candidate}${ellipsis}`).width > width) {
+    candidate = candidate.slice(0, -1).trimEnd();
+  }
+
+  return candidate ? `${candidate}${ellipsis}` : ellipsis;
+}
+
+function clampWrappedLines(ctx: CanvasRenderingContext2D, value: string, width: number, maxLines: number) {
+  const lines = wrapText(ctx, value, width);
+
+  if (maxLines <= 0) return [];
+  if (lines.length <= maxLines) return lines;
+
+  const visibleLines = lines.slice(0, maxLines);
+  visibleLines[visibleLines.length - 1] = fitLineWithEllipsis(ctx, visibleLines[visibleLines.length - 1], width);
+  return visibleLines;
+}
+
+function drawWrappedTextLimited(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  x: number,
+  y: number,
+  width: number,
+  size: number,
+  color: string,
+  weight: number | "normal" | "bold" = 400,
+  lineHeight = size + 9,
+  maxLines = Number.POSITIVE_INFINITY,
+) {
+  setFont(ctx, size, weight);
+  ctx.fillStyle = color;
+
+  const lines = Number.isFinite(maxLines)
+    ? clampWrappedLines(ctx, value, width, maxLines)
+    : wrapText(ctx, value, width);
+
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight);
+  });
+
+  return lines.length * lineHeight;
+}
 class CanvasCvRenderer {
   private pages: PdfPage[] = [];
   private profile: Perfil;
   private images: CvImages;
+  private currentSectionTitle = "";
 
   constructor(profile: Perfil, images: CvImages) {
     this.profile = profile;
@@ -428,82 +478,121 @@ class CanvasCvRenderer {
     this.pages.push(this.createPage(this.pages.length + 1));
   }
 
-  private checkPageBreak(height: number) {
-    if (this.page.y + height > BOTTOM) {
-      this.addPage();
+ private checkPageBreak(height: number, repeatSectionTitle = false) {
+  if (this.page.y + height > BOTTOM) {
+    this.addPage();
+
+    if (repeatSectionTitle && this.currentSectionTitle) {
+      this.drawSectionHeading(this.currentSectionTitle);
     }
   }
+}
 
   private drawSidebar(page: PdfPage) {
-    const { ctx } = page;
-    const x = 42;
-    const sidebarContentW = SIDEBAR_W - 84;
-    let y = 52;
+  const { ctx } = page;
+  const x = 42;
+  const sidebarContentW = SIDEBAR_W - 84;
+  let y = 52;
 
-    if (page.pageNumber === 1) {
-      const photoSize = 142;
-      const photoX = (SIDEBAR_W - photoSize) / 2;
-      fillRoundedRect(ctx, photoX - 8, y - 8, photoSize + 16, photoSize + 16, (photoSize + 16) / 2, "rgba(255, 255, 255, 0.16)");
-      if (this.images.profile) {
-        drawCircularCoverImage(ctx, this.images.profile.image, photoX, y, photoSize);
-      } else {
-        fillRoundedRect(ctx, photoX, y, photoSize, photoSize, photoSize / 2, "#dbeafe");
-        setFont(ctx, 42, 800);
-        ctx.fillStyle = "#1d4ed8";
-        const initials = getUserInitials(this.profile);
-        const initialsWidth = ctx.measureText(initials).width;
-        ctx.fillText(initials, photoX + (photoSize - initialsWidth) / 2, y + 46);
-      }
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.arc(photoX + photoSize / 2, y + photoSize / 2, photoSize / 2 + 1, 0, Math.PI * 2);
-      ctx.stroke();
-      y += 178;
+  if (page.pageNumber === 1) {
+    const photoSize = 142;
+    const photoX = (SIDEBAR_W - photoSize) / 2;
+
+    fillRoundedRect(
+      ctx,
+      photoX - 8,
+      y - 8,
+      photoSize + 16,
+      photoSize + 16,
+      (photoSize + 16) / 2,
+      "rgba(255, 255, 255, 0.16)",
+    );
+
+    if (this.images.profile) {
+      drawCircularCoverImage(ctx, this.images.profile.image, photoX, y, photoSize);
     } else {
-      drawWrappedText(ctx, "SpherLink CV", x, y, sidebarContentW, 24, "#ffffff", 800, 32);
-      y += 64;
+      fillRoundedRect(ctx, photoX, y, photoSize, photoSize, photoSize / 2, "#dbeafe");
+      setFont(ctx, 42, 800);
+      ctx.fillStyle = "#1d4ed8";
+      const initials = getUserInitials(this.profile);
+      const initialsWidth = ctx.measureText(initials).width;
+      ctx.fillText(initials, photoX + (photoSize - initialsWidth) / 2, y + 46);
     }
 
-    const contactRows = [
-      ["Correo", this.profile.correo],
-      ["Teléfono", this.profile.telefono],
-      ["Ubicación", this.profile.ubicacion],
-    ];
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(photoX + photoSize / 2, y + photoSize / 2, photoSize / 2 + 1, 0, Math.PI * 2);
+    ctx.stroke();
 
-    this.sidebarTitle(ctx, "Información", x, y);
-    y += 34;
-    contactRows.forEach(([label, value]) => {
-      y += this.sidebarLine(ctx, label || "", textOrEmpty(value), x, y);
-    });
+    y += 178;
+  } else {
+    drawWrappedText(ctx, "SpherLink CV", x, y, sidebarContentW, 24, "#ffffff", 800, 32);
+    y += 64;
+  }
 
-    if (page.pageNumber === 1) {
-      y += 12;
-      this.sidebarTitle(ctx, "Resumen", x, y);
-      y += 34;
-      const summaryHeight = drawWrappedText(ctx, richText(this.profile.biografia), x, y, sidebarContentW, 17, "#dbeafe", 400, 25);
-      y += Math.min(summaryHeight, 178);
+  const contactRows = [
+    ["Correo", this.profile.correo],
+    ["Teléfono", this.profile.telefono],
+    ["Ubicación", this.profile.ubicacion],
+  ];
 
-      y += 22;
-      this.sidebarTitle(ctx, "Habilidades", x, y);
-      y += 36;
-      y += this.drawSidebarSkillGroup(ctx, "Técnicas", this.profile.habilidades?.filter((skill) => skill.tipo === "tecnica") || [], x, y, "Sin habilidades técnicas registradas");
-      y += 14;
-      y += this.drawSidebarSkillGroup(ctx, "Blandas", this.profile.habilidades?.filter((skill) => skill.tipo === "blanda") || [], x, y, "Sin habilidades blandas registradas");
+  this.sidebarTitle(ctx, "Información", x, y);
+  y += 34;
 
-      y += 22;
-      if (y > BOTTOM - 214) y = BOTTOM - 214;
-      this.sidebarTitle(ctx, "Enlaces", x, y);
-      y += 34;
-      [
-        ["LinkedIn", this.profile.linkedin_url],
-        ["GitHub", this.profile.github_url],
-        ["Sitio web", this.profile.sitio_web_url],
-      ].forEach(([label, value]) => {
-        y += this.sidebarLine(ctx, label || "", textOrEmpty(value), x, y);
-      });
+  contactRows.forEach(([label, value]) => {
+    y += this.sidebarLine(ctx, label || "", textOrEmpty(value), x, y);
+  });
+
+  if (page.pageNumber === 1) {
+  y += 20;
+
+  const linksReserve = 214;
+  const skillsBottom = BOTTOM - linksReserve;
+
+  if (y < skillsBottom) {
+    this.sidebarTitle(ctx, "Habilidades", x, y);
+    y += 36;
+
+    y += this.drawSidebarSkillGroup(
+      ctx,
+      "Técnicas",
+      this.profile.habilidades?.filter((skill) => skill.tipo === "tecnica") || [],
+      x,
+      y,
+      "Sin habilidades técnicas registradas",
+      skillsBottom,
+    );
+
+    y += 14;
+
+    if (y < skillsBottom) {
+      y += this.drawSidebarSkillGroup(
+        ctx,
+        "Blandas",
+        this.profile.habilidades?.filter((skill) => skill.tipo === "blanda") || [],
+        x,
+        y,
+        "Sin habilidades blandas registradas",
+        skillsBottom,
+      );
     }
   }
+
+  y = Math.min(y + 22, BOTTOM - linksReserve);
+
+  this.sidebarTitle(ctx, "Enlaces", x, y);
+  y += 34;
+
+  [
+    ["LinkedIn", this.profile.linkedin_url],
+    ["GitHub", this.profile.github_url],
+    ["Sitio web", this.profile.sitio_web_url],
+  ].forEach(([label, value]) => {
+    y += this.sidebarLine(ctx, label || "", textOrEmpty(value), x, y, 2);
+  });
+}
+}
 
   private sidebarTitle(ctx: CanvasRenderingContext2D, title: string, x: number, y: number) {
     setFont(ctx, 22, 800);
@@ -513,80 +602,179 @@ class CanvasCvRenderer {
     ctx.fillRect(x, y + 32, SIDEBAR_W - 84, 2);
   }
 
-  private sidebarLine(ctx: CanvasRenderingContext2D, label: string, value: string, x: number, y: number) {
-    setFont(ctx, 14, 800);
-    ctx.fillStyle = "#bae6fd";
-    ctx.fillText(label, x, y);
-    const height = drawWrappedText(ctx, value, x, y + 19, SIDEBAR_W - 84, 15, "#f8fafc", 400, 21);
-    return height + 27;
-  }
+  private sidebarLine(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  maxLines = 3,
+) {
+  setFont(ctx, 14, 800);
+  ctx.fillStyle = "#bae6fd";
+  ctx.fillText(label, x, y);
+
+  const height = drawWrappedTextLimited(
+    ctx,
+    value,
+    x,
+    y + 19,
+    SIDEBAR_W - 84,
+    15,
+    "#f8fafc",
+    400,
+    21,
+    maxLines,
+  );
+
+  return height + 27;
+}
 
   private drawSidebarSkillGroup(
-    ctx: CanvasRenderingContext2D,
-    label: string,
-    skills: NonNullable<Perfil["habilidades"]>,
-    x: number,
-    y: number,
-    emptyMessage: string,
-  ) {
-    setFont(ctx, 15, 800);
-    ctx.fillStyle = "#bae6fd";
-    ctx.fillText(label, x, y);
-    let currentY = y + 24;
-    const items = skills.length
-      ? skills.map((skill) => `${skill.nombre}${skill.nivel_dominio ? ` (${skill.nivel_dominio})` : ""}`)
-      : [emptyMessage];
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  skills: NonNullable<Perfil["habilidades"]>,
+  x: number,
+  y: number,
+  emptyMessage: string,
+  maxBottom = BOTTOM,
+) {
+  setFont(ctx, 15, 800);
+  ctx.fillStyle = "#bae6fd";
+  ctx.fillText(label, x, y);
 
-    items.slice(0, 8).forEach((item) => {
-      const lines = wrapText(ctx, item, SIDEBAR_W - 112);
-      fillRoundedRect(ctx, x, currentY - 2, SIDEBAR_W - 84, Math.max(27, lines.length * 20 + 8), 10, "rgba(219, 234, 254, 0.14)");
-      setFont(ctx, 14, 700);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText("•", x + 10, currentY + 3);
-      drawWrappedText(ctx, item, x + 26, currentY + 3, SIDEBAR_W - 112, 14, "#ffffff", 500, 20);
-      currentY += Math.max(30, lines.length * 20 + 10);
-    });
+  let currentY = y + 24;
 
-    if (skills.length > 8) {
-      drawWrappedText(ctx, `+ ${skills.length - 8} habilidades más`, x + 10, currentY + 2, SIDEBAR_W - 104, 13, "#bae6fd", 700, 18);
-      currentY += 24;
-    }
+  const items = skills.length
+    ? skills.map((skill) => `${skill.nombre}${skill.nivel_dominio ? ` (${skill.nivel_dominio})` : ""}`)
+    : [emptyMessage];
 
-    return currentY - y;
+  const visibleLimit = skills.length ? 8 : 1;
+  let renderedItems = 0;
+
+  for (const item of items.slice(0, visibleLimit)) {
+    setFont(ctx, 14, 700);
+
+    const lines = clampWrappedLines(ctx, item, SIDEBAR_W - 112, 2);
+    const itemHeight = Math.max(30, lines.length * 20 + 10);
+
+    if (currentY + itemHeight > maxBottom - 30) break;
+
+    fillRoundedRect(
+      ctx,
+      x,
+      currentY - 2,
+      SIDEBAR_W - 84,
+      Math.max(27, lines.length * 20 + 8),
+      10,
+      "rgba(219, 234, 254, 0.14)",
+    );
+
+    setFont(ctx, 14, 700);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("•", x + 10, currentY + 3);
+
+    drawTextLines(ctx, lines, x + 26, currentY + 3, 14, "#ffffff", 500, 20);
+
+    currentY += itemHeight;
+    renderedItems += 1;
   }
 
-  private sectionTitle(title: string) {
-    this.checkPageBreak(60);
-    const { ctx } = this.page;
-    setFont(ctx, 26, 900);
-    ctx.fillStyle = "#0b4aa8";
-    ctx.fillText(title, RIGHT_X, this.page.y);
-    ctx.fillStyle = "#bfdbfe";
-    ctx.fillRect(RIGHT_X, this.page.y + 38, RIGHT_W, 2);
-    this.page.y += 62;
+  const hiddenItems = skills.length ? Math.max(0, skills.length - renderedItems) : 0;
+
+  if (hiddenItems > 0 && currentY + 24 <= maxBottom) {
+    drawWrappedText(ctx, `+ ${hiddenItems} habilidades más`, x + 10, currentY + 2, SIDEBAR_W - 104, 13, "#bae6fd", 700, 18);
+    currentY += 24;
   }
+
+  return currentY - y;
+}
+
+  private drawSectionHeading(title: string) {
+  const { ctx } = this.page;
+
+  setFont(ctx, 26, 900);
+  ctx.fillStyle = "#0b4aa8";
+  ctx.fillText(title, RIGHT_X, this.page.y);
+
+  ctx.fillStyle = "#bfdbfe";
+  ctx.fillRect(RIGHT_X, this.page.y + 38, RIGHT_W, 2);
+
+  this.page.y += 62;
+}
+
+private sectionTitle(title: string) {
+  this.currentSectionTitle = title;
+  this.checkPageBreak(60);
+  this.drawSectionHeading(title);
+}
 
   private textBlock(label: string, value: string) {
-    const { ctx } = this.page;
-    setFont(ctx, 19, 800);
-    const lines = wrapText(ctx, value, RIGHT_W - 42);
-    const height = 50 + lines.length * 25;
-    this.checkPageBreak(height);
+  const measureCtx = this.page.ctx;
 
-    fillShadowRoundedRect(ctx, RIGHT_X, this.page.y, RIGHT_W, height, 18, "#ffffff", "rgba(15, 23, 42, 0.06)");
+  setFont(measureCtx, 18, 400);
+
+  const remainingLines = wrapText(measureCtx, value, RIGHT_W - 48);
+  const lineHeight = 27;
+  const cardPadding = 50;
+  let firstChunk = true;
+
+  do {
+    const minimumHeight = cardPadding + lineHeight + 18;
+
+    if (this.page.y + minimumHeight > BOTTOM) {
+      this.addPage();
+    }
+
+    const ctx = this.page.ctx;
+
+    const maxLines = Math.max(
+      1,
+      Math.floor((BOTTOM - this.page.y - cardPadding - 18) / lineHeight),
+    );
+
+    const lines = remainingLines.splice(0, maxLines);
+    const height = cardPadding + lines.length * lineHeight;
+    const currentLabel = firstChunk ? label : `${label} (continuación)`;
+
+    fillShadowRoundedRect(
+      ctx,
+      RIGHT_X,
+      this.page.y,
+      RIGHT_W,
+      height,
+      18,
+      "#ffffff",
+      "rgba(15, 23, 42, 0.06)",
+    );
+
     ctx.strokeStyle = "#dbe3ee";
     ctx.lineWidth = 2;
     drawRoundedRect(ctx, RIGHT_X, this.page.y, RIGHT_W, height, 18);
     ctx.stroke();
+
     ctx.fillStyle = "#08a6c9";
     ctx.fillRect(RIGHT_X, this.page.y + 18, 5, height - 36);
 
     setFont(ctx, 17, 900);
     ctx.fillStyle = "#0f172a";
-    ctx.fillText(label, RIGHT_X + 24, this.page.y + 18);
-    drawWrappedText(ctx, value, RIGHT_X + 24, this.page.y + 47, RIGHT_W - 48, 18, "#475569", 400, 27);
+    ctx.fillText(currentLabel, RIGHT_X + 24, this.page.y + 18);
+
+    drawTextLines(
+      ctx,
+      lines,
+      RIGHT_X + 24,
+      this.page.y + 47,
+      18,
+      "#475569",
+      400,
+      lineHeight,
+    );
+
     this.page.y += height + 18;
-  }
+    firstChunk = false;
+  } while (remainingLines.length);
+}
 
   private measureTagRows(ctx: CanvasRenderingContext2D, tags: string[], width: number) {
     if (!tags.length) return 0;
@@ -628,81 +816,193 @@ class CanvasCvRenderer {
     });
   }
 
-  private card(title: string, meta: string, body: string, tags: string[] = [], image?: LoadedImage | null, footer?: string) {
-    const { ctx } = this.page;
-    const safeTitle = textOrEmpty(title);
-    const safeMeta = textOrEmpty(meta);
-    const safeBody = textOrEmpty(body);
-    const safeFooter = sanitizeText(footer);
-    const safeTags = cleanTags(tags);
-    const imageW = image ? 150 : 0;
-    const textW = RIGHT_W - 48 - imageW - (image ? 22 : 0);
-    const maxCardHeight = BOTTOM - TOP - 16;
-    const titleLines = wrapText(ctx, safeTitle, textW).slice(0, 2);
-    const metaLines = wrapText(ctx, safeMeta, textW).slice(0, 3);
-    const allBodyLines = wrapText(ctx, safeBody, textW);
-    const footerLines = safeFooter ? wrapText(ctx, safeFooter, textW) : [];
-    const remainingBodyLines = [...allBodyLines];
-    let firstChunk = true;
+  private card(
+  title: string,
+  meta: string,
+  body: string,
+  tags: string[] = [],
+  image?: LoadedImage | null,
+  footer?: string,
+) {
+  const measureCtx = this.page.ctx;
 
-    do {
-      const continued = !firstChunk;
-      const currentTitleLines = continued ? wrapText(ctx, `${safeTitle} (continuación)`, textW).slice(0, 2) : titleLines;
-      const currentMetaLines = continued ? [] : metaLines;
-      const bodyStartY = 30 + currentTitleLines.length * 28 + currentMetaLines.length * 23 + 10;
-      const isPotentialLast = remainingBodyLines.length <= Math.floor((maxCardHeight - bodyStartY - 62) / 25);
-      const showExtras = isPotentialLast;
-      const tagRows = showExtras ? this.measureTagRows(ctx, safeTags, textW) : 0;
-      const footerHeight = showExtras && footerLines.length ? footerLines.length * 22 + 8 : 0;
-      const tagHeight = showExtras && safeTags.length ? tagRows * 32 + 12 : 0;
-      const maxBodyLines = Math.max(1, Math.floor((maxCardHeight - bodyStartY - tagHeight - footerHeight - 38) / 25));
-      const bodyLines = remainingBodyLines.splice(0, maxBodyLines);
-      const isLast = remainingBodyLines.length === 0;
-      const finalTagRows = isLast ? this.measureTagRows(ctx, safeTags, textW) : 0;
-      const finalTagHeight = isLast && safeTags.length ? finalTagRows * 32 + 12 : 0;
-      const finalFooterHeight = isLast && footerLines.length ? footerLines.length * 22 + 8 : 0;
-      const height = Math.max(
-        image && firstChunk ? 160 : 0,
-        bodyStartY + bodyLines.length * 25 + finalTagHeight + finalFooterHeight + 30,
+  const safeTitle = textOrEmpty(title);
+  const safeMeta = textOrEmpty(meta);
+  const safeBody = textOrEmpty(body);
+  const safeFooter = sanitizeText(footer);
+  const safeTags = cleanTags(tags);
+
+  const imageW = image ? 150 : 0;
+  const textW = RIGHT_W - 48 - imageW - (image ? 22 : 0);
+  const maxCardHeight = BOTTOM - TOP - 16;
+
+  setFont(measureCtx, 22, 900);
+  const titleLines = wrapText(measureCtx, safeTitle, textW).slice(0, 2);
+
+  setFont(measureCtx, 16, 800);
+  const metaLines = wrapText(measureCtx, safeMeta, textW).slice(0, 3);
+
+  setFont(measureCtx, 17, 400);
+  const allBodyLines = wrapText(measureCtx, safeBody, textW);
+
+  setFont(measureCtx, 15, 700);
+  const footerLines = safeFooter ? wrapText(measureCtx, safeFooter, textW) : [];
+
+  const remainingBodyLines = [...allBodyLines];
+  let firstChunk = true;
+
+  do {
+    const continued = !firstChunk;
+
+    setFont(measureCtx, 22, 900);
+    const currentTitleLines = continued
+      ? wrapText(measureCtx, `${safeTitle} (continuación)`, textW).slice(0, 2)
+      : titleLines;
+
+    const currentMetaLines = continued ? [] : metaLines;
+
+    const bodyStartY =
+      30 +
+      currentTitleLines.length * 28 +
+      currentMetaLines.length * 23 +
+      10;
+
+    const isPotentialLast =
+      remainingBodyLines.length <=
+      Math.floor((maxCardHeight - bodyStartY - 62) / 25);
+
+    const showExtras = isPotentialLast;
+
+    const tagRows = showExtras
+      ? this.measureTagRows(measureCtx, safeTags, textW)
+      : 0;
+
+    const footerHeight =
+      showExtras && footerLines.length ? footerLines.length * 22 + 8 : 0;
+
+    const tagHeight =
+      showExtras && safeTags.length ? tagRows * 32 + 12 : 0;
+
+    const maxBodyLines = Math.max(
+      1,
+      Math.floor(
+        (maxCardHeight - bodyStartY - tagHeight - footerHeight - 38) / 25,
+      ),
+    );
+
+    const bodyLines = remainingBodyLines.splice(0, maxBodyLines);
+    const isLast = remainingBodyLines.length === 0;
+
+    const finalTagRows = isLast
+      ? this.measureTagRows(measureCtx, safeTags, textW)
+      : 0;
+
+    const finalTagHeight =
+      isLast && safeTags.length ? finalTagRows * 32 + 12 : 0;
+
+    const finalFooterHeight =
+      isLast && footerLines.length ? footerLines.length * 22 + 8 : 0;
+
+    const height = Math.max(
+      image && firstChunk ? 160 : 0,
+      bodyStartY +
+        bodyLines.length * 25 +
+        finalTagHeight +
+        finalFooterHeight +
+        30,
+    );
+
+    this.checkPageBreak(height + 18, true);
+
+    const ctx = this.page.ctx;
+
+    fillShadowRoundedRect(
+      ctx,
+      RIGHT_X,
+      this.page.y,
+      RIGHT_W,
+      height,
+      18,
+      "#ffffff",
+    );
+
+    ctx.strokeStyle = "#dbe3ee";
+    ctx.lineWidth = 2;
+    drawRoundedRect(ctx, RIGHT_X, this.page.y, RIGHT_W, height, 18);
+    ctx.stroke();
+
+    let x = RIGHT_X + 24;
+
+    if (image && firstChunk) {
+      drawCoverImage(ctx, image.image, x, this.page.y + 24, 150, 112, 14);
+      x += 172;
+    }
+
+    let y = this.page.y + 22;
+
+    y += drawTextLines(
+      ctx,
+      currentTitleLines,
+      x,
+      y,
+      22,
+      "#0f172a",
+      900,
+      28,
+    );
+
+    if (currentMetaLines.length) {
+      y +=
+        drawTextLines(
+          ctx,
+          currentMetaLines,
+          x,
+          y + 2,
+          16,
+          "#1d4ed8",
+          800,
+          23,
+        ) + 8;
+    } else {
+      y += 8;
+    }
+
+    y += drawTextLines(
+      ctx,
+      bodyLines,
+      x,
+      y,
+      17,
+      "#475569",
+      400,
+      25,
+    );
+
+    if (isLast && safeTags.length) {
+      y += 12;
+      this.drawTags(ctx, safeTags, x, y, textW);
+      y += finalTagRows * 32;
+    }
+
+    if (isLast && footerLines.length) {
+      y += 8;
+
+      drawTextLines(
+        ctx,
+        footerLines,
+        x,
+        y,
+        15,
+        "#64748b",
+        700,
+        22,
       );
+    }
 
-      this.checkPageBreak(height + 18);
-      fillShadowRoundedRect(ctx, RIGHT_X, this.page.y, RIGHT_W, height, 18, "#ffffff");
-      ctx.strokeStyle = "#dbe3ee";
-      ctx.lineWidth = 2;
-      drawRoundedRect(ctx, RIGHT_X, this.page.y, RIGHT_W, height, 18);
-      ctx.stroke();
-
-      let x = RIGHT_X + 24;
-      if (image && firstChunk) {
-        drawCoverImage(ctx, image.image, x, this.page.y + 24, 150, 112, 14);
-        x += 172;
-      }
-
-      let y = this.page.y + 22;
-      y += drawTextLines(ctx, currentTitleLines, x, y, 22, "#0f172a", 900, 28);
-      if (currentMetaLines.length) {
-        y += drawTextLines(ctx, currentMetaLines, x, y + 2, 16, "#1d4ed8", 800, 23) + 8;
-      } else {
-        y += 8;
-      }
-      y += drawTextLines(ctx, bodyLines, x, y, 17, "#475569", 400, 25);
-
-      if (isLast && safeTags.length) {
-        y += 12;
-        this.drawTags(ctx, safeTags, x, y, textW);
-        y += finalTagRows * 32;
-      }
-
-      if (isLast && footerLines.length) {
-        y += 8;
-        drawTextLines(ctx, footerLines, x, y, 15, "#64748b", 700, 22);
-      }
-
-      this.page.y += height + 18;
-      firstChunk = false;
-    } while (remainingBodyLines.length);
-  }
+    this.page.y += height + 18;
+    firstChunk = false;
+  } while (remainingBodyLines.length);
+}
 
   render() {
     const { ctx } = this.page;
