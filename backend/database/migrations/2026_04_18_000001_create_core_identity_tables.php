@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -13,7 +13,7 @@ return new class extends Migration
                 $table->id();
                 $table->string('nombre', 180)->nullable();
                 $table->string('correo')->unique();
-                $table->string('contrasena');
+                $table->string('contraseña');
                 $table->string('estado', 20)->default('activo');
                 $table->string('token_recordar', 100)->nullable();
                 $table->timestamp('correo_verificado_en')->nullable();

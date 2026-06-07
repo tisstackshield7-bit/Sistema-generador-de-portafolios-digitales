@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\Api;
 
@@ -19,22 +19,22 @@ class PasswordRecoveryController extends Controller
 
         if (!$usuario) {
             return response()->json([
-                'message' => 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.',
+                'message' => 'Si el correo existe, te enviamos una contraseña temporal valida por 30 minutos.',
             ]);
         }
 
         if ($usuario->recuperacion_solicitada_en && Carbon::parse($usuario->recuperacion_solicitada_en)->addSeconds(60)->isFuture()) {
             return response()->json([
-                'message' => 'Ya enviamos una contrasena temporal hace poco. Espera 60 segundos antes de solicitar otra.',
+                'message' => 'Ya enviamos una contraseña temporal hace poco. Espera 60 segundos antes de solicitar otra.',
             ], 429);
         }
 
         $expireMinutes = 30;
         $temporaryPassword = $this->generateTemporaryPassword();
 
-        $usuario->contrasena = Hash::make($temporaryPassword);
-        $usuario->debe_cambiar_contrasena = true;
-        $usuario->contrasena_temporal_expira_en = now()->addMinutes($expireMinutes);
+        $usuario->contraseña = Hash::make($temporaryPassword);
+        $usuario->debe_cambiar_contraseña = true;
+        $usuario->contraseña_temporal_expira_en = now()->addMinutes($expireMinutes);
         $usuario->recuperacion_solicitada_en = now();
         $usuario->token_recordar = null;
         $usuario->actualizado_en = now();
@@ -44,21 +44,21 @@ class PasswordRecoveryController extends Controller
         $usuario->sendTemporaryPasswordNotification($temporaryPassword, $expireMinutes);
 
         return response()->json([
-            'message' => 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.',
+            'message' => 'Si el correo existe, te enviamos una contraseña temporal valida por 30 minutos.',
         ]);
     }
 
     public function validateToken(Request $request, string $token)
     {
         return response()->json([
-            'message' => 'Este flujo ya no usa enlaces de recuperacion. Solicita una contrasena temporal.',
+            'message' => 'Este flujo ya no usa enlaces de recuperacion. Solicita una contraseña temporal.',
         ], 410);
     }
 
     public function resetPassword(ResetPasswordRequest $request)
     {
         return response()->json([
-            'message' => 'Este flujo ya no usa enlaces de recuperacion. Solicita una contrasena temporal.',
+            'message' => 'Este flujo ya no usa enlaces de recuperacion. Solicita una contraseña temporal.',
         ], 410);
     }
 

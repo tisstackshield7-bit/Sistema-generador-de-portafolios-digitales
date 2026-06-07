@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Database\Seeders;
 
@@ -17,11 +17,11 @@ class DatabaseSeeder extends Seeder
             ['correo' => env('ADMIN_INITIAL_EMAIL', 'admin@portfoliopro.local')],
             [
                 'nombre' => 'Administrador del Sistema',
-                'contrasena' => Hash::make(env('ADMIN_INITIAL_PASSWORD', 'Admin12345!')),
+                'contraseña' => Hash::make(env('ADMIN_INITIAL_PASSWORD', 'Admin12345!')),
                 'rol' => 'admin',
                 'estado' => 'activo',
-                'debe_cambiar_contrasena' => false,
-                'contrasena_temporal_expira_en' => null,
+                'debe_cambiar_contraseña' => false,
+                'contraseña_temporal_expira_en' => null,
                 'recuperacion_solicitada_en' => null,
                 'correo_verificado_en' => now(),
                 'creado_en' => now(),

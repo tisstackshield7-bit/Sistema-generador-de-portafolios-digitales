@@ -1,4 +1,4 @@
-import api from "./axios";
+﻿import api from "./axios";
 
 export const requestPasswordRecovery = async (correo: string) => {
   const { data } = await api.post("/auth/forgot-password", { correo });
@@ -6,14 +6,14 @@ export const requestPasswordRecovery = async (correo: string) => {
 };
 
 export const changePassword = async (
-  contrasena_actual: string,
-  contrasena_nueva: string,
-  contrasena_nueva_confirmation: string,
+  contraseña_actual: string,
+  contraseña_nueva: string,
+  contraseña_nueva_confirmation: string,
 ) => {
   const { data } = await api.put("/auth/change-password", {
-    contrasena_actual,
-    contrasena_nueva,
-    contrasena_nueva_confirmation,
+    contraseña_actual,
+    contraseña_nueva,
+    contraseña_nueva_confirmation,
   });
 
   return data;
@@ -29,14 +29,14 @@ export const validateResetToken = async (token: string, correo: string) => {
 export const resetPassword = async (
   correo: string,
   token: string,
-  contrasena: string,
-  contrasena_confirmation: string
+  contraseña: string,
+  contraseña_confirmation: string
 ) => {
   const { data } = await api.post("/auth/reset-password", {
     correo,
     token,
-    contrasena,
-    contrasena_confirmation,
+    contraseña,
+    contraseña_confirmation,
   });
 
   return data;

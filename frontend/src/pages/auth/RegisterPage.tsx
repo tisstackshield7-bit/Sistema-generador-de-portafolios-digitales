@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthMiniFooter from "../../components/auth/AuthMiniFooter";
 import FormInput from "../../components/common/FormInput";
@@ -29,23 +29,23 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   const [correo, setCorreo] = useState("");
-  const [contrasena, setContrasena] = useState("");
-  const [errors, setErrors] = useState<{ correo?: string; contrasena?: string }>({});
+  const [contraseña, setcontraseña] = useState("");
+  const [errors, setErrors] = useState<{ correo?: string; contraseña?: string }>({});
   const [serverError, setServerError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const correoError = validateEmail(correo);
-    const contrasenaError = validatePassword(contrasena);
+    const contraseñaError = validatePassword(contraseña);
 
-    setErrors({ correo: correoError, contrasena: contrasenaError });
+    setErrors({ correo: correoError, contraseña: contraseñaError });
     setServerError("");
 
-    if (correoError || contrasenaError) return;
+    if (correoError || contraseñaError) return;
 
     try {
-      const data = await registerUser({ correo, contrasena });
+      const data = await registerUser({ correo, contraseña });
       authStore.setSession(data.token, data.usuario);
       navigate(data.redirect_to || "/perfil/crear");
     } catch (error: unknown) {
@@ -133,11 +133,11 @@ export default function RegisterPage() {
             />
 
             <FormInput
-              label="Contrasena"
+              label="contraseña"
               type="password"
-              value={contrasena}
-              onChange={setContrasena}
-              error={errors.contrasena}
+              value={contraseña}
+              onChange={setcontraseña}
+              error={errors.contraseña}
               placeholder="Usa mayusculas, numeros y simbolos"
               togglePassword
             />

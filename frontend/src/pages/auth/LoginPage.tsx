@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthMiniFooter from "../../components/auth/AuthMiniFooter";
 import FormInput from "../../components/common/FormInput";
@@ -31,8 +31,8 @@ export default function LoginPage() {
   const [storedRedirect] = useState(() => authStore.consumeRedirectNotice());
 
   const [correo, setCorreo] = useState("");
-  const [contrasena, setContrasena] = useState("");
-  const [errors, setErrors] = useState<{ correo?: string; contrasena?: string }>({});
+  const [contraseña, setcontraseña] = useState("");
+  const [errors, setErrors] = useState<{ correo?: string; contraseña?: string }>({});
   const [serverError, setServerError] = useState("");
   const redirectMessage = (location.state as { message?: string; from?: string } | null)?.message || storedRedirect.message || "";
   const redirectTo = (location.state as { message?: string; from?: string } | null)?.from || storedRedirect.from || "/";
@@ -41,19 +41,19 @@ export default function LoginPage() {
     e.preventDefault();
 
     const correoError = validateEmail(correo);
-    const contrasenaError = validateRequired(contrasena, "La contrasena es obligatoria.");
+    const contraseñaError = validateRequired(contraseña, "La contraseña es obligatoria.");
 
     setErrors({
       correo: correoError,
-      contrasena: contrasenaError,
+      contraseña: contraseñaError,
     });
 
     setServerError("");
 
-    if (correoError || contrasenaError) return;
+    if (correoError || contraseñaError) return;
 
     try {
-      const data = await loginUser({ correo, contrasena });
+      const data = await loginUser({ correo, contraseña });
       authStore.setSession(data.token, data.usuario);
       navigate(data.redirect_to || redirectTo);
     } catch (error: unknown) {
@@ -129,17 +129,17 @@ export default function LoginPage() {
             />
 
             <div className="login-password-head">
-              <label className="form-label">Contrasena</label>
-              <Link to="/recuperar-contrasena">Olvidaste tu contrasena?</Link>
+              <label className="form-label">contraseña</label>
+              <Link to="/recuperar-contraseña">Olvidaste tu contraseña?</Link>
             </div>
 
             <FormInput
               label=""
               type="password"
-              value={contrasena}
-              onChange={setContrasena}
-              error={errors.contrasena}
-              placeholder="Ingresa tu contrasena"
+              value={contraseña}
+              onChange={setcontraseña}
+              error={errors.contraseña}
+              placeholder="Ingresa tu contraseña"
               togglePassword
             />
 

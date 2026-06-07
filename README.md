@@ -1,6 +1,6 @@
-# Sistema Generador de Portafolios Digitales
+﻿# Sistema Generador de Portafolios Digitales
 
-Sistema web para crear, administrar y publicar portafolios digitales profesionales. Incluye registro e inicio de sesion, perfiles publicos, gestion de habilidades, proyectos, experiencias, recuperacion de contrasena y panel administrativo.
+Sistema web para crear, administrar y publicar portafolios digitales profesionales. Incluye registro e inicio de sesion, perfiles publicos, gestion de habilidades, proyectos, experiencias, recuperacion de contraseña y panel administrativo.
 
 ## Tecnologias
 
@@ -155,8 +155,8 @@ php artisan db:seed
 ## Modulos principales
 
 - Autenticacion de usuarios
-- Recuperacion de contrasena por correo
-- Cambio obligatorio de contrasena temporal
+- Recuperacion de contraseña por correo
+- Cambio obligatorio de contraseña temporal
 - Creacion y edicion de perfil profesional
 - Perfil publico por `slug`
 - Gestion de habilidades tecnicas y blandas
@@ -227,11 +227,11 @@ Almacena las cuentas del sistema.
 | id | bigint | Identificador |
 | nombre | varchar | Nombre del usuario |
 | correo | varchar unique | Correo de acceso |
-| contrasena | varchar | Contrasena cifrada |
+| contraseña | varchar | contraseña cifrada |
 | rol | varchar | `usuario` o `admin` |
 | estado | varchar | Estado de la cuenta |
-| debe_cambiar_contrasena | boolean | Indica si debe cambiar contrasena temporal |
-| contrasena_temporal_expira_en | timestamp | Expiracion de contrasena temporal |
+| debe_cambiar_contraseña | boolean | Indica si debe cambiar contraseña temporal |
+| contraseña_temporal_expira_en | timestamp | Expiracion de contraseña temporal |
 | recuperacion_solicitada_en | timestamp | Fecha de solicitud de recuperacion |
 | token_recordar | varchar | Token recordatorio |
 | correo_verificado_en | timestamp | Verificacion de correo |

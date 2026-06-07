@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Requests\Auth;
 
@@ -15,7 +15,7 @@ class LoginRequest extends FormRequest
     {
         return [
             'correo' => ['required', 'email'],
-            'contrasena' => ['required', 'string'],
+            'contraseña' => ['required', 'string'],
         ];
     }
 
@@ -24,7 +24,7 @@ class LoginRequest extends FormRequest
         return [
             'correo.required' => 'El correo electronico es obligatorio.',
             'correo.email' => 'El correo no es valido.',
-            'contrasena.required' => 'La contrasena es obligatoria.',
+            'contraseña.required' => 'La contraseña es obligatoria.',
         ];
     }
 }

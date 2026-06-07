@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\Api;
 
@@ -139,7 +139,7 @@ class AdminController extends Controller
                     'experiencia_actualizada',
                     'experiencia_eliminada',
                     'experiencia_visibilidad',
-                    'cambio_contrasena',
+                    'cambio_contraseña',
                 ])->count(),
                 'busquedas' => (clone $baseQuery)->where('tipo', 'ilike', '%busqueda%')->count(),
             ],

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { authStore } from "../../store/authStore";
 import { getAuthenticatedHomePath } from "../../utils/authRedirect";
@@ -28,8 +28,8 @@ export default function PrivateRoute({ children }: Props) {
     );
   }
 
-  if (user?.debe_cambiar_contrasena && location.pathname !== "/perfil/cambiar-contrasena") {
-    return <Navigate to="/perfil/cambiar-contrasena" replace />;
+  if (user?.debe_cambiar_contraseña && location.pathname !== "/perfil/cambiar-contraseña") {
+    return <Navigate to="/perfil/cambiar-contraseña" replace />;
   }
 
   if (user?.rol === "admin") {

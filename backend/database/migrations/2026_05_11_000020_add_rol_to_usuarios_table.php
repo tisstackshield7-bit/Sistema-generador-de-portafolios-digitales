@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::table('usuarios', function (Blueprint $table) {
             if (!Schema::hasColumn('usuarios', 'rol')) {
-                $table->string('rol', 20)->default('usuario')->after('contrasena');
+                $table->string('rol', 20)->default('usuario')->after('contraseña');
             }
         });
 

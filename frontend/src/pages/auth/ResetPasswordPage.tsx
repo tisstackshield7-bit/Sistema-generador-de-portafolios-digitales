@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout";
@@ -26,7 +26,7 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const correo = searchParams.get("correo") || "";
 
-  const [contrasena, setContrasena] = useState("");
+  const [contraseña, setcontraseña] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
   const [message, setMessage] = useState("");
   const [serverError, setServerError] = useState("");
@@ -55,30 +55,30 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const passwordError = validatePassword(contrasena);
+    const passwordError = validatePassword(contraseña);
     if (passwordError) {
       setServerError(passwordError);
       return;
     }
 
-    if (contrasena !== confirmacion) {
-      setServerError("La confirmacion de contrasena no coincide.");
+    if (contraseña !== confirmacion) {
+      setServerError("La confirmacion de contraseña no coincide.");
       return;
     }
 
     try {
-      const data = await resetPassword(correo, token, contrasena, confirmacion);
+      const data = await resetPassword(correo, token, contraseña, confirmacion);
       setMessage(data.message);
       setServerError("");
       setTimeout(() => navigate("/login"), 1200);
     } catch (err: unknown) {
-      setServerError(getApiErrorMessage(err, "No se pudo restablecer la contrasena."));
+      setServerError(getApiErrorMessage(err, "No se pudo restablecer la contraseña."));
     }
   };
 
   if (tokenValid === false) {
     return (
-      <AuthLayout title="Restablecer contrasena" subtitle="El enlace de recuperacion no es valido o ya expiro.">
+      <AuthLayout title="Restablecer contraseña" subtitle="El enlace de recuperacion no es valido o ya expiro.">
         <AlertMessage message={serverError} />
       </AuthLayout>
     );
@@ -95,16 +95,16 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthLayout title="Nueva contrasena" subtitle="Define una contrasena segura. Recuerda que el enlace de recuperacion solo dura 30 minutos.">
+    <AuthLayout title="Nueva contraseña" subtitle="Define una contraseña segura. Recuerda que el enlace de recuperacion solo dura 30 minutos.">
       <AlertMessage message={message || serverError} />
 
       <form onSubmit={handleSubmit} className="form-stack">
-        <FormInput label="Nueva contrasena" type="password" value={contrasena} onChange={setContrasena} togglePassword />
+        <FormInput label="Nueva contraseña" type="password" value={contraseña} onChange={setcontraseña} togglePassword />
 
-        <FormInput label="Confirmar contrasena" type="password" value={confirmacion} onChange={setConfirmacion} togglePassword />
+        <FormInput label="Confirmar contraseña" type="password" value={confirmacion} onChange={setConfirmacion} togglePassword />
 
         <button type="submit" className="btn btn-primary btn-block">
-          Guardar contrasena
+          Guardar contraseña
         </button>
       </form>
     </AuthLayout>
