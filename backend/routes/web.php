@@ -31,3 +31,7 @@ Route::get('/storage/{path}', function (string $path) {
         ShareErrorsFromSession::class,
         ValidateCsrfToken::class,
     ]);
+
+    Route::get('/{any}', function () {
+    return view('index');
+})->where('any', '.');
