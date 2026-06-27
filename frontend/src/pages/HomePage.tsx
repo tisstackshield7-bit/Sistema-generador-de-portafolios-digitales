@@ -163,8 +163,8 @@ function getProfileExperienceYears(profile: PublicProfileCard) {
 }
 
 function formatExperienceLabel(years: number) {
-  if (!years) return "Sin registro";
-  return `${years} ${years === 1 ? "ano" : "anos"}`;
+  if (!years) return "0 años estimados";
+  return `${years} ${years === 1 ? "año estimado" : "años estimados"}`;
 }
 
 function getProfileCompleteness(profile: PublicProfileCard) {
@@ -222,7 +222,7 @@ function getProfileSummary(profile: PublicProfileCard) {
   }
 
   if (projectCount || skillCount || evidenceCount) {
-    return `${role}${profession}. ${skillCount} habilidades, ${projectCount} proyectos y ${formatExperienceLabel(experienceYears)} de experiencia registrada.`;
+    return `${role}${profession}. ${skillCount} habilidades, ${projectCount} proyectos y ${formatExperienceLabel(experienceYears)} de experiencia.`;
   }
 
   return `${role}${profession}. Perfil profesional en proceso de actualización.`;
@@ -395,7 +395,7 @@ function ProfileCard({
         <div className="landing-profile-evidence-strip" aria-label="Indicadores del perfil">
           <span title="Proyectos visibles publicados en el portafolio."><strong>{projectCount}</strong> proyectos</span>
           <span title="Habilidades visibles publicadas en el portafolio."><strong>{skillCount}</strong> habilidades</span>
-          <span title="Experiencia laboral estimada a partir de experiencias visibles o proyectos publicados."><strong>{experienceYears || "-"}</strong> experiencia</span>
+          <span title="Años estimados de experiencia calculados a partir de experiencias visibles o proyectos publicados."><strong>{experienceYears || 0}</strong> {experienceYears === 1 ? "año exp." : "años exp."}</span>
         </div>
 
         <div className="landing-profile-footer">
