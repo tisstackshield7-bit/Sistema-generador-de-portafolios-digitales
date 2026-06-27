@@ -387,6 +387,96 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
     setForm({ ...EMPTY_FORM, tipo: type });
     setAcademicDetails(EMPTY_ACADEMIC_DETAILS);
     setErrors({});
+    setServerError("");
+  };
+
+  const setFieldError = (field: string, message = "") => {
+    setErrors((prev) => {
+      const next = { ...prev };
+
+      if (message) {
+        next[field] = message;
+      } else {
+        delete next[field];
+      }
+
+      return next;
+    });
+  };
+
+  const clearExperienceServerError = () => {
+    if (serverError) {
+      setServerError("");
+    }
+  };
+
+  const handleTitleChange = (value: string) => {
+    const nextValue = sanitizeAlphaNumericText(value);
+    setForm((prev) => ({ ...prev, titulo: nextValue }));
+    setFieldError("titulo", nextValue.trim() ? "" : "El titulo es obligatorio.");
+    clearExperienceServerError();
+  };
+
+  const handleInstitutionChange = (value: string) => {
+    const nextValue = sanitizeAlphaNumericText(value);
+    setForm((prev) => ({ ...prev, institucion: nextValue }));
+    setFieldError("institucion", nextValue.trim() ? "" : "La institucion es obligatoria.");
+    clearExperienceServerError();
+  };
+
+  const handleDescriptionChange = (value: string) => {
+    const nextValue = limitRichText(value, 1800);
+    setForm((prev) => ({ ...prev, descripcion: nextValue }));
+    setFieldError("descripcion", isRichTextEmpty(nextValue) ? "La descripcion es obligatoria." : "");
+    clearExperienceServerError();
+  };
+
+  const handleStartDateChange = (value: string) => {
+    setForm((prev) => ({ ...prev, fecha_inicio: value }));
+    setFieldError(
+      "fecha_inicio",
+      !value ? "La fecha de inicio es obligatoria." : (validatePastOrTodayDate(value, "La fecha de inicio no puede ser futura.") || ""),
+    );
+    setFieldError(
+      "fecha_fin",
+      !form.actualidad && form.fecha_fin && value && form.fecha_fin < value
+        ? "La fecha de fin no puede ser anterior a la fecha de inicio."
+        : (!form.actualidad && form.fecha_fin
+            ? validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.") || ""
+            : ""),
+    );
+    clearExperienceServerError();
+  };
+
+  const handleEndDateChange = (value: string) => {
+    setForm((prev) => ({ ...prev, fecha_fin: value, actualidad: false }));
+    setFieldError(
+      "fecha_fin",
+      form.fecha_inicio && value && value < form.fecha_inicio
+        ? "La fecha de fin no puede ser anterior a la fecha de inicio."
+        : (validatePastOrTodayDate(value, "La fecha de fin no puede ser futura.") || ""),
+    );
+    clearExperienceServerError();
+  };
+
+  const handleAcademicSubtypeChange = (value: AcademicFormationType | "") => {
+    setAcademicDetails((prev) => ({ ...prev, tipoFormacion: value }));
+    setFieldError("subtipo_academico", value ? "" : "El subtipo academico es obligatorio.");
+    clearExperienceServerError();
+  };
+
+  const handleAcademicStatusChange = (value: AcademicExperienceStatus | "") => {
+    setAcademicDetails((prev) => ({ ...prev, estadoAcademico: value }));
+    setFieldError("estado_academico", value ? "" : "El estado academico es obligatorio.");
+    if (value === "En curso") {
+      setForm((prev) => ({ ...prev, actualidad: true, fecha_fin: "" }));
+      setFieldError("fecha_fin", "");
+      setFieldError("actualidad", "");
+    } else if (value === "Finalizado" || value === "Vencido") {
+      setForm((prev) => ({ ...prev, actualidad: false }));
+      setFieldError("actualidad", "");
+    }
+    clearExperienceServerError();
   };
 
   const validate = () => {
@@ -394,6 +484,8 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
 
     if (!form.titulo.trim()) nextErrors.titulo = "El titulo es obligatorio.";
     if (!form.institucion.trim()) nextErrors.institucion = "La institucion es obligatoria.";
+    if (form.tipo === "academica" && !academicDetails.tipoFormacion) nextErrors.subtipo_academico = "El subtipo academico es obligatorio.";
+    if (form.tipo === "academica" && !academicDetails.estadoAcademico) nextErrors.estado_academico = "El estado academico es obligatorio.";
     if (
       form.tipo === "academica" &&
       academicDetails.tipoAcreditacion !== "Sin acreditacion" &&
@@ -414,6 +506,25 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
       const endDateError = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
       if (endDateError) nextErrors.fecha_fin = endDateError;
     }
+    if (form.tipo === "academica" && academicDetails.estadoAcademico === "En curso" && !form.actualidad) {
+      nextErrors.actualidad = "El estado En curso requiere marcar actualidad.";
+    }
+    if (
+      form.tipo === "academica" &&
+      (academicDetails.estadoAcademico === "Finalizado" || academicDetails.estadoAcademico === "Vencido") &&
+      form.actualidad
+    ) {
+      nextErrors.actualidad = "Este estado academico no puede estar marcado como actualidad.";
+    }
+    if (
+      form.tipo === "academica" &&
+      academicDetails.estadoAcademico &&
+      academicDetails.estadoAcademico !== "En curso" &&
+      !form.actualidad &&
+      !form.fecha_fin
+    ) {
+      nextErrors.fecha_fin = "La fecha de fin es obligatoria para este estado academico.";
+    }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -427,7 +538,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
     event.preventDefault();
     setServerError("");
 
-    if (form.tipo !== "academica" && !validate()) return;
+    if (!validate()) return;
 
     setSaving(true);
 
@@ -637,7 +748,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                   <input
                     className={`form-input${errors.titulo ? " error" : ""}`}
                     value={form.titulo}
-                    onChange={(event) => setForm((prev) => ({ ...prev, titulo: sanitizeAlphaNumericText(event.target.value) }))}
+                    onChange={(event) => handleTitleChange(event.target.value)}
                   />
                   {errors.titulo ? <p className="form-error">{errors.titulo}</p> : null}
                 </div>
@@ -647,7 +758,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                   <input
                     className={`form-input${errors.institucion ? " error" : ""}`}
                     value={form.institucion}
-                    onChange={(event) => setForm((prev) => ({ ...prev, institucion: sanitizeAlphaNumericText(event.target.value) }))}
+                    onChange={(event) => handleInstitutionChange(event.target.value)}
                   />
                   {errors.institucion ? <p className="form-error">{errors.institucion}</p> : null}
                 </div>
@@ -660,12 +771,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                         <select
                           className={`form-input${errors.subtipo_academico ? " error" : ""}`}
                           value={academicDetails.tipoFormacion}
-                          onChange={(event) =>
-                            setAcademicDetails((prev) => ({
-                              ...prev,
-                              tipoFormacion: event.target.value as AcademicFormationType | "",
-                            }))
-                          }
+                          onChange={(event) => handleAcademicSubtypeChange(event.target.value as AcademicFormationType | "")}
                         >
                           <option value="">Selecciona un subtipo academico</option>
                           {ACADEMIC_FORMATION_OPTIONS.map((option) => (
@@ -682,16 +788,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                         <select
                           className={`form-input${errors.estado_academico ? " error" : ""}`}
                           value={academicDetails.estadoAcademico}
-                          onChange={(event) => {
-                            const nextValue = event.target.value as AcademicExperienceStatus | "";
-                            setAcademicDetails((prev) => ({
-                              ...prev,
-                              estadoAcademico: nextValue,
-                            }));
-                            if (nextValue === "En curso") {
-                              setForm((prev) => ({ ...prev, actualidad: true, fecha_fin: "" }));
-                            }
-                          }}
+                          onChange={(event) => handleAcademicStatusChange(event.target.value as AcademicExperienceStatus | "")}
                         >
                           <option value="">Selecciona un estado</option>
                           {ACADEMIC_STATUS_OPTIONS.map((option) => (
@@ -740,7 +837,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                   value={form.descripcion || ""}
                   error={errors.descripcion}
                   placeholder={form.tipo === "academica" ? "Describe lo aprendido, actividades realizadas, proyectos o conocimientos adquiridos..." : "Describe tus responsabilidades, logros y aprendizajes..."}
-                  onChange={(value) => setForm((prev) => ({ ...prev, descripcion: limitRichText(value, 1800) }))}
+                  onChange={handleDescriptionChange}
                 />
 
                 <div className="workspace-form-grid">
@@ -751,7 +848,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                       type="date"
                       max={today}
                       value={form.fecha_inicio}
-                      onChange={(event) => setForm((prev) => ({ ...prev, fecha_inicio: event.target.value }))}
+                      onChange={(event) => handleStartDateChange(event.target.value)}
                     />
                     {errors.fecha_inicio ? <p className="form-error">{errors.fecha_inicio}</p> : null}
                   </div>
@@ -764,7 +861,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                       max={today}
                       disabled={form.actualidad}
                       value={form.fecha_fin}
-                      onChange={(event) => setForm((prev) => ({ ...prev, fecha_fin: event.target.value, actualidad: false }))}
+                      onChange={(event) => handleEndDateChange(event.target.value)}
                     />
                     <label className="visibility-toggle current-status-toggle">
                       <span className="current-status-copy">
@@ -774,11 +871,31 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                       <button
                         type="button"
                         className={`toggle-switch ${form.actualidad ? "active" : ""}`}
-                        onClick={() => setForm((prev) => ({
-                          ...prev,
-                          actualidad: !prev.actualidad,
-                          fecha_fin: !prev.actualidad ? "" : prev.fecha_fin,
-                        }))}
+                        onClick={() => {
+                          if (form.tipo === "academica" && academicDetails.estadoAcademico === "En curso") {
+                            setFieldError("actualidad", "");
+                            return;
+                          }
+
+                          if (
+                            form.tipo === "academica" &&
+                            (academicDetails.estadoAcademico === "Finalizado" || academicDetails.estadoAcademico === "Vencido") &&
+                            !form.actualidad
+                          ) {
+                            setFieldError("actualidad", "Este estado academico no puede estar marcado como actualidad.");
+                            clearExperienceServerError();
+                            return;
+                          }
+
+                          setForm((prev) => ({
+                            ...prev,
+                            actualidad: !prev.actualidad,
+                            fecha_fin: !prev.actualidad ? "" : prev.fecha_fin,
+                          }));
+                          setFieldError("fecha_fin", "");
+                          setFieldError("actualidad", "");
+                          clearExperienceServerError();
+                        }}
                         aria-pressed={form.actualidad}
                       >
                         <span />
@@ -882,6 +999,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                     <span />
                   </button>
                 </label>
+                {errors.actualidad ? <p className="form-error">{errors.actualidad}</p> : null}
 
                 <div className="form-actions-row">
                   <button type="button" className="btn btn-secondary" onClick={closeForm}>

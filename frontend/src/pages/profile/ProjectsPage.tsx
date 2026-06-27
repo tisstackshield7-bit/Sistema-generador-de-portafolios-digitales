@@ -276,6 +276,93 @@ export default function ProjectsPage() {
     setForm((prev) => ({ ...prev, url_imagen: "" }));
   };
 
+  const setFieldError = (field: string, message = "") => {
+    setErrors((prev) => {
+      const next = { ...prev };
+
+      if (message) {
+        next[field] = message;
+      } else {
+        delete next[field];
+      }
+
+      return next;
+    });
+  };
+
+  const handleTitleChange = (value: string) => {
+    const nextValue = sanitizeAlphaNumericText(value);
+    setForm((prev) => ({ ...prev, titulo: nextValue }));
+    setFieldError("titulo", nextValue.trim() ? "" : "El titulo del proyecto es obligatorio.");
+  };
+
+  const handleRoleChange = (value: string) => {
+    const nextValue = sanitizeAlphaNumericText(value);
+    setForm((prev) => ({ ...prev, rol: nextValue }));
+    setFieldError("rol", nextValue.trim() ? "" : "Tu rol en el proyecto es obligatorio.");
+  };
+
+  const handleDescriptionChange = (value: string) => {
+    const nextValue = limitRichText(value, 1800);
+    setForm((prev) => ({ ...prev, descripcion: nextValue }));
+    setFieldError("descripcion", isRichTextEmpty(nextValue) ? "La descripcion del proyecto es obligatoria." : "");
+  };
+
+  const handleStartDateChange = (value: string) => {
+    setForm((prev) => ({ ...prev, fecha_inicio: value }));
+
+    const startDateError = !value
+      ? "La fecha de inicio es obligatoria."
+      : validatePastOrTodayDate(value, "La fecha de inicio no puede ser futura.");
+    setFieldError("fecha_inicio", startDateError || "");
+
+    setErrors((prev) => {
+      const next = { ...prev };
+      const endDateError = !form.actualidad && form.fecha_fin && value && form.fecha_fin < value
+        ? "La fecha de fin no puede ser anterior a la fecha de inicio."
+        : (!form.actualidad && form.fecha_fin
+            ? validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.")
+            : "");
+
+      if (endDateError) {
+        next.fecha_fin = endDateError;
+      } else {
+        delete next.fecha_fin;
+      }
+
+      return next;
+    });
+  };
+
+  const handleEndDateChange = (value: string) => {
+    setForm((prev) => ({ ...prev, fecha_fin: value, actualidad: false }));
+
+    const endDateError = form.fecha_inicio && value && value < form.fecha_inicio
+      ? "La fecha de fin no puede ser anterior a la fecha de inicio."
+      : validatePastOrTodayDate(value, "La fecha de fin no puede ser futura.");
+    setFieldError("fecha_fin", endDateError || "");
+  };
+
+  const handleTechnologiesChange = (value: string) => {
+    setForm((prev) => ({ ...prev, tecnologias: value }));
+    setFieldError("tecnologias", normalizeTechnologies(value).length ? "" : "Debes agregar al menos una tecnologia.");
+  };
+
+  const handleProjectLinkChange = (value: string) => {
+    setForm((prev) => ({ ...prev, enlace_proyecto: value }));
+    setFieldError("enlace_proyecto", validateUrl(value, "Ingrese un enlace valido") || "");
+  };
+
+  const handleCurrentToggle = () => {
+    setForm((prev) => ({
+      ...prev,
+      actualidad: !prev.actualidad,
+      fecha_fin: !prev.actualidad ? "" : prev.fecha_fin,
+    }));
+
+    setFieldError("fecha_fin", "");
+  };
+
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     const technologies = normalizeTechnologies(form.tecnologias);
@@ -540,7 +627,7 @@ export default function ProjectsPage() {
                     <input
                       className={`form-input${errors.titulo ? " error" : ""}`}
                       value={form.titulo}
-                      onChange={(event) => setForm((prev) => ({ ...prev, titulo: sanitizeAlphaNumericText(event.target.value) }))}
+                      onChange={(event) => handleTitleChange(event.target.value)}
                     />
                     {errors.titulo ? <p className="form-error">{errors.titulo}</p> : null}
                   </div>
@@ -550,7 +637,7 @@ export default function ProjectsPage() {
                     <input
                       className={`form-input${errors.rol ? " error" : ""}`}
                       value={form.rol}
-                      onChange={(event) => setForm((prev) => ({ ...prev, rol: sanitizeAlphaNumericText(event.target.value) }))}
+                      onChange={(event) => handleRoleChange(event.target.value)}
                     />
                     {errors.rol ? <p className="form-error">{errors.rol}</p> : null}
                   </div>
@@ -560,7 +647,7 @@ export default function ProjectsPage() {
                   label="Descripcion *"
                   value={form.descripcion}
                   placeholder="Describe objetivos, alcance y tu aporte principal."
-                  onChange={(value) => setForm((prev) => ({ ...prev, descripcion: limitRichText(value, 1800) }))}
+                  onChange={handleDescriptionChange}
                   error={errors.descripcion}
                 />
 
@@ -572,7 +659,7 @@ export default function ProjectsPage() {
                       type="date"
                       max={today}
                       value={form.fecha_inicio}
-                      onChange={(event) => setForm((prev) => ({ ...prev, fecha_inicio: event.target.value }))}
+                      onChange={(event) => handleStartDateChange(event.target.value)}
                     />
                     {errors.fecha_inicio ? <p className="form-error">{errors.fecha_inicio}</p> : null}
                   </div>
@@ -585,7 +672,7 @@ export default function ProjectsPage() {
                       max={today}
                       disabled={form.actualidad}
                       value={form.fecha_fin}
-                      onChange={(event) => setForm((prev) => ({ ...prev, fecha_fin: event.target.value, actualidad: false }))}
+                      onChange={(event) => handleEndDateChange(event.target.value)}
                     />
                     <label className="visibility-toggle current-status-toggle">
                       <span className="current-status-copy">
@@ -595,11 +682,7 @@ export default function ProjectsPage() {
                       <button
                         type="button"
                         className={`toggle-switch ${form.actualidad ? "active" : ""}`}
-                        onClick={() => setForm((prev) => ({
-                          ...prev,
-                          actualidad: !prev.actualidad,
-                          fecha_fin: !prev.actualidad ? "" : prev.fecha_fin,
-                        }))}
+                        onClick={handleCurrentToggle}
                         aria-pressed={form.actualidad}
                       >
                         <span />
@@ -615,7 +698,7 @@ export default function ProjectsPage() {
                     className={`form-input${errors.tecnologias ? " error" : ""}`}
                     value={form.tecnologias}
                     placeholder="React, Laravel, PostgreSQL"
-                    onChange={(event) => setForm((prev) => ({ ...prev, tecnologias: event.target.value }))}
+                    onChange={(event) => handleTechnologiesChange(event.target.value)}
                   />
                   <p className="form-help">Escribe las tecnologias separadas por coma.</p>
                   {errors.tecnologias ? <p className="form-error">{errors.tecnologias}</p> : null}
@@ -628,7 +711,7 @@ export default function ProjectsPage() {
                       className={`form-input${errors.enlace_proyecto ? " error" : ""}`}
                       value={form.enlace_proyecto}
                       placeholder="https://github.com/proyecto"
-                      onChange={(event) => setForm((prev) => ({ ...prev, enlace_proyecto: event.target.value }))}
+                      onChange={(event) => handleProjectLinkChange(event.target.value)}
                     />
                     {errors.enlace_proyecto ? <p className="form-error">{errors.enlace_proyecto}</p> : null}
                   </div>
