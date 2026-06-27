@@ -9,7 +9,7 @@ import { createSkill, deleteSkill, getMySkills, updateSkill, updateSkillVisibili
 import type { Perfil } from "../../types/profile";
 import type { Skill, SkillEvidencePayload, SkillPayload, SkillType } from "../../types/skill";
 import { isRichTextEmpty, limitRichText } from "../../utils/richText";
-import { sanitizeAlphaNumericText, validatePastOrTodayDate, validateUrl } from "../../utils/validations";
+import { sanitizeAlphaNumericText, sanitizeLettersAndSpaces, validatePastOrTodayDate, validateUrl } from "../../utils/validations";
 
 const FALLBACK_TECHNICAL_CATEGORIES = [
   "Frontend",
@@ -333,6 +333,18 @@ export default function SkillsPage() {
     });
     setErrors({});
     setExpandedEvidenceIndex(null);
+  };
+
+  const handleTechnicalSkillNameChange = (value: string) => {
+    const nextValue = sanitizeLettersAndSpaces(value);
+
+    setForm((prev) => ({ ...prev, nombre: nextValue }));
+    setErrors((prev) => ({
+      ...prev,
+      nombre: nextValue.trim()
+        ? ""
+        : "El nombre de la habilidad es obligatorio. Por favor, completa este campo.",
+    }));
   };
 
   const validate = () => {
@@ -686,7 +698,7 @@ export default function SkillsPage() {
                         <input
                           className={`form-input${errors.nombre ? " error" : ""}`}
                           value={form.nombre}
-                          onChange={(event) => setForm((prev) => ({ ...prev, nombre: event.target.value }))}
+                          onChange={(event) => handleTechnicalSkillNameChange(event.target.value)}
                         />
                         {errors.nombre ? <p className="form-error">{errors.nombre}</p> : null}
                       </div>

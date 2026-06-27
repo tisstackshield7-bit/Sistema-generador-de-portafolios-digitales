@@ -325,7 +325,7 @@ export default function PublicProfilePage() {
               <h1>{perfil.nombre_completo}</h1>
               <p className="public-portfolio-role">{title}</p>
               <p className="public-portfolio-profession">{perfil.profesion}</p>
-              {(visibility.mostrar_correo && perfil.correo) || (visibility.mostrar_telefono && perfil.telefono) || perfil.ubicacion ? (
+              {(visibility.mostrar_correo && perfil.correo) || perfil.telefono || perfil.ubicacion ? (
                 <div className="public-portfolio-contact-row" aria-label="Datos de contacto">
                   {visibility.mostrar_correo && perfil.correo ? (
                     <a
@@ -339,7 +339,7 @@ export default function PublicProfilePage() {
                       Correo electrónico
                     </a>
                   ) : null}
-                  {visibility.mostrar_telefono && perfil.telefono ? (
+                  {perfil.telefono ? (
                     <a className="public-portfolio-contact-link" href={phoneHref}>
                       {perfil.telefono}
                     </a>
