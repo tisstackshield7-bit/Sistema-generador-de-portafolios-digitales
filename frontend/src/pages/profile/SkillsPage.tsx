@@ -198,6 +198,7 @@ export default function SkillsPage() {
   const [softCategories, setSoftCategories] = useState<string[]>(FALLBACK_SOFT_CATEGORIES);
   const [levels, setLevels] = useState<string[]>(FALLBACK_LEVELS);
   const today = new Date().toISOString().slice(0, 10);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -338,19 +339,21 @@ export default function SkillsPage() {
     const nextErrors: Record<string, string> = {};
 
     if (form.tipo === "tecnica" && !form.nombre.trim()) {
-      nextErrors.nombre = "El nombre de la habilidad es obligatorio.";
+      nextErrors.nombre = "El nombre de la habilidad es obligatorio. Por favor, completa este campo.";
     }
 
     if (!form.categoria) {
-      nextErrors.categoria = form.tipo === "blanda" ? "La habilidad blanda es obligatoria." : "La categoria es obligatoria.";
+      nextErrors.categoria = form.tipo === "blanda" 
+        ? "Debes seleccionar una habilidad blanda de la lista." 
+        : "La categoria es obligatoria. Selecciona una opcion.";
     }
 
     if (form.tipo === "blanda" && form.categoria === "__custom__" && !form.categoria_personalizada?.trim()) {
-      nextErrors.categoria_personalizada = "Escribe la habilidad blanda personalizada.";
+      nextErrors.categoria_personalizada = "Escribe el nombre de la habilidad blanda personalizada.";
     }
 
     if (!form.nivel_dominio) {
-      nextErrors.nivel_dominio = "El nivel de dominio es obligatorio.";
+      nextErrors.nivel_dominio = "El nivel de dominio es obligatorio. Selecciona Basico, Intermedio o Avanzado.";
     }
 
     if (form.tipo === "blanda") {
@@ -440,25 +443,36 @@ export default function SkillsPage() {
         if (editingSkill) {
           return prev.map((item) => (item.id === updatedSkill.id ? updatedSkill : item));
         }
-
         return [updatedSkill, ...prev];
       });
 
+      setMessage(editingSkill 
+        ? "Habilidad actualizada correctamente." 
+        : "Habilidad creada correctamente.");
+
       closeForm();
-    } catch (error: unknown) {
-      const errorData = getApiErrorData(error);
-      const apiErrors = errorData?.errors || {};
-      const fieldErrors: Record<string, string> = {};
 
-      Object.entries(apiErrors).forEach(([field, value]) => {
-        fieldErrors[field] = Array.isArray(value) ? String(value[0]) : String(value);
-      });
+      closeForm();
+      } catch (error: unknown) {
+        const errorData = getApiErrorData(error);
+        const apiErrors = errorData?.errors || {};
+        const fieldErrors: Record<string, string> = {};
 
-      setErrors((prev) => ({ ...prev, ...fieldErrors }));
-      setServerError(errorData?.message || "No se pudo guardar la habilidad.");
-    } finally {
-      setSaving(false);
-    }
+        Object.entries(apiErrors).forEach(([field, value]) => {
+          fieldErrors[field] = Array.isArray(value) ? String(value[0]) : String(value);
+        });
+
+        setErrors((prev) => ({ ...prev, ...fieldErrors }));
+        
+        const mainMessage = errorData?.message || "No se pudo guardar la habilidad.";
+        const detailMessage = Object.keys(fieldErrors).length > 0 
+          ? " Revisa los campos marcados en rojo." 
+          : " Verifica que todos los campos obligatorios esten completos.";
+        
+        setServerError(mainMessage + detailMessage);
+      } finally {
+        setSaving(false);
+      }  
   };
 
   const handleToggleVisibility = async (skill: Skill) => {

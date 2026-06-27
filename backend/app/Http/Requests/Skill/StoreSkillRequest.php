@@ -97,9 +97,9 @@ class StoreSkillRequest extends FormRequest
 
         return [
             'tipo' => ['required', Rule::in(['tecnica', 'blanda'])],
-            'nombre' => $nameRules,
+            'nombre' => ['required', 'string', 'max:150', 'regex:/^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ\s\.\-\+\#]+$/u'],
             'categoria' => $categoryRules,
-            'categoria_personalizada' => ['nullable', 'string', 'max:100'],
+            'categoria_personalizada' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u'],
             'nivel_dominio' => ['required', Rule::in(self::LEVELS)],
             'visible_publico' => ['nullable', 'boolean'],
             'certificado_pdf' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
@@ -191,7 +191,7 @@ class StoreSkillRequest extends FormRequest
         return [
             'tipo.required' => 'El tipo de habilidad es obligatorio.',
             'tipo.in' => 'El tipo de habilidad no es valido.',
-            'nombre.required' => 'El nombre de la habilidad es obligatorio.',
+            'nombre.required' => 'El nombre de la habilidad es obligatorio. Por favor, completa este campo.',
             'categoria.required' => 'La categoria es obligatoria.',
             'categoria.in' => 'La categoria seleccionada no es valida.',
             'nivel_dominio.required' => 'El nivel de dominio es obligatorio.',

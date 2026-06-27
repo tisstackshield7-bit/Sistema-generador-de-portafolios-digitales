@@ -321,7 +321,8 @@ const preview = useMemo(() => {
 
             <div className="workspace-form-grid">
               <FormInput
-                label="Nombre(s) *"
+                label="Nombre(s)"
+                required
                 value={nombres}
                 onChange={handleNombresChange}
                 error={errors.nombres}
@@ -330,7 +331,7 @@ const preview = useMemo(() => {
                 inputMode="text"
               />
               <FormInput
-                label="Apellidos *"
+                label="Apellidos"
                 value={apellidos}
                 onChange={handleApellidosChange}
                 error={errors.apellidos}
@@ -342,7 +343,7 @@ const preview = useMemo(() => {
 
             <div className="workspace-form-grid">
               <FormInput
-                label="Profesion/Titulo *"
+                label="Profesion/Titulo "
                 value={profesion}
                 onChange={handleProfesionChange}
                 error={errors.profesion}
@@ -352,7 +353,7 @@ const preview = useMemo(() => {
               />
 
               <FormInput
-                label="Rol o especialidad *"
+                label="Rol o especialidad "
                 value={titularProfesional}
                 onChange={handleTitularProfesionalChange}
                 error={errors.titular_profesional}
