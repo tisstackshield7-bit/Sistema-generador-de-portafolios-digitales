@@ -471,6 +471,10 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
     if (value === "En curso") {
       setForm((prev) => ({ ...prev, actualidad: true, fecha_fin: "" }));
       setFieldError("fecha_fin", "");
+      setFieldError("actualidad", "");
+    } else if (value === "Finalizado" || value === "Vencido") {
+      setForm((prev) => ({ ...prev, actualidad: false }));
+      setFieldError("actualidad", "");
     }
     clearExperienceServerError();
   };
@@ -501,6 +505,16 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
     } else if (!form.actualidad && form.fecha_fin) {
       const endDateError = validatePastOrTodayDate(form.fecha_fin, "La fecha de fin no puede ser futura.");
       if (endDateError) nextErrors.fecha_fin = endDateError;
+    }
+    if (form.tipo === "academica" && academicDetails.estadoAcademico === "En curso" && !form.actualidad) {
+      nextErrors.actualidad = "El estado En curso requiere marcar actualidad.";
+    }
+    if (
+      form.tipo === "academica" &&
+      (academicDetails.estadoAcademico === "Finalizado" || academicDetails.estadoAcademico === "Vencido") &&
+      form.actualidad
+    ) {
+      nextErrors.actualidad = "Este estado academico no puede estar marcado como actualidad.";
     }
     if (
       form.tipo === "academica" &&
@@ -858,12 +872,28 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                         type="button"
                         className={`toggle-switch ${form.actualidad ? "active" : ""}`}
                         onClick={() => {
+                          if (form.tipo === "academica" && academicDetails.estadoAcademico === "En curso") {
+                            setFieldError("actualidad", "");
+                            return;
+                          }
+
+                          if (
+                            form.tipo === "academica" &&
+                            (academicDetails.estadoAcademico === "Finalizado" || academicDetails.estadoAcademico === "Vencido") &&
+                            !form.actualidad
+                          ) {
+                            setFieldError("actualidad", "Este estado academico no puede estar marcado como actualidad.");
+                            clearExperienceServerError();
+                            return;
+                          }
+
                           setForm((prev) => ({
                             ...prev,
                             actualidad: !prev.actualidad,
                             fecha_fin: !prev.actualidad ? "" : prev.fecha_fin,
                           }));
                           setFieldError("fecha_fin", "");
+                          setFieldError("actualidad", "");
                           clearExperienceServerError();
                         }}
                         aria-pressed={form.actualidad}
@@ -969,6 +999,7 @@ export default function ExperiencePage({ type }: ExperiencePageProps) {
                     <span />
                   </button>
                 </label>
+                {errors.actualidad ? <p className="form-error">{errors.actualidad}</p> : null}
 
                 <div className="form-actions-row">
                   <button type="button" className="btn btn-secondary" onClick={closeForm}>
