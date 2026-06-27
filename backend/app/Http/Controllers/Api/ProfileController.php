@@ -245,16 +245,42 @@ class ProfileController extends Controller
 
         if ($search !== '') {
             $perfilesQuery->where(function ($query) use ($search) {
-                $query->where('nombre_completo', 'ilike', "%{$search}%")
-                    ->orWhere('profesion', 'ilike', "%{$search}%")
-                    ->orWhere('titular_profesional', 'ilike', "%{$search}%")
-                    ->orWhere('biografia', 'ilike', "%{$search}%")
-                    ->orWhereHas('habilidades', function ($skillQuery) use ($search) {
+                $likeSearch = "%{$search}%";
+
+                $query->where('nombre_completo', 'ilike', $likeSearch)
+                    ->orWhere('profesion', 'ilike', $likeSearch)
+                    ->orWhere('titular_profesional', 'ilike', $likeSearch)
+                    ->orWhere('ubicacion', 'ilike', $likeSearch)
+
+                    // Busca tecnologías registradas como habilidades técnicas visibles
+                    ->orWhereHas('habilidades', function ($skillQuery) use ($search, $likeSearch) {
                         $skillQuery->where('visible_publico', true)
                             ->where('tipo', 'tecnica')
-                            ->where(function ($matchQuery) use ($search) {
-                                $matchQuery->where('nombre', 'ilike', "%{$search}%")
-                                    ->orWhere('categoria', 'ilike', "%{$search}%");
+                            ->where(function ($matchQuery) use ($search, $likeSearch) {
+                                $matchQuery->where('nombre', 'ilike', $search)
+                                    ->orWhere('nombre', 'ilike', $likeSearch)
+                                    ->orWhere('categoria', 'ilike', $likeSearch);
+                            });
+                    })
+
+                    // Busca tecnologías registradas en proyectos visibles
+                    ->orWhereHas('proyectos', function ($projectQuery) use ($search, $likeSearch) {
+                        $projectQuery->where('visible_publico', true)
+                            ->where(function ($matchQuery) use ($search, $likeSearch) {
+                                $matchQuery->where('titulo', 'ilike', $likeSearch)
+                                    ->orWhere('rol', 'ilike', $likeSearch)
+                                    ->orWhereRaw('tecnologias::text ILIKE ?', ['%"' . $search . '"%']);
+                            });
+                    })
+
+                    // Busca experiencias por datos principales, no por texto largo
+                    ->orWhereHas('experiencias', function ($experienceQuery) use ($likeSearch) {
+                        $experienceQuery->where('visible_publico', true)
+                            ->where(function ($matchQuery) use ($likeSearch) {
+                                $matchQuery->where('titulo', 'ilike', $likeSearch)
+                                    ->orWhere('institucion', 'ilike', $likeSearch)
+                                    ->orWhere('ubicacion', 'ilike', $likeSearch)
+                                    ->orWhere('area_especializacion', 'ilike', $likeSearch);
                             });
                     });
             });
