@@ -36,7 +36,7 @@ class ApiSystemReviewTest extends TestCase
 
         $response->assertOk()
             ->assertJson([
-                'message' => 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.',
+                'message' => 'Si la direccion esta registrada, enviaremos una contrasena temporal con vigencia de 30 minutos.',
             ]);
 
         Notification::assertNothingSent();
@@ -53,7 +53,7 @@ class ApiSystemReviewTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('message', 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.');
+            ->assertJsonPath('message', 'Si la direccion esta registrada, enviaremos una contrasena temporal con vigencia de 30 minutos.');
 
         $usuario->refresh();
 
@@ -215,6 +215,28 @@ class ApiSystemReviewTest extends TestCase
             ->assertJsonPath('perfil.nombre_completo', 'Juan Carlos Perez de la Cruz');
 
         $this->assertTrue(Schema::hasColumns('perfiles', ['nombres', 'apellidos']));
+    }
+
+    public function test_profile_accepts_professional_roles_and_biography_with_common_symbols(): void
+    {
+        [$perfil, $token] = $this->createPerfilConSesion('profesional@example.com', str_repeat('v', 80));
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson('/api/perfil', [
+                'nombres' => 'Ana Maria',
+                'apellidos' => 'Del Carpio Ballesteros',
+                'profesion' => 'Disenador UX/UI',
+                'titular_profesional' => 'QA/QC Nivel 2',
+                'telefono' => '71234567',
+                'ubicacion' => 'La Paz, Bolivia',
+                'biografia' => 'Tengo 3 anos de experiencia en Laravel, React y PostgreSQL.',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('perfil.id', $perfil->id)
+            ->assertJsonPath('perfil.profesion', 'Disenador UX/UI')
+            ->assertJsonPath('perfil.titular_profesional', 'QA/QC Nivel 2')
+            ->assertJsonPath('perfil.ubicacion', 'La Paz, Bolivia');
     }
 
     public function test_can_create_technical_skill_with_category_and_level(): void
@@ -433,6 +455,87 @@ class ApiSystemReviewTest extends TestCase
             ->assertJsonPath('perfil.habilidades.0.nombre', 'Laravel');
     }
 
+    public function test_public_profile_listing_counts_visible_technical_and_soft_skills(): void
+    {
+        [$perfil] = $this->createPerfilConSesion('public-list-skills@example.com', str_repeat('m', 80), 'perfil-listado-skills');
+
+        Habilidad::create([
+            'perfil_id' => $perfil->id,
+            'tipo' => 'tecnica',
+            'nombre' => 'Laravel',
+            'categoria' => 'Backend',
+            'nivel_dominio' => 'Avanzado',
+            'visible_publico' => true,
+            'creado_en' => now(),
+            'actualizado_en' => now(),
+        ]);
+
+        Habilidad::create([
+            'perfil_id' => $perfil->id,
+            'tipo' => 'blanda',
+            'nombre' => 'Comunicacion',
+            'categoria' => 'Comunicacion',
+            'nivel_dominio' => 'Intermedio',
+            'visible_publico' => true,
+            'creado_en' => now(),
+            'actualizado_en' => now(),
+        ]);
+
+        $response = $this->getJson('/api/perfiles-publicos');
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'perfiles.0.habilidades')
+            ->assertJsonPath('perfiles.0.habilidades.0.nombre', 'Comunicacion')
+            ->assertJsonPath('perfiles.0.habilidades.1.nombre', 'Laravel');
+    }
+
+    public function test_incomplete_public_profile_is_not_exposed(): void
+    {
+        $usuario = $this->createUsuario('incomplete-public@example.com');
+
+        Perfil::create([
+            'usuario_id' => $usuario->id,
+            'nombres' => 'Ana',
+            'apellidos' => 'Belen',
+            'nombre_completo' => 'Ana Belen',
+            'profesion' => 'Desarrolladora Backend',
+            'telefono' => '71234567',
+            'biografia' => 'Perfil con biografia, pero sin ubicacion ni contenido visible.',
+            'es_publico' => true,
+            'slug' => 'ana-incompleta',
+            'creado_en' => now(),
+            'actualizado_en' => now(),
+        ]);
+
+        $this->getJson('/api/perfiles-publicos')
+            ->assertOk()
+            ->assertJsonMissing(['slug' => 'ana-incompleta']);
+
+        $this->getJson('/api/perfiles-publicos/ana-incompleta')
+            ->assertNotFound();
+    }
+
+    public function test_complete_public_profile_with_visible_project_is_listed_without_skills(): void
+    {
+        [$perfil] = $this->createPerfilConSesion('project-only-public@example.com', str_repeat('n', 80), 'perfil-con-proyecto');
+
+        \App\Models\Proyecto::create([
+            'perfil_id' => $perfil->id,
+            'titulo' => 'Sistema de inventarios',
+            'rol' => 'Desarrolladora Backend',
+            'descripcion' => '<p>Proyecto publicado como evidencia principal del portafolio.</p>',
+            'fecha_inicio' => now()->subMonth()->toDateString(),
+            'tecnologias' => ['PHP', 'Laravel'],
+            'visible_publico' => true,
+            'creado_en' => now(),
+            'actualizado_en' => now(),
+        ]);
+
+        $this->getJson('/api/perfiles-publicos')
+            ->assertOk()
+            ->assertJsonFragment(['slug' => 'perfil-con-proyecto']);
+    }
+
     private function createUsuario(string $correo): Usuario
     {
         return Usuario::create([
@@ -474,6 +577,7 @@ class ApiSystemReviewTest extends TestCase
             'profesion' => 'Desarrolladora Backend',
             'titular_profesional' => 'Desarrolladora Backend',
             'telefono' => '71234567',
+            'ubicacion' => 'La Paz, Bolivia',
             'biografia' => 'Perfil de prueba con informacion suficiente para las validaciones.',
             'es_publico' => true,
             'slug' => $slug,
@@ -489,7 +593,7 @@ class ApiSystemReviewTest extends TestCase
         for ($index = 1; $index <= $count; $index++) {
             $usuario = $this->createUsuario("user{$index}@example.com");
 
-            Perfil::create([
+            $perfil = Perfil::create([
                 'usuario_id' => $usuario->id,
                 'nombres' => "Nombre {$index}",
                 'apellidos' => "Apellido {$index}",
@@ -497,9 +601,21 @@ class ApiSystemReviewTest extends TestCase
                 'profesion' => 'Desarrollador Full Stack',
                 'titular_profesional' => 'Desarrollador Full Stack',
                 'telefono' => '71234567',
+                'ubicacion' => 'La Paz, Bolivia',
                 'biografia' => "Biografia valida del perfil {$index}.",
                 'es_publico' => true,
                 'slug' => "perfil-{$index}",
+                'creado_en' => now()->addSeconds($index),
+                'actualizado_en' => now()->addSeconds($index),
+            ]);
+
+            Habilidad::create([
+                'perfil_id' => $perfil->id,
+                'tipo' => 'tecnica',
+                'nombre' => 'Laravel',
+                'categoria' => 'Backend',
+                'nivel_dominio' => 'Intermedio',
+                'visible_publico' => true,
                 'creado_en' => now()->addSeconds($index),
                 'actualizado_en' => now()->addSeconds($index),
             ]);

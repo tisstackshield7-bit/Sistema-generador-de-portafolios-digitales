@@ -185,6 +185,24 @@ function getProfileCompleteness(profile: PublicProfileCard) {
   return { label: "En construccion", tone: "draft" };
 }
 
+function getCompletenessDescription(tone: string) {
+  if (tone === "complete") {
+    return "Perfil completo: tiene informacion base, biografia suficiente y contenido visible como habilidades, proyectos o evidencias.";
+  }
+
+  if (tone === "progress") {
+    return "Con avances: el perfil ya tiene varios datos publicados, pero aun puede sumar mas contenido o evidencias.";
+  }
+
+  return "En construccion: el perfil cumple lo minimo para mostrarse, pero todavia tiene poca informacion publicada.";
+}
+
+function getRankingDescription(ranking: number) {
+  return ranking === 1
+    ? "Top 1: perfil mejor posicionado por evidencias, proyectos, habilidades visibles y nivel declarado."
+    : `Ranking ${ranking}: posicion calculada por evidencias, proyectos, habilidades visibles y nivel declarado.`;
+}
+
 function getProfileSummary(profile: PublicProfileCard) {
   const visibility = getProfileVisibility(profile);
   const biography = visibility.mostrar_biografia
@@ -327,6 +345,7 @@ function ProfileCard({
   const experienceYears = getProfileExperienceYears(profile);
   const summary = getProfileSummary(profile);
   const completeness = getProfileCompleteness(profile);
+  const completenessDescription = getCompletenessDescription(completeness.tone);
   const socialLinks = visibility.mostrar_redes
     ? [
         profile.linkedin_url ? { type: "linkedin" as const, label: "LinkedIn", url: profile.linkedin_url } : null,
@@ -338,7 +357,7 @@ function ProfileCard({
   return (
     <article className={`landing-profile-card${ranking ? ` has-ranking rank-${Math.min(ranking, 4)}` : ""}`}>
       {ranking ? (
-        <span className="landing-ranking-badge">
+        <span className="landing-ranking-badge" title={getRankingDescription(ranking)} aria-label={getRankingDescription(ranking)}>
           <span>{ranking === 1 ? "TOP" : "N°"}</span>
           <strong>{ranking}</strong>
         </span>
@@ -358,7 +377,9 @@ function ProfileCard({
           <div className="landing-profile-main-copy">
             <div className="landing-profile-title-row">
               <h3>{profile.nombre_completo}</h3>
-              <span className={`landing-profile-status ${completeness.tone}`}>{completeness.label}</span>
+              <span className={`landing-profile-status ${completeness.tone}`} title={completenessDescription} aria-label={completenessDescription}>
+                {completeness.label}
+              </span>
             </div>
             <p className="landing-profile-profession">
               {[profile.titular_profesional, profile.profesion]
@@ -372,9 +393,9 @@ function ProfileCard({
         </div>
 
         <div className="landing-profile-evidence-strip" aria-label="Indicadores del perfil">
-          <span><strong>{projectCount}</strong> proyectos</span>
-          <span><strong>{skillCount}</strong> habilidades</span>
-          <span><strong>{experienceYears || "-"}</strong> experiencia</span>
+          <span title="Proyectos visibles publicados en el portafolio."><strong>{projectCount}</strong> proyectos</span>
+          <span title="Habilidades visibles publicadas en el portafolio."><strong>{skillCount}</strong> habilidades</span>
+          <span title="Experiencia laboral estimada a partir de experiencias visibles o proyectos publicados."><strong>{experienceYears || "-"}</strong> experiencia</span>
         </div>
 
         <div className="landing-profile-footer">
@@ -602,7 +623,11 @@ export default function HomePage() {
   const featuredProfiles = useMemo(
     () =>
       [...featuredProfilesSource]
-        .filter((profile) => getProfileHighlights(profile, selectedFeaturedCategory || undefined).length > 0)
+        .filter((profile) => (
+          selectedFeaturedCategory
+            ? getProfileHighlights(profile, selectedFeaturedCategory).length > 0
+            : true
+        ))
         .sort((left, right) => compareFeaturedProfiles(left, right, selectedFeaturedCategory || undefined)),
     [featuredProfilesSource, selectedFeaturedCategory],
   );
@@ -643,6 +668,15 @@ export default function HomePage() {
       })),
     [groupedFeaturedProfiles, showAllFeaturedProfiles],
   );
+  const visibleFeaturedProfileCount = useMemo(
+    () =>
+      visibleFeaturedGroups.reduce((total, group) => {
+        const isCollapsed = collapsedFeaturedCategories[group.category] ?? false;
+        return isCollapsed ? total : total + group.profiles.length;
+      }, 0),
+    [collapsedFeaturedCategories, visibleFeaturedGroups],
+  );
+  const hiddenFeaturedProfileCount = Math.max(featuredProfiles.length - visibleFeaturedProfileCount, 0);
 
   useEffect(() => {
     setShowAllFeaturedProfiles(false);
@@ -1152,8 +1186,11 @@ export default function HomePage() {
             <div>
               <h2>Talento disponible</h2>
               <p>Perfiles ordenados por experiencia, proyectos publicados y habilidades visibles.</p>
+              <p className="landing-ranking-help">
+                Las etiquetas indican avance del perfil; el ranking prioriza evidencias, proyectos, habilidades visibles y nivel declarado.
+              </p>
             </div>
-            <span className="landing-featured-count">{featuredProfiles.length} perfiles</span>
+            <span className="landing-featured-count">{visibleFeaturedProfileCount} perfiles visibles</span>
           </div>
 
           <div className="landing-category-tabs" aria-label="Categorias profesionales">
@@ -1183,13 +1220,14 @@ export default function HomePage() {
                   {visibleFeaturedGroups.map(({ category, profiles, hiddenCount, total }) => {
                     const isCollapsed = collapsedFeaturedCategories[category] ?? false;
                     const categoryId = getCategoryDomId(category);
+                    const displayedCount = isCollapsed ? 0 : profiles.length;
 
                     return (
                       <section key={category} className="landing-category-group">
                         <div className="landing-category-head">
                           <div>
                             <h3>{category}</h3>
-                            <span>{total} perfiles visibles</span>
+                            <span>{displayedCount} de {total} perfiles visibles</span>
                           </div>
                           <div className="landing-category-actions">
                             {hiddenCount > 0 ? <span>{hiddenCount} mas al expandir</span> : null}
@@ -1224,14 +1262,14 @@ export default function HomePage() {
                   })}
                 </div>
 
-                {featuredProfiles.length > FEATURED_PROFILE_LIMIT ? (
+                {hiddenFeaturedProfileCount > 0 || showAllFeaturedProfiles ? (
                   <div className="landing-directory-actions">
                     <button
                       type="button"
                       className="landing-show-all-profiles"
                       onClick={() => setShowAllFeaturedProfiles((current) => !current)}
                     >
-                      {showAllFeaturedProfiles ? "Ver menos perfiles" : `Ver mas perfiles (${featuredProfiles.length - FEATURED_PROFILE_LIMIT})`}
+                      {showAllFeaturedProfiles ? "Ver menos perfiles" : `Ver mas perfiles (${hiddenFeaturedProfileCount})`}
                     </button>
                   </div>
                 ) : null}

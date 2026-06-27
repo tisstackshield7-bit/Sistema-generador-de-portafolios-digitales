@@ -24,8 +24,8 @@ class TemporaryPasswordNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->from((string) config('mail.from.address'), 'PortafolioPro')
-            ->subject('PortafolioPro | Contrasena temporal de acceso')
+            ->from((string) config('mail.from.address'), 'SpherLink')
+            ->subject('SpherLink | Contrasena temporal de acceso')
             ->view('emails.temporary-password', [
                 'temporaryPassword' => $this->temporaryPassword,
                 'expireMinutes' => $this->expireMinutes,

@@ -283,6 +283,10 @@ export default function PublicProfilePage() {
                   <PortfolioIcon />
                   <span>{publicProjects.length} proyectos</span>
                 </span>
+                <span className="public-portfolio-meta-pill">
+                  <ExperienceMarkIcon type="laboral" />
+                  <span>{publicExperiences.length} experiencias</span>
+                </span>
               </div>
 
               <div className="public-portfolio-tag-row">
