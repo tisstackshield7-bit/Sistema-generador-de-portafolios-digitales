@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { FaWhatsapp } from "react-icons/fa";
+import { SiGmail } from "react-icons/si";
 import { API_ORIGIN } from "../api/axios";
 import { getPublicProfileBySlug } from "../api/profile";
 import RichTextContent from "../components/common/RichTextContent";
@@ -23,6 +25,88 @@ function getInitials(name?: string | null) {
 
 function formatVisibleText(value?: string | null) {
   return (value || "").replace(/\bPagina web\b/g, "Página web");
+}
+
+function buildGmailWebUrl(email: string, name?: string) {
+  const subject = encodeURIComponent("Contacto desde SpherLink");
+  const body = encodeURIComponent(
+    `Hola ${name || ""}, vi tu portafolio en SpherLink y me gustaría contactarte.`
+  );
+
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+    email
+  )}&su=${subject}&body=${body}`;
+}
+
+function buildMailtoLink(email: string, name?: string) {
+  const subject = encodeURIComponent("Contacto desde SpherLink");
+  const body = encodeURIComponent(
+    `Hola ${name || ""}, vi tu portafolio en SpherLink y me gustaría contactarte.`
+  );
+
+  return `mailto:${email}?subject=${subject}&body=${body}`;
+}
+
+function getEmailContactHref(email: string, name?: string) {
+  return isMobileOrTablet() ? buildMailtoLink(email, name) : buildGmailWebUrl(email, name);
+}
+
+function openEmailContact(email: string, name?: string) {
+  if (!email) return;
+
+  const gmailWebUrl = buildGmailWebUrl(email, name);
+  const mailtoUrl = buildMailtoLink(email, name);
+
+  if (isMobileOrTablet()) {
+    window.location.href = mailtoUrl;
+    return;
+  }
+
+  const newWindow = window.open(gmailWebUrl, "_blank", "noopener,noreferrer");
+  if (!newWindow) {
+    window.location.href = gmailWebUrl;
+  }
+}
+
+function normalizePhoneNumber(phone: string) {
+  let cleanPhone = phone.replace(/\D/g, "");
+
+  if (cleanPhone.length === 8) {
+    cleanPhone = `591${cleanPhone}`;
+  }
+
+  return cleanPhone;
+}
+
+function isMobileOrTablet() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function buildWhatsAppMessage(name?: string) {
+  return encodeURIComponent(
+    `Hola ${name || ""}, vi tu portafolio en SpherLink y me gustaría contactarte.`
+  );
+}
+
+function openWhatsAppContact(phone?: string | null, name?: string) {
+  if (!phone) return;
+
+  const normalizedPhone = normalizePhoneNumber(phone);
+  const message = buildWhatsAppMessage(name);
+
+  const appUrl = `whatsapp://send?phone=${normalizedPhone}&text=${message}`;
+  const mobileWebUrl = `https://wa.me/${normalizedPhone}?text=${message}`;
+  const desktopWebUrl = `https://web.whatsapp.com/send?phone=${normalizedPhone}&text=${message}`;
+
+  if (isMobileOrTablet()) {
+    window.location.href = mobileWebUrl;
+    return;
+  }
+
+  window.location.href = appUrl;
+  setTimeout(() => {
+    window.open(desktopWebUrl, "_blank", "noopener,noreferrer");
+  }, 1000);
 }
 
 function RibbonIcon() {
@@ -244,14 +328,32 @@ export default function PublicProfilePage() {
               {(visibility.mostrar_correo && perfil.correo) || (visibility.mostrar_telefono && perfil.telefono) || perfil.ubicacion ? (
                 <div className="public-portfolio-contact-row" aria-label="Datos de contacto">
                   {visibility.mostrar_correo && perfil.correo ? (
-                    <a className="public-portfolio-contact-link" href={`mailto:${perfil.correo}`}>
-                      {perfil.correo}
+                    <a
+                      className="public-portfolio-contact-link public-gmail-button"
+                      href={getEmailContactHref(perfil.correo, perfil.nombre_completo)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Enviar correo a ${perfil.nombre_completo}`}
+                    >
+                      <SiGmail className="public-gmail-icon" />
+                      Correo electrónico
                     </a>
                   ) : null}
                   {visibility.mostrar_telefono && perfil.telefono ? (
                     <a className="public-portfolio-contact-link" href={phoneHref}>
                       {perfil.telefono}
                     </a>
+                  ) : null}
+                  {perfil.telefono ? (
+                    <button
+                      type="button"
+                      className="public-whatsapp-button"
+                      onClick={() => openWhatsAppContact(perfil.telefono, perfil.nombre_completo)}
+                      aria-label={`Contactar por WhatsApp a ${perfil.nombre_completo}`}
+                    >
+                      <FaWhatsapp className="public-whatsapp-icon" />
+                      WhatsApp
+                    </button>
                   ) : null}
                   {perfil.ubicacion ? (
                     <span className="public-portfolio-contact-link as-text">

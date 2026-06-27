@@ -118,8 +118,9 @@ function resolveStorageImage(value?: string | null) {
   if (/^(https?:|blob:|data:)/i.test(imagePath)) return imagePath;
 
   const storagePath = imagePath.replace(/^\/+/, "").replace(/^storage\/+/i, "");
+  const encodedPath = encodeURI(storagePath);
 
-  return `${API_ORIGIN}/storage/${storagePath}`;
+  return `${API_ORIGIN}/storage-proxy/${encodedPath}`;
 }
 
 function resolveProfileImage(profile: Perfil) {
@@ -189,25 +190,75 @@ async function imageToBase64(url: string) {
   }
 }
 
-async function loadImage(url: string): Promise<LoadedImage | null> {
-  const base64 = await imageToBase64(url);
-  if (!base64) return null;
-
-  return await new Promise((resolve) => {
+function loadImageElement(src: string, url: string): Promise<LoadedImage | null> {
+  return new Promise((resolve) => {
     const image = new Image();
+
+    if (!src.startsWith("data:")) {
+      image.crossOrigin = "anonymous";
+    }
+
     image.onload = () => resolve({ image, url });
     image.onerror = () => resolve(null);
-    image.src = base64;
+    image.src = src;
   });
+}
+
+async function loadImageFromBlob(url: string): Promise<LoadedImage | null> {
+  try {
+    const response = await fetch(url, {
+      mode: "cors",
+      credentials: "omit",
+      headers: { Accept: "image/avif,image/webp,image/png,image/jpeg,image/*" },
+    });
+    if (!response.ok) {
+      console.warn(`[cvExport] loadImageFromBlob failed response ${response.status} for`, url);
+      return null;
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const loaded = await loadImageElement(objectUrl, url);
+    URL.revokeObjectURL(objectUrl);
+    if (!loaded) {
+      console.warn(`[cvExport] loadImageFromBlob could not load image element for`, url);
+    }
+    return loaded;
+  } catch (error) {
+    console.warn(`[cvExport] loadImageFromBlob error for`, url, error);
+    return null;
+  }
+}
+
+async function loadImage(url: string): Promise<LoadedImage | null> {
+  if (!url) return null;
+
+  const directImage = await loadImageElement(url, url);
+  if (directImage) return directImage;
+
+  const blobImage = await loadImageFromBlob(url);
+  if (blobImage) return blobImage;
+
+  const base64 = await imageToBase64(url);
+  if (base64) {
+    const dataImage = await loadImageElement(base64, url);
+    if (dataImage) return dataImage;
+  }
+
+  console.warn(`[cvExport] failed to load profile image for`, url);
+  return null;
 }
 
 async function loadCvImages(profile: Perfil): Promise<CvImages> {
   const profileUrl = resolveProfileImage(profile);
+  console.info(`[cvExport] profile foto_perfil=`, profile.foto_perfil, `profileUrl=`, profileUrl);
   const projectEntries = (profile.proyectos || []).map((project) => [project.id, getProjectImageUrl(project)] as const);
   const [profileImage, projectImages] = await Promise.all([
     loadImage(profileUrl),
     Promise.all(projectEntries.map(async ([id, url]) => [id, await loadImage(url)] as const)),
   ]);
+
+  console.info(`[cvExport] loaded profile image=`, !!profileImage, profileImage?.url);
 
   return {
     profile: profileImage,

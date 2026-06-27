@@ -3321,6 +3321,18 @@ img {
   border-bottom-color: #fff;
 }
 
+.public-gmail-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.public-gmail-icon {
+  font-size: 22px;
+  color: #ea4335;
+  flex-shrink: 0;
+}
+
 .public-portfolio-contact-link.as-text {
   border-bottom: 0;
 }
@@ -3352,6 +3364,46 @@ img {
   font-weight: 900;
   text-decoration: none;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.public-whatsapp-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #25d366;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(37, 211, 102, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.public-whatsapp-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(37, 211, 102, 0.45);
+}
+
+.public-whatsapp-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.public-whatsapp-icon {
+  font-size: 22px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.public-whatsapp-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
 }
 
 .public-social-links a:hover {

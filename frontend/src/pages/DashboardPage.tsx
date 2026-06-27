@@ -188,7 +188,43 @@ export default function DashboardPage() {
     perfil?.sitio_web_url ? { type: "web" as const, label: "Sitio Web", url: perfil.sitio_web_url } : null,
   ].filter(Boolean) as { type: "linkedin" | "github" | "web"; label: string; url: string }[];
 
+  const validateCvRequirements = () => {
+    const missing: string[] = [];
+    const hasProfilePhoto = Boolean(perfil?.foto_perfil);
+    const hasVisibleSkill =
+      technicalSkills.some((skill) => skill.visible_publico !== false) ||
+      softSkills.some((skill) => skill.visible_publico !== false);
+    const hasVisibleExperience =
+      academicExperiences.some((experience) => experience.visible_publico !== false) ||
+      workExperiences.some((experience) => experience.visible_publico !== false);
+
+    if (!hasProfilePhoto) {
+      missing.push("Subir una foto de perfil.");
+    }
+
+    if (!hasVisibleSkill) {
+      missing.push("Registrar y activar al menos una habilidad técnica o blanda.");
+    }
+
+    if (!hasVisibleExperience) {
+      missing.push("Registrar y activar al menos una experiencia académica o laboral.");
+    }
+
+    return missing;
+  };
+
   const handleDownloadPdf = async () => {
+    const missing = validateCvRequirements();
+
+    if (missing.length > 0) {
+      setDownloadError(
+        `<strong>No es posible descargar tu CV todavía.</strong><br /><br />Para generar un currículum completo y presentable, primero debes completar la siguiente información:<br /><br /><ul>${missing
+          .map((item) => `<li>${item}</li>`)
+          .join("")}</ul>`
+      );
+      return;
+    }
+
     try {
       setDownloadError("");
       setDownloadingCv("pdf");

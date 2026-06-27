@@ -31,3 +31,21 @@ Route::get('/storage/{path}', function (string $path) {
         ShareErrorsFromSession::class,
         ValidateCsrfToken::class,
     ]);
+
+Route::get('/storage-proxy/{path}', function (string $path) {
+    abort_unless(Storage::disk('public')->exists($path), 404);
+
+    $response = Storage::disk('public')->response($path);
+    $response->headers->set('Access-Control-Allow-Origin', '*');
+    $response->headers->set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    $response->headers->set('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization');
+
+    return $response;
+})->where('path', '.*')
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        ValidateCsrfToken::class,
+    ]);

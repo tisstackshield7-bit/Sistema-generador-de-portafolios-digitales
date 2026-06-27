@@ -10,5 +10,8 @@ export function resolveProjectImageSrc(value?: string | null) {
     return value;
   }
 
-  return `${API_ORIGIN}/storage/${value}`;
+  const storagePath = value.replace(/^\/+/, "").replace(/^storage\/+/, "");
+  const encodedPath = encodeURI(storagePath);
+
+  return `${API_ORIGIN}/storage-proxy/${encodedPath}`;
 }
