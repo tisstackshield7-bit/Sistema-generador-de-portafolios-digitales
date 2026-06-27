@@ -15,6 +15,7 @@ import {
   sanitizeLettersAndSpaces,
   sanitizeDigits,
   sanitizeLocationText,
+  sanitizeProfessionalText,
   validateDomainUrl,
   validateUrl,
 } from "../../utils/validations";
@@ -172,8 +173,8 @@ export default function BasicProfileEditPage() {
           setApellidos(sanitizeLettersAndSpaces(legacyName.apellidos));
         }
 
-        setProfesion(sanitizeLettersAndSpaces(perfil?.profesion || ""));
-        setTitularProfesional(sanitizeLettersAndSpaces(perfil?.titular_profesional || ""));
+        setProfesion(sanitizeProfessionalText(perfil?.profesion || ""));
+        setTitularProfesional(sanitizeProfessionalText(perfil?.titular_profesional || ""));
         setTelefono(sanitizeDigits(perfil?.telefono || ""));
         setUbicacion(sanitizeLocationText(perfil?.ubicacion || ""));
         setBiografia(perfil?.biografia || "");
@@ -196,8 +197,10 @@ const preview = useMemo(() => {
   return null;
 }, [foto, existingPhoto]);
 
-  const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
-  const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
+  const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten numeros ni simbolos.";
+  const professionalTextMessage = "Solo se aceptan letras, numeros, espacios y signos profesionales comunes.";
+  const lettersPattern = "[A-Za-z\\u00C0-\\u024F\\s]+";
+  const professionalPattern = "[A-Za-z0-9\\u00C0-\\u024F\\s.,/+#&()\\-]+";
   const [profesionError, setProfesionError] = useState("");
   const [titularProfesionalError, setTitularProfesionalError] = useState("");
 
@@ -226,8 +229,8 @@ const preview = useMemo(() => {
   };
 
   const handleProfesionChange = (value: string) => {
-    const cleaned = sanitizeLettersAndSpaces(value);
-    const fieldError = value !== cleaned ? onlyLettersMessage : "";
+    const cleaned = sanitizeProfessionalText(value);
+    const fieldError = value !== cleaned ? professionalTextMessage : "";
     setProfesion(cleaned);
     setProfesionError(fieldError);
     setErrors((prev) => ({
@@ -237,8 +240,8 @@ const preview = useMemo(() => {
   };
 
   const handleTitularProfesionalChange = (value: string) => {
-    const cleaned = sanitizeLettersAndSpaces(value);
-    const fieldError = value !== cleaned ? onlyLettersMessage : "";
+    const cleaned = sanitizeProfessionalText(value);
+    const fieldError = value !== cleaned ? professionalTextMessage : "";
     setTitularProfesional(cleaned);
     setTitularProfesionalError(fieldError);
     setErrors((prev) => ({
@@ -347,8 +350,8 @@ const preview = useMemo(() => {
                 value={profesion}
                 onChange={handleProfesionChange}
                 error={errors.profesion}
-                pattern={lettersPattern}
-                title={onlyLettersMessage}
+                pattern={professionalPattern}
+                title={professionalTextMessage}
                 inputMode="text"
               />
 
@@ -357,8 +360,8 @@ const preview = useMemo(() => {
                 value={titularProfesional}
                 onChange={handleTitularProfesionalChange}
                 error={errors.titular_profesional}
-                pattern={lettersPattern}
-                title={onlyLettersMessage}
+                pattern={professionalPattern}
+                title={professionalTextMessage}
                 inputMode="text"
               />
             </div>

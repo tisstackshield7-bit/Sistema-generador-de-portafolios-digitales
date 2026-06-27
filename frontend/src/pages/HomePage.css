@@ -2127,6 +2127,14 @@
   color: #64748b;
 }
 
+.landing-section-head .landing-ranking-help {
+  max-width: 720px;
+  margin-top: 8px;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .landing-featured-count {
   min-height: 36px;
   padding: 0 14px;

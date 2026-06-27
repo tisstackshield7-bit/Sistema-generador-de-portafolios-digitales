@@ -49,7 +49,7 @@ php artisan key:generate
 Edita `backend/.env` con tus datos locales:
 
 ```env
-APP_NAME=Laravel
+APP_NAME=SpherLink
 APP_ENV=local
 APP_KEY=base64:qCRIVHJab5WpntU+ApkBLOiZNhlSaKg20JWV8oR3wzw=
 APP_DEBUG=true
@@ -106,7 +106,7 @@ MAIL_PORT=587
 MAIL_USERNAME=tis.stack.shield7@gmail.com
 MAIL_PASSWORD="nmosvstbefjaolzj"
 MAIL_FROM_ADDRESS="tis.stack.shield7@gmail.com"
-MAIL_FROM_NAME="PortafolioPro"
+MAIL_FROM_NAME="SpherLink"
 
 
 

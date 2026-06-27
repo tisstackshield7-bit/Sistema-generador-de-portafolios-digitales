@@ -223,9 +223,10 @@ class ProfileController extends Controller
 
         $perfilesQuery = Perfil::with([
             'usuario:id,correo',
-            'habilidades' => function ($query) use ($applySkillFilters) {
-                $applySkillFilters($query);
-                $query->orderBy('tipo')->orderByDesc('creado_en');
+            'habilidades' => function ($query) {
+                $query->where('visible_publico', true)
+                    ->orderBy('tipo')
+                    ->orderByDesc('creado_en');
             },
             'habilidades.evidencias',
             'proyectos' => function ($query) {
@@ -239,7 +240,8 @@ class ProfileController extends Controller
                     ->orderByDesc('creado_en');
             },
         ])->where('es_publico', true)
-            ->whereHas('usuario', fn ($query) => $query->where('estado', 'activo'));
+            ->whereHas('usuario', fn ($query) => $query->where('estado', 'activo'))
+            ->where(fn ($query) => $this->applyPublicProfileMinimum($query));
 
         if ($search !== '') {
             $perfilesQuery->where(function ($query) use ($search) {
@@ -351,6 +353,7 @@ class ProfileController extends Controller
             'perfiles' => $perfiles,
             'categorias' => Habilidad::where('visible_publico', true)
                 ->where('tipo', 'tecnica')
+                ->whereHas('perfil', fn ($query) => $this->applyPublicProfileMinimum($query))
                 ->whereHas('perfil.usuario', fn ($query) => $query->where('estado', 'activo'))
                 ->whereNotNull('categoria')
                 ->distinct()
@@ -378,6 +381,7 @@ class ProfileController extends Controller
     {
         return Perfil::where('es_publico', true)
             ->whereHas('usuario', fn ($query) => $query->where('estado', 'activo'))
+            ->where(fn ($query) => $this->applyPublicProfileMinimum($query))
             ->pluck('titular_profesional')
             ->map(fn ($role) => trim((string) $role))
             ->filter()
@@ -390,11 +394,13 @@ class ProfileController extends Controller
     {
         $skillTechnologies = Habilidad::where('visible_publico', true)
             ->where('tipo', 'tecnica')
+            ->whereHas('perfil', fn ($query) => $this->applyPublicProfileMinimum($query))
             ->whereHas('perfil.usuario', fn ($query) => $query->where('estado', 'activo'))
             ->distinct()
             ->pluck('nombre');
 
         $projectTechnologies = \App\Models\Proyecto::where('visible_publico', true)
+            ->whereHas('perfil', fn ($query) => $this->applyPublicProfileMinimum($query))
             ->whereHas('perfil.usuario', fn ($query) => $query->where('estado', 'activo'))
             ->pluck('tecnologias')
             ->flatMap(fn ($technologies) => is_array($technologies) ? $technologies : []);
@@ -430,6 +436,7 @@ class ProfileController extends Controller
             },
         ])->where('es_publico', true)
             ->whereHas('usuario', fn ($query) => $query->where('estado', 'activo'))
+            ->where(fn ($query) => $this->applyPublicProfileMinimum($query))
             ->where('slug', $slug)
             ->first();
 
@@ -442,5 +449,20 @@ class ProfileController extends Controller
         return response()->json([
             'perfil' => $perfil,
         ]);
+    }
+
+    private function applyPublicProfileMinimum($query): void
+    {
+        $query
+            ->whereRaw("NULLIF(TRIM(COALESCE(nombre_completo, '')), '') IS NOT NULL")
+            ->whereRaw("NULLIF(TRIM(COALESCE(profesion, '')), '') IS NOT NULL")
+            ->whereRaw("NULLIF(TRIM(COALESCE(ubicacion, '')), '') IS NOT NULL")
+            ->whereRaw("NULLIF(TRIM(COALESCE(biografia, '')), '') IS NOT NULL")
+            ->where(function ($contentQuery) {
+                $contentQuery
+                    ->whereHas('habilidades', fn ($skillQuery) => $skillQuery->where('visible_publico', true))
+                    ->orWhereHas('proyectos', fn ($projectQuery) => $projectQuery->where('visible_publico', true))
+                    ->orWhereHas('experiencias', fn ($experienceQuery) => $experienceQuery->where('visible_publico', true));
+            });
     }
 }

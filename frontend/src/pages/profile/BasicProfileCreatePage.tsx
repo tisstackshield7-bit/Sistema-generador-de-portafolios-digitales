@@ -9,6 +9,7 @@ import {
   sanitizeDigits,
   sanitizeLettersAndSpaces,
   sanitizeLocationText,
+  sanitizeProfessionalText,
   validateBiography,
   validateBoliviaPhone,
   validateProfilePhoto,
@@ -67,9 +68,11 @@ export default function BasicProfileCreatePage() {
 
   const preview = useMemo(() => (foto ? URL.createObjectURL(foto) : null), [foto]);
 
-  const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten números ni símbolos.";
+  const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten numeros ni simbolos.";
+  const professionalTextMessage = "Solo se aceptan letras, numeros, espacios y signos profesionales comunes.";
   const requiredPhotoMessage = "La foto de perfil es obligatoria.";
-  const lettersPattern = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]+";
+  const lettersPattern = "[A-Za-z\\u00C0-\\u024F\\s]+";
+  const professionalPattern = "[A-Za-z0-9\\u00C0-\\u024F\\s.,/+#&()\\-]+";
 
   const validateField = (field: FieldName, value: string, customError = "") => {
     if (customError) return customError;
@@ -138,8 +141,8 @@ export default function BasicProfileCreatePage() {
   };
 
   const handleProfesionChange = (value: string) => {
-    const cleaned = sanitizeLettersAndSpaces(value);
-    const customError = value !== cleaned ? onlyLettersMessage : "";
+    const cleaned = sanitizeProfessionalText(value);
+    const customError = value !== cleaned ? professionalTextMessage : "";
     setProfesion(cleaned);
 
     if (touched.profesion) {
@@ -151,8 +154,8 @@ export default function BasicProfileCreatePage() {
   };
 
   const handleTitularProfesionalChange = (value: string) => {
-    const cleaned = sanitizeLettersAndSpaces(value);
-    const customError = value !== cleaned ? onlyLettersMessage : "";
+    const cleaned = sanitizeProfessionalText(value);
+    const customError = value !== cleaned ? professionalTextMessage : "";
     setTitularProfesional(cleaned);
 
     if (touched.titular_profesional) {
@@ -311,8 +314,8 @@ export default function BasicProfileCreatePage() {
                 setFieldError("profesion", profesion, errors.profesion);
               }}
               error={errors.profesion}
-              pattern={lettersPattern}
-              title={onlyLettersMessage}
+              pattern={professionalPattern}
+              title={professionalTextMessage}
               inputMode="text"
             />
 
@@ -325,8 +328,8 @@ export default function BasicProfileCreatePage() {
                 setFieldError("titular_profesional", titularProfesional, errors.titular_profesional);
               }}
               error={errors.titular_profesional}
-              pattern={lettersPattern}
-              title={onlyLettersMessage}
+              pattern={professionalPattern}
+              title={professionalTextMessage}
               inputMode="text"
             />
 

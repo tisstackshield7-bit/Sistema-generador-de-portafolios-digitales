@@ -13,13 +13,15 @@ use Illuminate\Support\Facades\Hash;
 
 class PasswordRecoveryController extends Controller
 {
+    private const RECOVERY_RESPONSE_MESSAGE = 'Si la direccion esta registrada, enviaremos una contrasena temporal con vigencia de 30 minutos.';
+
     public function sendRecovery(ForgotPasswordRequest $request)
     {
         $usuario = Usuario::where('correo', $request->correo)->first();
 
         if (!$usuario) {
             return response()->json([
-                'message' => 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.',
+                'message' => self::RECOVERY_RESPONSE_MESSAGE,
             ]);
         }
 
@@ -44,7 +46,7 @@ class PasswordRecoveryController extends Controller
         $usuario->sendTemporaryPasswordNotification($temporaryPassword, $expireMinutes);
 
         return response()->json([
-            'message' => 'Si el correo existe, te enviamos una contrasena temporal valida por 30 minutos.',
+            'message' => self::RECOVERY_RESPONSE_MESSAGE,
         ]);
     }
 
