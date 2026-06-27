@@ -12,6 +12,7 @@ type Props = {
   title?: string;
   inputMode?: "text" | "search" | "none" | "tel" | "url" | "email" | "numeric" | "decimal";
   togglePassword?: boolean;
+  required?: boolean;
 };
 
 export default function FormInput({
@@ -26,6 +27,7 @@ export default function FormInput({
   title,
   inputMode,
   togglePassword = false,
+  required = false,
 }: Props) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -38,7 +40,10 @@ export default function FormInput({
 
   return (
     <div className="form-field">
-      <label className="form-label">{label}</label>
+      <label className="form-label">
+        {label}
+        {required && !label.includes("*") ? <span className="required-mark"> *</span> : null}
+      </label>
 
       <div className="form-input-shell">
         <input
@@ -49,6 +54,8 @@ export default function FormInput({
           pattern={pattern}
           title={title}
           inputMode={inputMode}
+          required={required}
+          aria-required={required ? "true" : "false"}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
         />

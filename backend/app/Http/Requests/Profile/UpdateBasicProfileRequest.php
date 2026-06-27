@@ -41,13 +41,13 @@ class UpdateBasicProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombres' => ['required', 'string', 'max:120'],
-            'apellidos' => ['required', 'string', 'max:120'],
-            'profesion' => ['required', 'string', 'max:150'],
-            'titular_profesional' => ['required', 'string', 'max:150'],
+            'nombres' => ['required', 'string', 'max:120', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u'],
+            'apellidos' => ['required', 'string', 'max:120', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u'],
+            'profesion' => ['required', 'string', 'max:150', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u'],
+            'titular_profesional' => ['required', 'string', 'max:150', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u'],
             'telefono' => ['required', 'string', 'regex:/^(?:591)?[67]\d{7}$/'],
-            'ubicacion' => ['nullable', 'string', 'max:180'],
-            'biografia' => ['required', 'string', 'min:10', 'max:5000'],
+            'ubicacion' => ['nullable', 'string', 'max:180', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u'],
+            'biografia' => ['required', 'string', 'min:10', 'max:5000', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u'],
             'linkedin_url' => ['nullable', 'url', 'max:255', function ($attribute, $value, $fail) {
                 if (!$this->hasAllowedHost((string) $value, self::LINKEDIN_HOSTS)) {
                     $fail('Ingresa una URL valida de LinkedIn.');
