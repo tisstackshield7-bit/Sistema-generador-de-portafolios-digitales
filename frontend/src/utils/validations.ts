@@ -1,19 +1,19 @@
 import { richTextToPlainText } from "./richText";
 
 export const validateEmail = (value: string) => {
-  if (!value.trim()) return "El correo electronico es obligatorio.";
+  if (!value.trim()) return "El correo electronico es obligatorio.*";
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(value)) return "El correo no es valido.";
+  if (!emailRegex.test(value)) return "El correo no es valido.*";
   return "";
 };
 
 export const validatePassword = (value: string) => {
-  if (!value.trim()) return "La contraseña es obligatoria.";
-  if (value.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
-  if (!/[A-Z]/.test(value)) return "La contraseña debe incluir una mayuscula.";
-  if (!/[a-z]/.test(value)) return "La contraseña debe incluir una minuscula.";
-  if (!/[0-9]/.test(value)) return "La contraseña debe incluir un numero.";
-  if (!/[\W_]/.test(value)) return "La contraseña debe incluir un simbolo.";
+  if (!value.trim()) return "La contraseña es obligatoria.*";
+  if (value.length < 8) return "La contraseña debe tener al menos 8 caracteres.*";
+  if (!/[A-Z]/.test(value)) return "La contraseña debe incluir una mayuscula.*";
+  if (!/[a-z]/.test(value)) return "La contraseña debe incluir una minuscula.*";
+  if (!/[0-9]/.test(value)) return "La contraseña debe incluir un numero.*";
+  if (!/[\W_]/.test(value)) return "La contraseña debe incluir un simbolo.*";
   return "";
 };
 
@@ -24,21 +24,21 @@ export const validateRequired = (value: string, message: string) => {
 export const validateBiography = (value: string) => {
   const plainText = richTextToPlainText(value);
 
-  if (!plainText) return "La biografia es obligatoria.";
-  if (plainText.length < 10) return "La biografia debe tener al menos 10 caracteres.";
-  if (plainText.length > 1200) return "La biografia no puede superar los 1200 caracteres.";
+  if (!plainText) return "La biografia es obligatoria.*";
+  if (plainText.length < 10) return "La biografia debe tener al menos 10 caracteres.*";
+  if (plainText.length > 1200) return "La biografia no puede superar los 1200 caracteres.*";
   return "";
 };
 
 export const validateBoliviaPhone = (value: string) => {
   const normalized = value.replace(/\D/g, "");
 
-  if (!normalized) return "El numero telefonico es obligatorio.";
+  if (!normalized) return "El numero telefonico es obligatorio.*";
 
   const boliviaPhoneRegex = /^(?:591)?[67]\d{7}$/;
 
   if (!boliviaPhoneRegex.test(normalized)) {
-    return "Ingresa un numero de Bolivia valido. Ej: 71234567 o 59171234567.";
+    return "Ingresa un numero de Bolivia valido. Ej: 71234567 o 59171234567.*";
   }
 
   return "";
@@ -50,11 +50,11 @@ export const validateProfilePhoto = (file?: File | null) => {
   const maxSize = 5 * 1024 * 1024;
 
   if (!validTypes.includes(file.type)) {
-    return "Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.";
+    return "Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.*";
   }
 
   if (file.size > maxSize) {
-    return "Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.";
+    return "Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.*";
   }
 
   return "";

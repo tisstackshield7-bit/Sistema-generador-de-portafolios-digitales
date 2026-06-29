@@ -126,16 +126,16 @@ class StoreExperienceRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'tipo.required' => 'El tipo de experiencia es obligatorio.',
-            'tipo.in' => 'El tipo de experiencia no es valido.',
-            'titulo.required' => 'El titulo es obligatorio.',
-            'institucion.required' => 'La institucion es obligatoria.',
-            'descripcion.required' => 'La descripcion es obligatoria.',
-            'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
-            'fecha_inicio.before_or_equal' => 'La fecha de inicio no puede ser futura.',
-            'fecha_fin.after_or_equal' => 'La fecha de fin no puede ser anterior a la fecha de inicio.',
-            'fecha_fin.before_or_equal' => 'La fecha de fin no puede ser futura.',
-            'url_credencial.url' => 'Ingresa una URL valida para la credencial.',
+            'tipo.required' => 'El tipo de experiencia es obligatorio.*',
+            'tipo.in' => 'El tipo de experiencia no es valido.*',
+            'titulo.required' => 'El titulo es obligatorio.*',
+            'institucion.required' => 'La institucion es obligatoria.*',
+            'descripcion.required' => 'La descripcion es obligatoria.*',
+            'fecha_inicio.required' => 'La fecha de inicio es obligatoria.*',
+            'fecha_inicio.before_or_equal' => 'La fecha de inicio no puede ser futura.*',
+            'fecha_fin.after_or_equal' => 'La fecha de fin no puede ser anterior a la fecha de inicio.*',
+            'fecha_fin.before_or_equal' => 'La fecha de fin no puede ser futura.*',
+            'url_credencial.url' => 'Ingresa una URL valida para la credencial.*',
         ];
     }
 }

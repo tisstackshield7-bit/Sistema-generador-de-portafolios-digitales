@@ -68,9 +68,9 @@ export default function BasicProfileCreatePage() {
 
   const preview = useMemo(() => (foto ? URL.createObjectURL(foto) : null), [foto]);
 
-  const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten numeros ni simbolos.";
-  const professionalTextMessage = "Solo se aceptan letras, numeros, espacios y signos profesionales comunes.";
-  const requiredPhotoMessage = "La foto de perfil es obligatoria.";
+  const onlyLettersMessage = "Solo se aceptan letras y espacios; no se permiten numeros ni simbolos.*";
+  const professionalTextMessage = "Solo se aceptan letras, numeros, espacios y signos profesionales comunes.*";
+  const requiredPhotoMessage = "La foto de perfil es obligatoria.*";
   const lettersPattern = "[A-Za-z\\u00C0-\\u024F\\s]+";
   const professionalPattern = "[A-Za-z0-9\\u00C0-\\u024F\\s.,/+#&()\\-]+";
 
@@ -79,17 +79,17 @@ export default function BasicProfileCreatePage() {
 
     switch (field) {
       case "nombres":
-        return validateRequired(value, "El nombre es obligatorio.");
+        return validateRequired(value, "El nombre es obligatorio.*");
       case "apellidos":
-        return validateRequired(value, "Los apellidos son obligatorios.");
+        return validateRequired(value, "Los apellidos son obligatorios.*");
       case "profesion":
-        return validateRequired(value, "La profesion es obligatoria.");
+        return validateRequired(value, "La profesion es obligatoria.*");
       case "titular_profesional":
-        return validateRequired(value, "El rol o especialidad profesional es obligatorio.");
+        return validateRequired(value, "El rol o especialidad profesional es obligatorio.*");
       case "telefono":
         return validateBoliviaPhone(value);
       case "ubicacion":
-        return value.trim().length > 180 ? "La ubicacion no puede superar 180 caracteres." : "";
+        return value.trim().length > 180 ? "La ubicacion no puede superar 180 caracteres.*" : "";
       case "biografia":
         return validateBiography(value);
       default:

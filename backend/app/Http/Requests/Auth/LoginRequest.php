@@ -22,9 +22,9 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'correo.required' => 'El correo electronico es obligatorio.',
-            'correo.email' => 'El correo no es valido.',
-            'contrasena.required' => 'La contrasena es obligatoria.',
+            'correo.required' => 'El correo electronico es obligatorio.*',
+            'correo.email' => 'El correo no es valido.*',
+            'contrasena.required' => 'La contrasena es obligatoria.*',
         ];
     }
 }

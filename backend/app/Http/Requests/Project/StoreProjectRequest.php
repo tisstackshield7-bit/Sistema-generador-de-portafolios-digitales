@@ -79,20 +79,20 @@ class StoreProjectRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'titulo.required' => 'El titulo del proyecto es obligatorio.',
-            'rol.required' => 'Tu rol en el proyecto es obligatorio.',
-            'descripcion.required' => 'La descripcion del proyecto es obligatoria.',
-            'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
-            'fecha_inicio.before_or_equal' => 'La fecha de inicio no puede ser futura.',
-            'fecha_fin.after_or_equal' => 'La fecha de fin no puede ser anterior a la fecha de inicio.',
-            'fecha_fin.before_or_equal' => 'La fecha de fin no puede ser futura.',
-            'tecnologias.required' => 'Debes agregar al menos una tecnologia.',
-            'tecnologias.min' => 'Debes agregar al menos una tecnologia.',
-            'enlace_proyecto.url' => 'Ingrese un enlace valido',
-            'url_imagen.url' => 'Ingrese una URL de imagen valida.',
-            'imagen_archivo.image' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.',
-            'imagen_archivo.mimes' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.',
-            'imagen_archivo.max' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.',
+            'titulo.required' => 'El titulo del proyecto es obligatorio.*',
+            'rol.required' => 'Tu rol en el proyecto es obligatorio.*',
+            'descripcion.required' => 'La descripcion del proyecto es obligatoria.*',
+            'fecha_inicio.required' => 'La fecha de inicio es obligatoria.*',
+            'fecha_inicio.before_or_equal' => 'La fecha de inicio no puede ser futura.*',
+            'fecha_fin.after_or_equal' => 'La fecha de fin no puede ser anterior a la fecha de inicio.*',
+            'fecha_fin.before_or_equal' => 'La fecha de fin no puede ser futura.*',
+            'tecnologias.required' => 'Debes agregar al menos una tecnologia.*',
+            'tecnologias.min' => 'Debes agregar al menos una tecnologia.*',
+            'enlace_proyecto.url' => 'Ingrese un enlace valido*',
+            'url_imagen.url' => 'Ingrese una URL de imagen valida.*',
+            'imagen_archivo.image' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.*',
+            'imagen_archivo.mimes' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.*',
+            'imagen_archivo.max' => 'Solo se permiten imagenes JPG, PNG o WEBP de hasta 5 MB.*',
         ];
     }
 }

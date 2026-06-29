@@ -21,8 +21,8 @@ class ForgotPasswordRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'correo.required' => 'El correo electronico es obligatorio.',
-            'correo.email' => 'El correo no es valido.',
+            'correo.required' => 'El correo electronico es obligatorio.*',
+            'correo.email' => 'El correo no es valido.*',
         ];
     }
 }

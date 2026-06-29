@@ -343,7 +343,7 @@ export default function SkillsPage() {
       ...prev,
       nombre: nextValue.trim()
         ? ""
-        : "El nombre de la habilidad es obligatorio. Por favor, completa este campo.",
+        : "El nombre de la habilidad es obligatorio. Por favor, completa este campo.*",
     }));
   };
 
@@ -351,7 +351,7 @@ export default function SkillsPage() {
     const nextErrors: Record<string, string> = {};
 
     if (form.tipo === "tecnica" && !form.nombre.trim()) {
-      nextErrors.nombre = "El nombre de la habilidad es obligatorio. Por favor, completa este campo.";
+      nextErrors.nombre = "El nombre de la habilidad es obligatorio. Por favor, completa este campo.*";
     }
 
     if (!form.categoria) {
@@ -361,18 +361,18 @@ export default function SkillsPage() {
     }
 
     if (form.tipo === "blanda" && form.categoria === "__custom__" && !form.categoria_personalizada?.trim()) {
-      nextErrors.categoria_personalizada = "Escribe el nombre de la habilidad blanda personalizada.";
+      nextErrors.categoria_personalizada = "Escribe el nombre de la habilidad blanda personalizada.*";
     }
 
     if (!form.nivel_dominio) {
-      nextErrors.nivel_dominio = "El nivel de dominio es obligatorio. Selecciona Basico, Intermedio o Avanzado.";
+      nextErrors.nivel_dominio = "El nivel de dominio es obligatorio. Selecciona Basico, Intermedio o Avanzado.*";
     }
 
     if (form.tipo === "blanda") {
       const evidence = getSoftSkillCertificate(form.evidencias || []);
 
       if (evidence.archivo && evidence.archivo.type !== "application/pdf") {
-        nextErrors["evidencias.0.archivo"] = "Solo se permite subir certificados PDF.";
+        nextErrors["evidencias.0.archivo"] = "Solo se permite subir certificados PDF.*";
       }
     }
 
@@ -380,27 +380,27 @@ export default function SkillsPage() {
       if (!hasEvidenceContent(evidence)) return;
 
       if (!evidence.titulo.trim()) {
-        nextErrors[`evidencias.${index}.titulo`] = "El titulo de la evidencia es obligatorio.";
+        nextErrors[`evidencias.${index}.titulo`] = "El titulo de la evidencia es obligatorio.*";
       }
 
       if (!evidence.url?.trim() && !evidence.archivo) {
-        nextErrors[`evidencias.${index}.url`] = "Agrega un enlace o archivo para esta evidencia.";
+        nextErrors[`evidencias.${index}.url`] = "Agrega un enlace o archivo para esta evidencia.*";
       } else if (evidence.url?.trim()) {
-        const evidenceUrlError = validateUrl(evidence.url, "Ingresa un enlace valido para la evidencia.");
+        const evidenceUrlError = validateUrl(evidence.url, "Ingresa un enlace valido para la evidencia.*");
         if (evidenceUrlError) nextErrors[`evidencias.${index}.url`] = evidenceUrlError;
       }
 
       if (!evidence.actualidad && evidence.fecha) {
         const evidenceDateError = validatePastOrTodayDate(
           evidence.fecha,
-          "La fecha de la evidencia no puede ser futura.",
+          "La fecha de la evidencia no puede ser futura.*",
         );
         if (evidenceDateError) nextErrors[`evidencias.${index}.fecha`] = evidenceDateError;
       }
     });
 
     if (form.tipo === "tecnica" && form.visible_publico && !(form.evidencias || []).some(hasEvidenceContent)) {
-      nextErrors.visible_publico = "Agrega al menos una evidencia para publicar esta habilidad tecnica.";
+      nextErrors.visible_publico = "Agrega al menos una evidencia para publicar esta habilidad tecnica.*";
     }
 
     setErrors(nextErrors);
@@ -501,7 +501,7 @@ export default function SkillsPage() {
       setServerError("");
     } catch (error: unknown) {
       const errorData = getApiErrorData(error);
-      setServerError(errorData?.message || "No se pudo actualizar la visibilidad.");
+      setServerError(errorData?.message || "No se pudo actualizar la visibilidad.*");
     }
   };
 
@@ -514,7 +514,7 @@ export default function SkillsPage() {
       setServerError("");
     } catch (error: unknown) {
       const errorData = getApiErrorData(error);
-      setServerError(errorData?.message || "No se pudo eliminar la habilidad.");
+      setServerError(errorData?.message || "No se pudo eliminar la habilidad.*");
     } finally {
       setPendingDelete(null);
     }

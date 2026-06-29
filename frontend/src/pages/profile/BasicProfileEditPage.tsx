@@ -262,16 +262,16 @@ const preview = useMemo(() => {
     e.preventDefault();
 
     const nextErrors = {
-      nombres: validateRequired(nombres, "El nombre es obligatorio.") || errors.nombres,
-      apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.") || errors.apellidos,
-      profesion: validateRequired(profesion, "La profesion es obligatoria.") || profesionError,
-      titular_profesional: validateRequired(titularProfesional, "El rol o especialidad profesional es obligatorio.") || titularProfesionalError,
+      nombres: validateRequired(nombres, "El nombre es obligatorio.*") || errors.nombres,
+      apellidos: validateRequired(apellidos, "Los apellidos son obligatorios.*") || errors.apellidos,
+      profesion: validateRequired(profesion, "La profesion es obligatoria.*") || profesionError,
+      titular_profesional: validateRequired(titularProfesional, "El rol o especialidad profesional es obligatorio.*") || titularProfesionalError,
       telefono: validateBoliviaPhone(telefono),
-      ubicacion: ubicacion.trim().length > 180 ? "La ubicacion no puede superar 180 caracteres." : "",
+      ubicacion: ubicacion.trim().length > 180 ? "La ubicacion no puede superar 180 caracteres.*" : "",
       biografia: validateBiography(biografia),
-      linkedin_url: validateDomainUrl(linkedinUrl, ["linkedin.com", "www.linkedin.com"], "Ingresa una URL valida de LinkedIn."),
-      github_url: validateDomainUrl(githubUrl, ["github.com", "www.github.com"], "Ingresa una URL valida de GitHub."),
-      sitio_web_url: validateUrl(sitioWebUrl, "Ingresa una URL valida para tu sitio web."),
+      linkedin_url: validateDomainUrl(linkedinUrl, ["linkedin.com", "www.linkedin.com"], "Ingresa una URL valida de LinkedIn.*"),
+      github_url: validateDomainUrl(githubUrl, ["github.com", "www.github.com"], "Ingresa una URL valida de GitHub.*"),
+      sitio_web_url: validateUrl(sitioWebUrl, "Ingresa una URL valida para tu sitio web.*"),
     };
 
     setErrors(nextErrors);
